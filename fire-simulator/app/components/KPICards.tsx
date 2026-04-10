@@ -56,7 +56,6 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     coastFireAmount,
     requiredSparrate,
     sparquote,
-    totalTaxPaid,
     drawdownSurvives,
     drawdownDepletionYear,
     derivedFireNumber,

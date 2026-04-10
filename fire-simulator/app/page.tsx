@@ -140,7 +140,7 @@ function HomeContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareTooltip, setShareTooltip] = useState(false);
   const { theme, toggleTheme } = useTheme();
-  const { t, locale, setLocale, formatCurrency } = useI18n();
+  const { t, locale, setLocale } = useI18n();
 
   // Update html lang when locale changes
   useEffect(() => {
