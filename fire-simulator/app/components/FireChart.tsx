@@ -1,9 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -53,6 +55,7 @@ function yAxisFormatter(value: number): string {
 }
 
 export default function FireChart({ result, zielvermoegen }: FireChartProps) {
+  const [showScenarios, setShowScenarios] = useState(false);
   const {
     yearlyData,
     coastFireYear,
@@ -61,18 +64,23 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     coastFireCalendarYear,
     fullFireCalendarYear,
     lzkStartCalendarYear,
+    coastFireAmount,
+    scenarioOptimistic,
+    scenarioPessimistic,
   } = result;
 
-  // Show data up to full FIRE + 2 years or max 25 years
+  // Show data up to full FIRE + 2 years or max 30 years
   const displayEnd = Math.min(
-    (fullFireYear !== null ? fullFireYear + 2 : 25),
+    (fullFireYear !== null ? fullFireYear + 2 : 30),
     yearlyData.length - 1
   );
-  const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint) => ({
+  const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint, i: number) => ({
     year: d.calendarYear,
     ETF: Math.round(d.etfBalanceReal),
     LZK: Math.round(d.lzkBalanceReal),
     Gesamt: Math.round(d.totalReal),
+    Optimistisch: scenarioOptimistic[i] ? Math.round(scenarioOptimistic[i].totalReal) : undefined,
+    Pessimistisch: scenarioPessimistic[i] ? Math.round(scenarioPessimistic[i].totalReal) : undefined,
   }));
 
   const milestoneLines = [
@@ -94,152 +102,81 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
   ].filter(Boolean) as { year: number; label: string; color: string }[];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-bold text-[#0f294d]">Portfolio-Entwicklung</h2>
-          <p className="text-sm text-slate-500">Kaufkraftbereinigt in heutigen € (real)</p>
+          <p className="text-sm text-slate-500">Kaufkraftbereinigt in heutigen € (real, nach Steuern)</p>
         </div>
         <div className="flex items-center gap-4 text-xs">
-          <span className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowScenarios((p) => !p)}
+            className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
+              showScenarios
+                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+            }`}
+          >
+            {showScenarios ? "Szenarien ausblenden" : "Szenarien ±2%"}
+          </button>
+          <span className="flex items-center gap-1.5 hidden sm:flex">
             <span className="inline-block w-3 h-3 rounded-full bg-emerald-500" />
-            ETF-Portfolio
+            ETF
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-1.5 hidden sm:flex">
             <span className="inline-block w-3 h-3 rounded-full bg-blue-400" />
-            LZK-Konto
+            LZK
           </span>
         </div>
       </div>
 
       <ResponsiveContainer width="100%" height={380}>
-        <AreaChart
-          data={chartData}
-          margin={{ top: 10, right: 20, left: 20, bottom: 0 }}
-        >
-          <defs>
-            <linearGradient id="etfGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
-            </linearGradient>
-            <linearGradient id="lzkGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.4} />
-              <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.05} />
-            </linearGradient>
-          </defs>
-
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-
-          <XAxis
-            dataKey="year"
-            tick={{ fontSize: 12, fill: "#94a3b8" }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis
-            tickFormatter={yAxisFormatter}
-            tick={{ fontSize: 12, fill: "#94a3b8" }}
-            tickLine={false}
-            axisLine={false}
-            width={55}
-          />
-
-          <Tooltip content={<CustomTooltip />} />
-
-          {/* Target reference line */}
-          <ReferenceLine
-            y={zielvermoegen}
-            stroke="#6366f1"
-            strokeDasharray="6 3"
-            strokeWidth={1.5}
-            label={{
-              value: `Ziel: ${yAxisFormatter(zielvermoegen)}`,
-              position: "insideTopRight",
-              fontSize: 11,
-              fill: "#6366f1",
-            }}
-          />
-
-          {/* Coast FIRE reference line */}
-          <ReferenceLine
-            y={1_000_000}
-            stroke="#10b981"
-            strokeDasharray="4 2"
-            strokeWidth={1}
-            label={{
-              value: "Coast FIRE 1M",
-              position: "insideTopRight",
-              fontSize: 11,
-              fill: "#10b981",
-            }}
-          />
-
-          {/* Vertical milestone lines */}
-          {milestoneLines.map((m) => (
-            <ReferenceLine
-              key={m.label}
-              x={m.year}
-              stroke={m.color}
-              strokeDasharray="4 3"
-              strokeWidth={1.5}
-              label={{
-                value: m.label,
-                position: "top",
-                fontSize: 10,
-                fill: m.color,
-                angle: -45,
-                offset: 10,
-              }}
-            />
-          ))}
-
-          {/* LZK area (rendered first so it's behind ETF visually at stack position) */}
-          <Area
-            type="monotone"
-            dataKey="LZK"
-            stackId="portfolio"
-            stroke="#60a5fa"
-            strokeWidth={2}
-            fill="url(#lzkGradient)"
-            name="LZK-Konto"
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
-
-          {/* ETF area */}
-          <Area
-            type="monotone"
-            dataKey="ETF"
-            stackId="portfolio"
-            stroke="#10b981"
-            strokeWidth={2.5}
-            fill="url(#etfGradient)"
-            name="ETF-Portfolio"
-            dot={false}
-            activeDot={{ r: 5 }}
-          />
-
-          <Legend
-            wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }}
-            iconType="circle"
-          />
-        </AreaChart>
+        {showScenarios ? (
+          <LineChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} />
+            <Line type="monotone" dataKey="Optimistisch" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Optimistisch (+2%)" />
+            <Line type="monotone" dataKey="Gesamt" stroke="#0f294d" strokeWidth={2.5} dot={false} name="Realistisch" />
+            <Line type="monotone" dataKey="Pessimistisch" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Pessimistisch (-2%)" />
+            <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} />
+          </LineChart>
+        ) : (
+          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+            <defs>
+              <linearGradient id="etfGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+              </linearGradient>
+              <linearGradient id="lzkGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `Ziel: ${yAxisFormatter(zielvermoegen)}`, position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
+            <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Coast FIRE ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
+            {milestoneLines.map((m) => (
+              <ReferenceLine key={m.label} x={m.year} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
+            ))}
+            <Area type="monotone" dataKey="LZK" stackId="portfolio" stroke="#60a5fa" strokeWidth={2} fill="url(#lzkGradient)" name="LZK-Konto" dot={false} activeDot={{ r: 4 }} />
+            <Area type="monotone" dataKey="ETF" stackId="portfolio" stroke="#10b981" strokeWidth={2.5} fill="url(#etfGradient)" name="ETF-Portfolio" dot={false} activeDot={{ r: 5 }} />
+            <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="circle" />
+          </AreaChart>
+        )}
       </ResponsiveContainer>
 
       {/* Milestone badges */}
       <div className="flex flex-wrap gap-3 mt-4">
         {milestoneLines.map((m) => (
-          <div
-            key={m.label}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-50 border border-slate-200"
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: m.color }}
-            />
-            <span className="text-slate-700">
-              {m.label} · {m.year}
-            </span>
+          <div key={m.label} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-50 border border-slate-200">
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} />
+            <span className="text-slate-700">{m.label} · {m.year}</span>
           </div>
         ))}
       </div>
