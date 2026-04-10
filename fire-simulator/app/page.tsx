@@ -196,7 +196,7 @@ function HomeContent() {
       d.isDrawdownPhase ? t.phaseWithdrawal : d.isLZKPhase ? t.phaseLzk : t.phaseSaving,
     ]);
     const csv = [headers, ...rows].map((r) => r.join(";")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }); // BOM prefix for Excel UTF-8
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
