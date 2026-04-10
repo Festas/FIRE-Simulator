@@ -1,0 +1,4 @@
+fire.festas-builds.com {
+	reverse_proxy fire-simulator:3000
+	encode gzip zstd
+}
