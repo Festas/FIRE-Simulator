@@ -10,9 +10,9 @@ This document explains how to set up automatic deployments of the FIRE Simulator
 GitHub Actions (on push to main)
   └─► SSH into Hetzner server
         └─► docker compose build & up
-              └── fire-simulator  (Next.js on 127.0.0.1:3000)
-        └─► nginx reload
-              └── reverse proxy :80/:443 → 127.0.0.1:3000
+              └── fire-simulator  (Next.js on 127.0.0.1:3200)
+        └─► nginx (managed centrally in Festas/Link-in-Bio)
+              └── reverse proxy :80/:443 → 127.0.0.1:3200
 ```
 
 nginx handles TLS termination using Let's Encrypt certificates (managed by certbot).
@@ -113,11 +113,11 @@ This points `fire.festas-builds.com` to your Hetzner server.
 
 1. You push code to the `main` branch (or manually trigger the workflow).
 2. GitHub Actions checks out the code.
-3. The source files (including `fire-simulator.nginx.conf`) are copied to `/opt/fire-simulator` on the server via SCP.
+3. The source files are copied to `/opt/fire-simulator` on the server via SCP.
 4. An SSH command runs `docker compose build && docker compose up -d` on the server.
 5. Docker builds the Next.js app in a multi-stage build (deps → build → minimal production image).
-6. The nginx config is symlinked to `/etc/nginx/sites-enabled/` and nginx is reloaded.
-7. nginx reverse-proxies requests from `fire.festas-builds.com` to the Next.js container on `127.0.0.1:3000`, with HTTPS via certbot.
+6. The container listens on `127.0.0.1:3200` on the host.
+7. nginx reverse-proxies requests from `fire.festas-builds.com` to the Next.js container on `127.0.0.1:3200`, with HTTPS via certbot. The nginx config is managed centrally in [Festas/Link-in-Bio](https://github.com/Festas/Link-in-Bio) (`nginx/sites-available/fire.festas-builds.com.conf`).
 
 ---
 
@@ -149,15 +149,12 @@ docker compose restart
 # Full rebuild
 docker compose down && docker compose build --no-cache && docker compose up -d
 
-# Check nginx config
+# Check nginx config (nginx is managed centrally in Festas/Link-in-Bio)
 nginx -t
 
 # View nginx logs
 tail -f /var/log/nginx/access.log
 tail -f /var/log/nginx/error.log
-
-# Reload nginx
-systemctl reload nginx
 ```
 
 ---
@@ -168,6 +165,6 @@ systemctl reload nginx
 | ---------------------------------- | -------------------------------------------------------- |
 | `.github/workflows/deploy.yml`     | GitHub Actions workflow — deploys on push to `main`      |
 | `docker-compose.yml`               | Defines the fire-simulator Docker service                |
-| `fire-simulator.nginx.conf`        | nginx site config — reverse proxy + HTTPS                |
+| `fire-simulator.nginx.conf`        | nginx config reference only — canonical config is in [Festas/Link-in-Bio](https://github.com/Festas/Link-in-Bio) (`nginx/sites-available/fire.festas-builds.com.conf`) |
 | `fire-simulator/Dockerfile`        | Multi-stage Docker build for the Next.js app             |
 | `fire-simulator/next.config.ts`    | Next.js config with `output: "standalone"` for Docker    |

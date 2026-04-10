@@ -24,7 +24,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT }}
-          source: "fire-simulator/,docker-compose.yml,fire-simulator.nginx.conf"
+          source: "fire-simulator/,docker-compose.yml"
           target: "/opt/fire-simulator"
 
       - name: Build and restart containers
@@ -40,6 +40,3 @@ jobs:
             docker compose build --no-cache
             docker compose up -d
             docker image prune -f
-            # Ensure nginx picks up the site config
-            ln -sf /opt/fire-simulator/fire-simulator.nginx.conf /etc/nginx/sites-enabled/fire-simulator.conf
-            nginx -t && systemctl reload nginx
