@@ -12,6 +12,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { FireResult, FireInputs, formatEuro } from "@/lib/fireCalculations";
+import { useI18n } from "@/lib/i18n";
 
 interface DrawdownChartProps {
   result: FireResult;
@@ -31,8 +32,8 @@ interface CustomTooltipProps {
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || !payload.length) return null;
   return (
-    <div className="bg-[#0f294d] text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
-      <p className="font-semibold mb-2 text-slate-300">Jahr {label}</p>
+    <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
+      <p className="font-semibold mb-2 text-slate-300">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex justify-between gap-4">
           <span style={{ color: p.color }} className="font-medium">{p.name}</span>
@@ -50,14 +51,15 @@ function yAxisFormatter(value: number): string {
 }
 
 export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
+  const { t } = useI18n();
   const { drawdownData, drawdownSurvives, drawdownDepletionYear, fullFireYear } = result;
 
   if (!drawdownData.length || fullFireYear === null) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
-        <h2 className="text-lg font-bold text-[#0f294d] mb-2">Entnahme-Phase</h2>
-        <p className="text-sm text-slate-500">
-          Das FIRE-Ziel wurde innerhalb von 30 Jahren nicht erreicht. Passen Sie Ihre Parameter an.
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
+        <h2 className="text-lg font-bold text-[#0f294d] dark:text-white mb-2">{t.drawdownTitle}</h2>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {t.drawdownNoTarget}
         </p>
       </div>
     );
@@ -70,25 +72,24 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
   }));
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <div>
-          <h2 className="text-lg font-bold text-[#0f294d]">Entnahme-Phase (Post-FIRE)</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-bold text-[#0f294d] dark:text-white">{t.drawdownTitle}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {inputs.entnahmeModell === "ewigeRente"
-              ? `Ewige Rente · ${formatEuro(inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente)}/Monat Entnahme`
-              : `Kapitalverzehr über ${inputs.kapitalverzehrJahre} Jahre`}
-            {" · "}Portfolio kaufkraftbereinigt (real)
+              ? t.drawdownPerpetualSub(formatEuro(inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente))
+              : t.drawdownSpendSub(inputs.kapitalverzehrJahre)}
           </p>
         </div>
         <div className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
           drawdownSurvives
-            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-            : "bg-red-50 text-red-700 border border-red-200"
+            ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700"
+            : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700"
         }`}>
           {drawdownSurvives
-            ? "✅ Portfolio überlebt 40 Jahre"
-            : `⚠️ Aufgebraucht ${drawdownDepletionYear}`}
+            ? t.drawdownSurvives40
+            : t.drawdownDepleted(drawdownDepletionYear ?? 0)}
         </div>
       </div>
 
