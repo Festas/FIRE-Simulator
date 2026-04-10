@@ -73,7 +73,20 @@ function SliderField({
   };
 
   const handleEditConfirm = () => {
-    const parsed = parseFloat(editValue.replace(/[^0-9.,\-]/g, "").replace(",", "."));
+    // Handle German number format (1.234,56 → 1234.56)
+    const cleaned = editValue.replace(/[^0-9.,\-]/g, "");
+    const hasComma = cleaned.includes(",");
+    const hasDot = cleaned.includes(".");
+    let normalized: string;
+    if (hasComma && hasDot) {
+      // German format: dots are thousands separators, comma is decimal
+      normalized = cleaned.replace(/\./g, "").replace(",", ".");
+    } else if (hasComma) {
+      normalized = cleaned.replace(",", ".");
+    } else {
+      normalized = cleaned;
+    }
+    const parsed = parseFloat(normalized);
     if (!isNaN(parsed)) {
       onChange(Math.max(min, Math.min(max, parsed)));
     }

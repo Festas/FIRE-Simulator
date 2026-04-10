@@ -110,7 +110,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         icon="📊"
         title="FIRE-Zahl"
         value={formatEuroShort(derivedFireNumber)}
-        sub={`${formatEuro(inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente)} Lücke/Monat`}
+        sub={`${formatEuro(Math.max(0, inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente))} Lücke/Monat`}
       />
 
       {/* Row 2 */}
