@@ -26,7 +26,7 @@ interface PhasesTimelineProps {
 }
 
 export default function PhasesTimeline({ result, startYear }: PhasesTimelineProps) {
-  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear } = result;
+  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate } = result;
 
   const fireYear = fullFireYear ?? 25;
   const lzkStart = lzkStartYear;
@@ -111,7 +111,7 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       title: "Exit & Entnahme",
       subtitle: "FIRE erreicht",
       description:
-        "Finanzieller Ruhestand. Entnahme nach der Safe Withdrawal Rate (3,5 %). ETF und LZK decken alle Lebenshaltungskosten. Arbeit optional.",
+        `Finanzieller Ruhestand. Entnahme nach der Safe Withdrawal Rate (${swRate.toFixed(1)} %). ETF und LZK decken alle Lebenshaltungskosten. Arbeit optional.`,
       yearStart: fireYear + 1,
       yearEnd: null,
       calStart: (fullFireCalendarYear ?? startYear + fireYear) + 1,

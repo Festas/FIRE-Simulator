@@ -1,4 +1,9 @@
+// ---------------------------------------------------------------------------
+// Interfaces
+// ---------------------------------------------------------------------------
+
 export interface FireInputs {
+  // Existing fields
   startKapital: number;
   monatlicheSparrate: number;
   dynamikSparrate: number;
@@ -9,6 +14,24 @@ export interface FireInputs {
   lzkJahre: number;
   lzkRendite: number;
   startYear: number;
+
+  // Retirement income
+  monatlichesWunschEinkommen: number; // desired monthly income in retirement
+  gesetzlicheRente: number; // expected monthly state pension
+
+  // Safe withdrawal rate (percent, e.g. 3.5)
+  swr: number;
+
+  // Tax settings
+  steuerModell: "single" | "couple"; // 1 000 € vs 2 000 € Freibetrag
+  kirchensteuer: boolean; // adds church-tax surcharge
+
+  // Withdrawal mode
+  entnahmeModell: "ewigeRente" | "kapitalverzehr";
+  kapitalverzehrJahre: number; // years to deplete (only for kapitalverzehr)
+
+  // Gross income for savings-rate display
+  monatlichesBrutto: number;
 }
 
 export interface YearDataPoint {
@@ -23,9 +46,15 @@ export interface YearDataPoint {
   annualLZKContrib: number;
   monthlySavings: number;
   isLZKPhase: boolean;
+
+  taxPaid: number;
+  annualGains: number;
+  isDrawdownPhase: boolean;
+  annualWithdrawal: number;
 }
 
 export interface FireResult {
+  // Existing fields
   yearlyData: YearDataPoint[];
   coastFireYear: number | null;
   fullFireYear: number | null;
@@ -36,10 +65,338 @@ export interface FireResult {
   passiveIncomeAtExit: number;
   swRate: number;
   targetReached: boolean;
+
+  // Drawdown
+  drawdownData: YearDataPoint[];
+  drawdownSurvives: boolean;
+  drawdownDepletionYear: number | null;
+
+  // Dynamic Coast FIRE threshold
+  coastFireAmount: number;
+
+  // Reverse calculation
+  requiredSparrate: number;
+
+  // Savings rate as % of gross income
+  sparquote: number;
+
+  // Scenario comparison
+  scenarioOptimistic: YearDataPoint[]; // +2 % return
+  scenarioPessimistic: YearDataPoint[]; // −2 % return
+
+  // Tax totals
+  totalTaxPaid: number;
+  effectiveTaxRate: number;
+
+  // Derived FIRE number from desired income
+  derivedFireNumber: number;
 }
 
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
 const MAX_YEARS = 30;
-const SWR = 0.035;
+const DRAWDOWN_YEARS = 40;
+
+// Teilfreistellung: 30 % of equity-ETF gains are tax-free
+const TEILFREISTELLUNG = 0.3;
+
+// 25 % Abgeltungssteuer + 5.5 % Solidaritätszuschlag
+const TAX_RATE_BASE = 0.26375;
+// With 8 % Kirchensteuer on the 25 % base
+const TAX_RATE_KIST = 0.2782;
+
+// ---------------------------------------------------------------------------
+// Tax helper — German Abgeltungssteuer
+// ---------------------------------------------------------------------------
+
+function calculateTax(gains: number, inputs: FireInputs): number {
+  if (gains <= 0) return 0;
+
+  // Only 70 % of equity-ETF gains are taxable
+  const taxableGains = gains * (1 - TEILFREISTELLUNG);
+
+  // Sparerpauschbetrag
+  const freibetrag = inputs.steuerModell === "couple" ? 2_000 : 1_000;
+  const afterFreibetrag = Math.max(0, taxableGains - freibetrag);
+
+  if (afterFreibetrag <= 0) return 0;
+
+  const rate = inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE;
+  return afterFreibetrag * rate;
+}
+
+// ---------------------------------------------------------------------------
+// Simplified accumulation for scenario comparison
+// ---------------------------------------------------------------------------
+
+function simulateAccumulation(
+  inputs: FireInputs,
+  returnOffset: number,
+): YearDataPoint[] {
+  const {
+    startKapital,
+    monatlicheSparrate,
+    dynamikSparrate,
+    etfRendite,
+    inflation,
+    bavJaehrlich,
+    startYear,
+  } = inputs;
+
+  const roi = (etfRendite + returnOffset) / 100;
+  const inf = inflation / 100;
+  const dyn = dynamikSparrate / 100;
+
+  let etfBal = startKapital;
+  const data: YearDataPoint[] = [];
+
+  data.push(makeYearZero(startKapital, monatlicheSparrate, startYear));
+
+  for (let y = 1; y <= MAX_YEARS; y++) {
+    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const contrib = savings * 12 + bavJaehrlich;
+    const prevBal = etfBal;
+    etfBal = (etfBal + contrib) * (1 + roi);
+    const gains = etfBal - prevBal - contrib;
+    const tax = calculateTax(gains, inputs);
+    etfBal -= tax;
+    const realFactor = Math.pow(1 + inf, y);
+    const etfReal = etfBal / realFactor;
+
+    data.push({
+      year: y,
+      calendarYear: startYear + y,
+      etfBalanceNominal: etfBal,
+      etfBalanceReal: etfReal,
+      lzkBalanceNominal: 0,
+      lzkBalanceReal: 0,
+      totalReal: etfReal,
+      annualETFContrib: contrib,
+      annualLZKContrib: 0,
+      monthlySavings: savings,
+      isLZKPhase: false,
+      taxPaid: tax,
+      annualGains: gains,
+      isDrawdownPhase: false,
+      annualWithdrawal: 0,
+    });
+  }
+
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// Drawdown simulation
+// ---------------------------------------------------------------------------
+
+function simulateDrawdown(
+  exitBalanceNominal: number,
+  inputs: FireInputs,
+  exitYear: number,
+): {
+  data: YearDataPoint[];
+  survives: boolean;
+  depletionYear: number | null;
+} {
+  const {
+    etfRendite,
+    inflation,
+    monatlichesWunschEinkommen,
+    gesetzlicheRente,
+    entnahmeModell,
+    kapitalverzehrJahre,
+    startYear,
+  } = inputs;
+
+  // More conservative allocation in drawdown (−1 % return)
+  const roi = Math.max(0, etfRendite - 1) / 100;
+  const inf = inflation / 100;
+  const monthlyGap = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+
+  let balance = exitBalanceNominal;
+  const data: YearDataPoint[] = [];
+  let survives = true;
+  let depletionYear: number | null = null;
+
+  for (let y = 1; y <= DRAWDOWN_YEARS; y++) {
+    const calYear = startYear + exitYear + y;
+    const realFactor = Math.pow(1 + inf, exitYear + y);
+
+    if (balance <= 0) {
+      data.push(makeEmptyDrawdownPoint(exitYear + y, calYear));
+      continue;
+    }
+
+    // Growth
+    const prevBalance = balance;
+    balance *= 1 + roi;
+    const gains = balance - prevBalance;
+    const tax = calculateTax(gains, inputs);
+    balance -= tax;
+
+    // Withdrawal calculation
+    let withdrawal: number;
+    if (entnahmeModell === "kapitalverzehr") {
+      const remaining = kapitalverzehrJahre - (y - 1);
+      if (remaining <= 1) {
+        withdrawal = balance;
+      } else {
+        // Approximate net return after tax for the annuity formula
+        const approxTaxDrag =
+          (1 - TEILFREISTELLUNG) *
+          (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE);
+        const netReturn = roi * (1 - approxTaxDrag);
+        if (netReturn <= 0) {
+          withdrawal = balance / remaining;
+        } else {
+          withdrawal =
+            (balance * netReturn) /
+            (1 - Math.pow(1 + netReturn, -remaining));
+        }
+      }
+    } else {
+      // Ewige Rente: desired income gap, inflation-adjusted
+      withdrawal = monthlyGap * 12 * Math.pow(1 + inf, exitYear + y);
+    }
+
+    withdrawal = Math.min(withdrawal, balance);
+    balance -= withdrawal;
+
+    if (balance <= 0 && depletionYear === null) {
+      depletionYear = calYear;
+      survives = false;
+      balance = 0;
+    }
+
+    data.push({
+      year: exitYear + y,
+      calendarYear: calYear,
+      etfBalanceNominal: balance,
+      etfBalanceReal: balance / realFactor,
+      lzkBalanceNominal: 0,
+      lzkBalanceReal: 0,
+      totalReal: balance / realFactor,
+      annualETFContrib: 0,
+      annualLZKContrib: 0,
+      monthlySavings: 0,
+      isLZKPhase: false,
+      taxPaid: tax,
+      annualGains: gains,
+      isDrawdownPhase: true,
+      annualWithdrawal: withdrawal,
+    });
+  }
+
+  return { data, survives, depletionYear };
+}
+
+// ---------------------------------------------------------------------------
+// Reverse calculation — binary-search for required monthly savings
+// ---------------------------------------------------------------------------
+
+function calculateRequiredSparrate(
+  inputs: FireInputs,
+  targetYears: number,
+): number {
+  if (targetYears <= 0) return 0;
+
+  const {
+    startKapital,
+    dynamikSparrate,
+    etfRendite,
+    inflation,
+    bavJaehrlich,
+    zielvermoegen,
+  } = inputs;
+
+  const roi = etfRendite / 100;
+  const inf = inflation / 100;
+  const dyn = dynamikSparrate / 100;
+
+  function finalRealValue(monthlySavings: number): number {
+    let bal = startKapital;
+    for (let y = 1; y <= targetYears; y++) {
+      const savings = monthlySavings * Math.pow(1 + dyn, y - 1);
+      const contrib = savings * 12 + bavJaehrlich;
+      const prev = bal;
+      bal = (bal + contrib) * (1 + roi);
+      const gains = bal - prev - contrib;
+      bal -= calculateTax(gains, inputs);
+    }
+    return bal / Math.pow(1 + inf, targetYears);
+  }
+
+  let lo = 0;
+  let hi = 50_000;
+
+  for (let i = 0; i < 80; i++) {
+    const mid = (lo + hi) / 2;
+    if (finalRealValue(mid) < zielvermoegen) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  return Math.round((lo + hi) / 2);
+}
+
+// ---------------------------------------------------------------------------
+// Small helpers
+// ---------------------------------------------------------------------------
+
+function makeYearZero(
+  startKapital: number,
+  monthlySavings: number,
+  startYear: number,
+): YearDataPoint {
+  return {
+    year: 0,
+    calendarYear: startYear,
+    etfBalanceNominal: startKapital,
+    etfBalanceReal: startKapital,
+    lzkBalanceNominal: 0,
+    lzkBalanceReal: 0,
+    totalReal: startKapital,
+    annualETFContrib: 0,
+    annualLZKContrib: 0,
+    monthlySavings,
+    isLZKPhase: false,
+    taxPaid: 0,
+    annualGains: 0,
+    isDrawdownPhase: false,
+    annualWithdrawal: 0,
+  };
+}
+
+function makeEmptyDrawdownPoint(
+  year: number,
+  calendarYear: number,
+): YearDataPoint {
+  return {
+    year,
+    calendarYear,
+    etfBalanceNominal: 0,
+    etfBalanceReal: 0,
+    lzkBalanceNominal: 0,
+    lzkBalanceReal: 0,
+    totalReal: 0,
+    annualETFContrib: 0,
+    annualLZKContrib: 0,
+    monthlySavings: 0,
+    isLZKPhase: false,
+    taxPaid: 0,
+    annualGains: 0,
+    isDrawdownPhase: true,
+    annualWithdrawal: 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Main calculation
+// ---------------------------------------------------------------------------
 
 export function calculateFIRE(inputs: FireInputs): FireResult {
   const {
@@ -53,20 +410,39 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     lzkJahre,
     lzkRendite,
     startYear,
+    monatlichesWunschEinkommen,
+    gesetzlicheRente,
+    swr,
+    monatlichesBrutto,
   } = inputs;
 
   const roi = etfRendite / 100;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
   const lzkRoi = lzkRendite / 100;
+  const swrDecimal = swr / 100;
+  const realReturn = (1 + roi) / (1 + inf) - 1;
 
-  // Pass 1: estimate full FIRE year without LZK
+  // Derived FIRE number: (monthlyGap × 12) / SWR
+  const monthlyGap = Math.max(
+    0,
+    monatlichesWunschEinkommen - gesetzlicheRente,
+  );
+  const derivedFireNumber =
+    swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+
+  // -----------------------------------------------------------------------
+  // Pass 1: estimate FIRE year without LZK (with tax)
+  // -----------------------------------------------------------------------
   let etfBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
     const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
+    const prev = etfBal;
     etfBal = (etfBal + contrib) * (1 + roi);
+    const gains = etfBal - prev - contrib;
+    etfBal -= calculateTax(gains, inputs);
     const realVal = etfBal / Math.pow(1 + inf, y);
     if (realVal >= zielvermoegen) {
       estimatedFireYear = y;
@@ -76,29 +452,26 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
 
   const lzkStartYear = Math.max(1, estimatedFireYear - lzkJahre);
 
-  // Pass 2: full simulation with LZK logic
+  // -----------------------------------------------------------------------
+  // Pass 2: full simulation with LZK and tax
+  // -----------------------------------------------------------------------
   etfBal = startKapital;
   let lzkBal = 0;
   const yearlyData: YearDataPoint[] = [];
+  let totalTaxPaid = 0;
+  let totalGains = 0;
 
-  yearlyData.push({
-    year: 0,
-    calendarYear: startYear,
-    etfBalanceNominal: startKapital,
-    etfBalanceReal: startKapital,
-    lzkBalanceNominal: 0,
-    lzkBalanceReal: 0,
-    totalReal: startKapital,
-    annualETFContrib: 0,
-    annualLZKContrib: 0,
-    monthlySavings: monatlicheSparrate,
-    isLZKPhase: false,
-  });
+  yearlyData.push(makeYearZero(startKapital, monatlicheSparrate, startYear));
 
   let coastFireYear: number | null = null;
   let fullFireYear: number | null = null;
 
-  if (startKapital >= 1_000_000) coastFireYear = 0;
+  // Check year-0 Coast FIRE
+  const coastThreshold0 =
+    estimatedFireYear > 0
+      ? zielvermoegen / Math.pow(1 + realReturn, estimatedFireYear)
+      : zielvermoegen;
+  if (startKapital >= coastThreshold0) coastFireYear = 0;
   if (startKapital >= zielvermoegen) fullFireYear = 0;
 
   for (let y = 1; y <= MAX_YEARS; y++) {
@@ -109,15 +482,35 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
 
     let annualETFContrib = 0;
     let annualLZKContrib = 0;
+    let yearGains = 0;
+    let yearTax = 0;
 
     if (isLZKPhase) {
-      etfBal = etfBal * (1 + roi);
+      const prevEtf = etfBal;
+      etfBal *= 1 + roi;
+      const etfGains = etfBal - prevEtf;
+      const etfTax = calculateTax(etfGains, inputs);
+      etfBal -= etfTax;
+
       lzkBal = (lzkBal + contrib) * (1 + lzkRoi);
+
+      yearGains = etfGains;
+      yearTax = etfTax;
       annualLZKContrib = contrib;
     } else {
+      const prevEtf = etfBal;
       etfBal = (etfBal + contrib) * (1 + roi);
+      const etfGains = etfBal - prevEtf - contrib;
+      const etfTax = calculateTax(etfGains, inputs);
+      etfBal -= etfTax;
+
+      yearGains = etfGains;
+      yearTax = etfTax;
       annualETFContrib = contrib;
     }
+
+    totalTaxPaid += yearTax;
+    totalGains += yearGains;
 
     const etfReal = etfBal / realFactor;
     const lzkReal = lzkBal / realFactor;
@@ -135,16 +528,77 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       annualLZKContrib,
       monthlySavings: savings,
       isLZKPhase,
+      taxPaid: yearTax,
+      annualGains: yearGains,
+      isDrawdownPhase: false,
+      annualWithdrawal: 0,
     });
 
-    if (coastFireYear === null && totalReal >= 1_000_000) coastFireYear = y;
+    // Dynamic Coast FIRE
+    if (coastFireYear === null) {
+      const yearsRemaining = Math.max(0, estimatedFireYear - y);
+      const coastThreshold =
+        yearsRemaining > 0
+          ? zielvermoegen / Math.pow(1 + realReturn, yearsRemaining)
+          : zielvermoegen;
+      if (totalReal >= coastThreshold) coastFireYear = y;
+    }
+
     if (fullFireYear === null && totalReal >= zielvermoegen) fullFireYear = y;
   }
 
-  const exitIdx = fullFireYear !== null ? fullFireYear : MAX_YEARS;
-  const exitBalance = yearlyData[exitIdx]?.totalReal ?? 0;
-  const passiveIncomeAtExit = (exitBalance * SWR) / 12;
+  // Coast FIRE amount at the year it was reached (or current threshold)
+  let coastFireAmount: number;
+  if (coastFireYear !== null) {
+    const remaining = Math.max(0, estimatedFireYear - coastFireYear);
+    coastFireAmount =
+      remaining > 0
+        ? zielvermoegen / Math.pow(1 + realReturn, remaining)
+        : zielvermoegen;
+  } else {
+    coastFireAmount =
+      zielvermoegen /
+      Math.pow(1 + realReturn, Math.max(1, estimatedFireYear));
+  }
 
+  // -----------------------------------------------------------------------
+  // Exit values
+  // -----------------------------------------------------------------------
+  const exitIdx = fullFireYear !== null ? fullFireYear : MAX_YEARS;
+  const exitData = yearlyData[exitIdx];
+  const exitBalance = exitData?.totalReal ?? 0;
+  const exitBalanceNominal = exitData
+    ? exitData.etfBalanceNominal + exitData.lzkBalanceNominal
+    : 0;
+  const passiveIncomeAtExit = (exitBalance * swrDecimal) / 12;
+
+  // -----------------------------------------------------------------------
+  // Derived metrics
+  // -----------------------------------------------------------------------
+  const effectiveTaxRate = totalGains > 0 ? totalTaxPaid / totalGains : 0;
+
+  const sparquote =
+    monatlichesBrutto > 0
+      ? (monatlicheSparrate / monatlichesBrutto) * 100
+      : 0;
+
+  const targetYears = fullFireYear !== null ? fullFireYear : MAX_YEARS;
+  const requiredSparrate = calculateRequiredSparrate(inputs, targetYears);
+
+  // -----------------------------------------------------------------------
+  // Drawdown phase
+  // -----------------------------------------------------------------------
+  const drawdownResult = simulateDrawdown(exitBalanceNominal, inputs, exitIdx);
+
+  // -----------------------------------------------------------------------
+  // Scenario comparison (+/- 2 %)
+  // -----------------------------------------------------------------------
+  const scenarioOptimistic = simulateAccumulation(inputs, 2);
+  const scenarioPessimistic = simulateAccumulation(inputs, -2);
+
+  // -----------------------------------------------------------------------
+  // Return
+  // -----------------------------------------------------------------------
   return {
     yearlyData,
     coastFireYear,
@@ -156,10 +610,29 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     lzkStartYear,
     lzkStartCalendarYear: startYear + lzkStartYear,
     passiveIncomeAtExit,
-    swRate: SWR * 100,
+    swRate: swr,
     targetReached: fullFireYear !== null,
+
+    drawdownData: drawdownResult.data,
+    drawdownSurvives: drawdownResult.survives,
+    drawdownDepletionYear: drawdownResult.depletionYear,
+
+    coastFireAmount,
+    requiredSparrate,
+    sparquote,
+
+    scenarioOptimistic,
+    scenarioPessimistic,
+
+    totalTaxPaid,
+    effectiveTaxRate,
+    derivedFireNumber,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Formatters (unchanged)
+// ---------------------------------------------------------------------------
 
 export function formatEuro(value: number): string {
   return new Intl.NumberFormat("de-DE", {
