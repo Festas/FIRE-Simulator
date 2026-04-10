@@ -18,6 +18,14 @@ const DEFAULT_INPUTS: FireInputs = {
   lzkJahre: 3,
   lzkRendite: 3.5,
   startYear: 2026,
+  monatlichesWunschEinkommen: 4_000,
+  gesetzlicheRente: 1_500,
+  swr: 3.5,
+  steuerModell: "single",
+  kirchensteuer: false,
+  entnahmeModell: "ewigeRente",
+  kapitalverzehrJahre: 30,
+  monatlichesBrutto: 6_000,
 };
 
 export default function Home() {
