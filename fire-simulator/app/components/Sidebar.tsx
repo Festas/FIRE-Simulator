@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { FireInputs } from "@/lib/fireCalculations";
+import { useI18n } from "@/lib/i18n";
 
 /* ------------------------------------------------------------------ */
 /* Tooltip                                                             */
@@ -168,6 +169,8 @@ function ToggleSwitch({
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
           checked ? "bg-emerald-500" : "bg-slate-600"
         }`}
+        role="switch"
+        aria-checked={checked}
       >
         <span
           className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
@@ -184,11 +187,13 @@ function ToggleSwitch({
 /* ------------------------------------------------------------------ */
 
 function SegmentToggle<T extends string>({
+  label,
   options,
   value,
   onChange,
   tooltip,
 }: {
+  label?: string;
   options: { value: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
@@ -196,10 +201,10 @@ function SegmentToggle<T extends string>({
 }) {
   return (
     <div className="mb-4">
-      {tooltip && (
+      {(label || tooltip) && (
         <div className="flex items-center mb-2">
-          <span className="text-sm text-slate-300">Entnahme-Modus</span>
-          <InfoTooltip text={tooltip} />
+          {label && <span className="text-sm text-slate-300">{label}</span>}
+          {tooltip && <InfoTooltip text={tooltip} />}
         </div>
       )}
       <div className="flex rounded-lg bg-slate-700 p-0.5">
@@ -275,14 +280,10 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ inputs, onChange }: SidebarProps) {
-  const fmtEuro = (v: number) =>
-    new Intl.NumberFormat("de-DE", {
-      style: "currency",
-      currency: "EUR",
-      maximumFractionDigits: 0,
-    }).format(v);
-  const fmtPct = (v: number) => `${v.toFixed(1)} %`;
-  const fmtYrs = (v: number) => `${v} Jahre`;
+  const { t, formatCurrency, formatPercent } = useI18n();
+  const fmtEuro = formatCurrency;
+  const fmtPct = formatPercent;
+  const fmtYrs = (v: number) => `${v} ${t.years}`;
 
   return (
     <div className="flex flex-col h-full">
@@ -293,8 +294,8 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
             <span className="text-white text-sm font-bold">F</span>
           </div>
           <div>
-            <h1 className="text-white text-lg font-bold leading-tight">FIRE Masterplan</h1>
-            <p className="text-slate-400 text-xs">Family Office Simulator</p>
+            <h1 className="text-white text-lg font-bold leading-tight">{t.sidebarTitle}</h1>
+            <p className="text-slate-400 text-xs">{t.sidebarSubtitle}</p>
           </div>
         </div>
       </div>
@@ -303,13 +304,13 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
       <div className="flex-1 overflow-y-auto px-6 py-5 sidebar-scroll">
         {/* ===== RETIREMENT GOALS ===== */}
         <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-          🎯 Ruhestandsziel
+          {t.retirementGoals}
         </p>
 
         <SliderField
-          label="Wunsch-Einkommen"
-          subLabel="Netto monatlich im Ruhestand (heute)"
-          tooltip="Wie viel möchten Sie monatlich im Ruhestand zur Verfügung haben? Daraus wird automatisch Ihr Zielvermögen berechnet."
+          label={t.desiredIncome}
+          subLabel={t.desiredIncomeSub}
+          tooltip={t.desiredIncomeTooltip}
           value={inputs.monatlichesWunschEinkommen}
           min={1_000}
           max={15_000}
@@ -319,9 +320,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         />
 
         <SliderField
-          label="Gesetzliche Rente"
-          subLabel="Erwartete monatliche Rente"
-          tooltip="Ihre erwartete gesetzliche Rente reduziert die benötigte Entnahme aus dem Portfolio. Finden Sie Ihren Wert in der jährlichen Renteninformation."
+          label={t.statePension}
+          subLabel={t.statePensionSub}
+          tooltip={t.statePensionTooltip}
           value={inputs.gesetzlicheRente}
           min={0}
           max={4_000}
@@ -331,9 +332,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         />
 
         <SliderField
-          label="Safe Withdrawal Rate"
-          subLabel="Sichere jährliche Entnahmerate"
-          tooltip="Die Entnahmerate bestimmt, wie viel Prozent Ihres Vermögens Sie pro Jahr entnehmen. 3,5% gilt als konservativ, 4% als Standard (Trinity Study)."
+          label={t.swr}
+          subLabel={t.swrSub}
+          tooltip={t.swrTooltip}
           value={inputs.swr}
           min={2.5}
           max={5.0}
@@ -345,13 +346,13 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         {/* ===== SPARPHASE ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            💰 Sparphase
+            {t.savingsPhase}
           </p>
 
           <SliderField
-            label="Startkapital"
-            subLabel="Aktuelles investiertes Vermögen"
-            tooltip="Der Gesamtwert Ihrer aktuellen Investments (ETF-Depot, Aktien etc.)."
+            label={t.startCapital}
+            subLabel={t.startCapitalSub}
+            tooltip={t.startCapitalTooltip}
             value={inputs.startKapital}
             min={0}
             max={500_000}
@@ -361,9 +362,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
           />
 
           <SliderField
-            label="Monatliche Sparrate"
-            subLabel="Monatlicher ETF-Sparplan"
-            tooltip="Ihr regelmäßiger monatlicher Investitionsbetrag."
+            label={t.monthlySavings}
+            subLabel={t.monthlySavingsSub}
+            tooltip={t.monthlySavingsTooltip}
             value={inputs.monatlicheSparrate}
             min={100}
             max={10_000}
@@ -373,9 +374,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
           />
 
           <SliderField
-            label="Dynamik Sparrate"
-            subLabel="Jährliche Erhöhung der Sparrate"
-            tooltip="Prozentuale Steigerung der Sparrate pro Jahr, z.B. durch Gehaltserhöhungen."
+            label={t.dynamicSavings}
+            subLabel={t.dynamicSavingsSub}
+            tooltip={t.dynamicSavingsTooltip}
             value={inputs.dynamikSparrate}
             min={0}
             max={5}
@@ -385,9 +386,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
           />
 
           <SliderField
-            label="Bruttoeinkommen"
-            subLabel="Für Sparquoten-Berechnung"
-            tooltip="Ihr monatliches Bruttoeinkommen. Wird nur zur Berechnung Ihrer Sparquote verwendet."
+            label={t.grossIncome}
+            subLabel={t.grossIncomeSub}
+            tooltip={t.grossIncomeTooltip}
             value={inputs.monatlichesBrutto}
             min={0}
             max={20_000}
@@ -397,28 +398,28 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
           />
 
           <SliderField
-            label="BAV-Zuschuss"
-            subLabel="Betriebliche Altersversorgung p.a."
-            tooltip="Jährlicher Gesamtbetrag der betrieblichen Altersversorgung inkl. Arbeitgeberanteil."
+            label={t.bavContribution}
+            subLabel={t.bavContributionSub}
+            tooltip={t.bavContributionTooltip}
             value={inputs.bavJaehrlich}
             min={0}
             max={20_000}
             step={500}
             onChange={(v) => onChange("bavJaehrlich", v)}
-            format={(v) => `${fmtEuro(v)}/J`}
+            format={(v) => `${fmtEuro(v)}${t.perYear}`}
           />
         </div>
 
         {/* ===== RENDITE & MARKT ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            📈 Rendite & Markt
+            {t.returnMarket}
           </p>
 
           <SliderField
-            label="Erwartete ETF-Rendite"
-            subLabel="Erwartete Jahresrendite (brutto)"
-            tooltip="Historische Durchschnittsrendite des MSCI World liegt bei ca. 7% p.a. vor Inflation."
+            label={t.expectedReturn}
+            subLabel={t.expectedReturnSub}
+            tooltip={t.expectedReturnTooltip}
             value={inputs.etfRendite}
             min={2}
             max={12}
@@ -428,9 +429,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
           />
 
           <SliderField
-            label="Inflation p.a."
-            subLabel="Inflationsrate zur Kaufkraftanpassung"
-            tooltip="Alle Werte werden kaufkraftbereinigt dargestellt. Die EZB strebt 2% an, historisch lag sie bei 2-3%."
+            label={t.inflationRate}
+            subLabel={t.inflationRateSub}
+            tooltip={t.inflationRateTooltip}
             value={inputs.inflation}
             min={0}
             max={6}
@@ -443,23 +444,23 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         {/* ===== STEUER ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            🏛️ Steuern
+            {t.taxes}
           </p>
 
           <SelectToggle
-            label="Veranlagung"
-            tooltip="Bestimmt den Sparerpauschbetrag: 1.000 € (Einzel) oder 2.000 € (Zusammen)."
+            label={t.taxFiling}
+            tooltip={t.taxFilingTooltip}
             options={[
-              { value: "single" as const, label: "Einzel" },
-              { value: "couple" as const, label: "Zusammen" },
+              { value: "single" as const, label: t.taxFilingSingle },
+              { value: "couple" as const, label: t.taxFilingCouple },
             ]}
             value={inputs.steuerModell}
             onChange={(v) => onChange("steuerModell", v)}
           />
 
           <ToggleSwitch
-            label="Kirchensteuer"
-            tooltip="Erhöht den Steuersatz auf Kapitalerträge von 26,375% auf ca. 27,82%."
+            label={t.churchTax}
+            tooltip={t.churchTaxTooltip}
             checked={inputs.kirchensteuer}
             onChange={(v) => onChange("kirchensteuer", v)}
           />
@@ -468,14 +469,15 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         {/* ===== ENTNAHME ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            📤 Entnahme-Strategie
+            {t.withdrawalStrategy}
           </p>
 
           <SegmentToggle
-            tooltip="'Kapital erhalten' (Ewige Rente): Sie leben nur von den Erträgen. 'Aufbrauchen': Das Vermögen wird über einen definierten Zeitraum komplett entnommen."
+            label={t.withdrawalMode}
+            tooltip={t.withdrawalModeTooltip}
             options={[
-              { value: "ewigeRente" as const, label: "Kapital erhalten" },
-              { value: "kapitalverzehr" as const, label: "Aufbrauchen" },
+              { value: "ewigeRente" as const, label: t.withdrawalPreserve },
+              { value: "kapitalverzehr" as const, label: t.withdrawalSpend },
             ]}
             value={inputs.entnahmeModell}
             onChange={(v) => onChange("entnahmeModell", v)}
@@ -483,9 +485,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
 
           {inputs.entnahmeModell === "kapitalverzehr" && (
             <SliderField
-              label="Entnahme-Dauer"
-              subLabel="Kapital in X Jahren aufbrauchen"
-              tooltip="Über wie viele Jahre soll das Kapital verteilt werden?"
+              label={t.withdrawalDuration}
+              subLabel={t.withdrawalDurationSub}
+              tooltip={t.withdrawalDurationTooltip}
               value={inputs.kapitalverzehrJahre}
               min={10}
               max={50}
@@ -499,13 +501,13 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         {/* ===== LZK ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            🔒 Langzeitkonto (LZK)
+            {t.lzkSection}
           </p>
 
           <SliderField
-            label="LZK-Phase (Jahre)"
-            subLabel="Endspurt-Dauer vor dem FIRE-Exit"
-            tooltip="In den letzten Jahren vor dem Exit fließen Ihre Beiträge in ein risikoarmes Langzeitkonto."
+            label={t.lzkPhase}
+            subLabel={t.lzkPhaseSub}
+            tooltip={t.lzkPhaseTooltip}
             value={inputs.lzkJahre}
             min={1}
             max={7}
@@ -515,9 +517,9 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
           />
 
           <SliderField
-            label="LZK-Rendite"
-            subLabel="Zinssatz des Langzeitkontos"
-            tooltip="Rendite des LZK (z.B. Festgeld, Tagesgeld). Typisch: 2-4% p.a."
+            label={t.lzkReturn}
+            subLabel={t.lzkReturnSub}
+            tooltip={t.lzkReturnTooltip}
             value={inputs.lzkRendite}
             min={0}
             max={6}
@@ -530,12 +532,12 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
         {/* ===== Override Target ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-slate-500 mb-4 font-semibold">
-            Manuelles Zielvermögen
+            {t.manualTarget}
           </p>
           <SliderField
-            label="Zielvermögen (Override)"
-            subLabel="Überschreibt die automatische FIRE-Zahl"
-            tooltip="Standardmäßig wird Ihr Zielvermögen aus dem Wunsch-Einkommen, der Rente und der SWR berechnet. Hier können Sie es manuell überschreiben."
+            label={t.targetWealth}
+            subLabel={t.targetWealthSub}
+            tooltip={t.targetWealthTooltip}
             value={inputs.zielvermoegen}
             min={100_000}
             max={5_000_000}
@@ -549,7 +551,7 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
       {/* Footer */}
       <div className="px-6 py-3 border-t border-slate-700">
         <p className="text-xs text-slate-600 text-center">
-          Simulationsbeginn {inputs.startYear} · SWR {inputs.swr.toFixed(1)} %
+          {t.simulationStart} {inputs.startYear} · SWR {inputs.swr.toFixed(1)} %
         </p>
       </div>
     </div>

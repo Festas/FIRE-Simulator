@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { FireResult, formatEuro } from "@/lib/fireCalculations";
+import { useI18n } from "@/lib/i18n";
 
 interface DetailTableProps {
   result: FireResult;
@@ -9,23 +10,24 @@ interface DetailTableProps {
 
 export default function DetailTable({ result }: DetailTableProps) {
   const [open, setOpen] = useState(false);
+  const { t } = useI18n();
   const { yearlyData, drawdownData } = result;
   const allData = [...yearlyData.slice(1), ...drawdownData]; // skip year 0
 
   if (!allData.length) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 mb-6 overflow-hidden">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 mb-6 overflow-hidden">
       <button
         onClick={() => setOpen((p) => !p)}
-        className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
+        className="w-full px-6 py-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
       >
         <div>
-          <h2 className="text-lg font-bold text-[#0f294d] text-left">
-            Jahr-für-Jahr Übersicht
+          <h2 className="text-lg font-bold text-[#0f294d] dark:text-white text-left">
+            {t.tableTitle}
           </h2>
-          <p className="text-sm text-slate-500 text-left">
-            Detaillierte Tabelle aller Spar- und Entnahmejahre
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-left">
+            {t.tableSubtitle}
           </p>
         </div>
         <svg
@@ -40,69 +42,69 @@ export default function DetailTable({ result }: DetailTableProps) {
       </button>
 
       {open && (
-        <div className="overflow-x-auto border-t border-slate-100">
+        <div className="overflow-x-auto border-t border-slate-100 dark:border-slate-700">
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-slate-50 text-slate-500 uppercase tracking-wider">
-                <th className="px-4 py-3 text-left font-semibold">Jahr</th>
-                <th className="px-4 py-3 text-right font-semibold">ETF (real)</th>
-                <th className="px-4 py-3 text-right font-semibold">LZK (real)</th>
-                <th className="px-4 py-3 text-right font-semibold">Gesamt (real)</th>
-                <th className="px-4 py-3 text-right font-semibold">Sparrate/M</th>
-                <th className="px-4 py-3 text-right font-semibold">Erträge</th>
-                <th className="px-4 py-3 text-right font-semibold">Steuern</th>
-                <th className="px-4 py-3 text-right font-semibold">Entnahme</th>
-                <th className="px-4 py-3 text-center font-semibold">Phase</th>
+              <tr className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                <th className="px-4 py-3 text-left font-semibold">{t.tableYear}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableEtf}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableLzk}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableTotal}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableSavingsMonth}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableGains}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableTaxes}</th>
+                <th className="px-4 py-3 text-right font-semibold">{t.tableWithdrawal}</th>
+                <th className="px-4 py-3 text-center font-semibold">{t.tablePhase}</th>
               </tr>
             </thead>
             <tbody>
               {allData.map((d) => (
                 <tr
                   key={d.calendarYear}
-                  className={`border-t border-slate-50 ${
+                  className={`border-t border-slate-50 dark:border-slate-700 ${
                     d.isDrawdownPhase
-                      ? "bg-amber-50/50"
+                      ? "bg-amber-50/50 dark:bg-amber-900/10"
                       : d.isLZKPhase
-                        ? "bg-blue-50/30"
+                        ? "bg-blue-50/30 dark:bg-blue-900/10"
                         : ""
-                  } hover:bg-slate-50`}
+                  } hover:bg-slate-50 dark:hover:bg-slate-700`}
                 >
-                  <td className="px-4 py-2.5 font-medium text-slate-700">
+                  <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-300">
                     {d.calendarYear}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-slate-600">
+                  <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
                     {formatEuro(d.etfBalanceReal)}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-slate-600">
+                  <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
                     {d.lzkBalanceReal > 0 ? formatEuro(d.lzkBalanceReal) : "—"}
                   </td>
-                  <td className="px-4 py-2.5 text-right font-semibold text-[#0f294d]">
+                  <td className="px-4 py-2.5 text-right font-semibold text-[#0f294d] dark:text-white">
                     {formatEuro(d.totalReal)}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-slate-600">
+                  <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
                     {d.monthlySavings > 0 ? formatEuro(d.monthlySavings) : "—"}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-emerald-600">
+                  <td className="px-4 py-2.5 text-right text-emerald-600 dark:text-emerald-400">
                     {d.annualGains > 0 ? formatEuro(d.annualGains) : "—"}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-red-500">
+                  <td className="px-4 py-2.5 text-right text-red-500 dark:text-red-400">
                     {d.taxPaid > 0 ? formatEuro(d.taxPaid) : "—"}
                   </td>
-                  <td className="px-4 py-2.5 text-right text-amber-600">
+                  <td className="px-4 py-2.5 text-right text-amber-600 dark:text-amber-400">
                     {d.annualWithdrawal > 0 ? formatEuro(d.annualWithdrawal) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {d.isDrawdownPhase ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700">
-                        Entnahme
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
+                        {t.phaseWithdrawal}
                       </span>
                     ) : d.isLZKPhase ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-700">
-                        LZK
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400">
+                        {t.phaseLzk}
                       </span>
                     ) : (
-                      <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">
-                        Sparen
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400">
+                        {t.phaseSaving}
                       </span>
                     )}
                   </td>

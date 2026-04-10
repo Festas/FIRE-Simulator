@@ -15,6 +15,7 @@ import {
   Legend,
 } from "recharts";
 import { FireResult, YearDataPoint, formatEuro } from "@/lib/fireCalculations";
+import { useI18n } from "@/lib/i18n";
 
 interface FireChartProps {
   result: FireResult;
@@ -34,8 +35,8 @@ interface CustomTooltipProps {
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload || !payload.length) return null;
   return (
-    <div className="bg-[#0f294d] text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
-      <p className="font-semibold mb-2 text-slate-300">Jahr {label}</p>
+    <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
+      <p className="font-semibold mb-2 text-slate-300">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex justify-between gap-4">
           <span style={{ color: p.color }} className="font-medium">
@@ -56,6 +57,7 @@ function yAxisFormatter(value: number): string {
 
 export default function FireChart({ result, zielvermoegen }: FireChartProps) {
   const [showScenarios, setShowScenarios] = useState(false);
+  const { t } = useI18n();
   const {
     yearlyData,
     coastFireYear,
@@ -69,7 +71,6 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     scenarioPessimistic,
   } = result;
 
-  // Show data up to full FIRE + 2 years or max 30 years
   const displayEnd = Math.min(
     (fullFireYear !== null ? fullFireYear + 2 : 30),
     yearlyData.length - 1
@@ -91,39 +92,39 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     },
     lzkStartYear > 0 && {
       year: lzkStartCalendarYear,
-      label: "LZK Endspurt",
+      label: "LZK",
       color: "#f59e0b",
     },
     fullFireYear !== null && {
       year: fullFireCalendarYear,
-      label: "Full FIRE Exit",
+      label: "Full FIRE",
       color: "#6366f1",
     },
   ].filter(Boolean) as { year: number; label: string; color: string }[];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
         <div>
-          <h2 className="text-lg font-bold text-[#0f294d]">Portfolio-Entwicklung</h2>
-          <p className="text-sm text-slate-500">Kaufkraftbereinigt in heutigen € (real, nach Steuern)</p>
+          <h2 className="text-lg font-bold text-[#0f294d] dark:text-white">{t.chartTitle}</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{t.chartSubtitle}</p>
         </div>
         <div className="flex items-center gap-4 text-xs">
           <button
             onClick={() => setShowScenarios((p) => !p)}
             className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
               showScenarios
-                ? "bg-indigo-50 border-indigo-200 text-indigo-700"
-                : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
+                : "bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600"
             }`}
           >
-            {showScenarios ? "Szenarien ausblenden" : "Szenarien ±2%"}
+            {showScenarios ? t.chartScenariosHide : t.chartScenarios}
           </button>
           <span className="flex items-center gap-1.5 hidden sm:flex">
             <span className="inline-block w-3 h-3 rounded-full bg-emerald-500" />
             ETF
           </span>
-          <span className="flex items-center gap-1.5 hidden sm:flex">
+          <span className="flex items-center gap-1.5 hidden sm:flex text-slate-600 dark:text-slate-400">
             <span className="inline-block w-3 h-3 rounded-full bg-blue-400" />
             LZK
           </span>
@@ -138,9 +139,9 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<CustomTooltip />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} />
-            <Line type="monotone" dataKey="Optimistisch" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Optimistisch (+2%)" />
-            <Line type="monotone" dataKey="Gesamt" stroke="#0f294d" strokeWidth={2.5} dot={false} name="Realistisch" />
-            <Line type="monotone" dataKey="Pessimistisch" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Pessimistisch (-2%)" />
+            <Line type="monotone" dataKey="Optimistisch" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Optimistic (+2%)" />
+            <Line type="monotone" dataKey="Gesamt" stroke="#0f294d" strokeWidth={2.5} dot={false} name="Realistic" />
+            <Line type="monotone" dataKey="Pessimistisch" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name="Pessimistic (-2%)" />
             <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} />
           </LineChart>
         ) : (
@@ -159,13 +160,13 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `Ziel: ${yAxisFormatter(zielvermoegen)}`, position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
+            <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
             <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Coast FIRE ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
             {milestoneLines.map((m) => (
               <ReferenceLine key={m.label} x={m.year} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
             ))}
-            <Area type="monotone" dataKey="LZK" stackId="portfolio" stroke="#60a5fa" strokeWidth={2} fill="url(#lzkGradient)" name="LZK-Konto" dot={false} activeDot={{ r: 4 }} />
-            <Area type="monotone" dataKey="ETF" stackId="portfolio" stroke="#10b981" strokeWidth={2.5} fill="url(#etfGradient)" name="ETF-Portfolio" dot={false} activeDot={{ r: 5 }} />
+            <Area type="monotone" dataKey="LZK" stackId="portfolio" stroke="#60a5fa" strokeWidth={2} fill="url(#lzkGradient)" name="LZK" dot={false} activeDot={{ r: 4 }} />
+            <Area type="monotone" dataKey="ETF" stackId="portfolio" stroke="#10b981" strokeWidth={2.5} fill="url(#etfGradient)" name="ETF" dot={false} activeDot={{ r: 5 }} />
             <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="circle" />
           </AreaChart>
         )}
@@ -174,9 +175,9 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
       {/* Milestone badges */}
       <div className="flex flex-wrap gap-3 mt-4">
         {milestoneLines.map((m) => (
-          <div key={m.label} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-50 border border-slate-200">
+          <div key={m.label} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} />
-            <span className="text-slate-700">{m.label} · {m.year}</span>
+            <span className="text-slate-700 dark:text-slate-300">{m.label} · {m.year}</span>
           </div>
         ))}
       </div>
