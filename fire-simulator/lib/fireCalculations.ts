@@ -34,6 +34,18 @@ export interface FireInputs {
   monatlichesBrutto: number;
 }
 
+export interface MonteCarloResult {
+  successRate: number; // 0–1 probability portfolio survives
+  percentiles: {
+    p10: number[];
+    p25: number[];
+    p50: number[];
+    p75: number[];
+    p90: number[];
+  };
+  years: number[]; // calendar years for each index
+}
+
 export interface YearDataPoint {
   year: number;
   calendarYear: number;
@@ -90,6 +102,9 @@ export interface FireResult {
 
   // Derived FIRE number from desired income
   derivedFireNumber: number;
+
+  // Monte Carlo simulation
+  monteCarlo: MonteCarloResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -222,6 +237,7 @@ function simulateDrawdown(
 
   for (let y = 1; y <= DRAWDOWN_YEARS; y++) {
     const calYear = startYear + exitYear + y;
+    // Inflation factor from simulation start (accumulation + drawdown years)
     const realFactor = Math.pow(1 + inf, exitYear + y);
 
     if (balance <= 0) {
@@ -391,6 +407,147 @@ function makeEmptyDrawdownPoint(
     annualGains: 0,
     isDrawdownPhase: true,
     annualWithdrawal: 0,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Seeded PRNG (Mulberry32) – deterministic, fast, no external deps
+// ---------------------------------------------------------------------------
+
+function mulberry32(seed: number): () => number {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Box-Muller transform for normal distribution
+function normalRandom(rng: () => number): number {
+  let u = 0, v = 0;
+  while (u === 0) u = rng();
+  while (v === 0) v = rng();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// ---------------------------------------------------------------------------
+// Monte Carlo drawdown simulation
+// ---------------------------------------------------------------------------
+
+const MC_SIMULATIONS = 1_000;
+const MC_DRAWDOWN_YEARS = 40;
+
+function simulateMonteCarlo(
+  exitBalanceNominal: number,
+  inputs: FireInputs,
+  exitYear: number,
+): MonteCarloResult {
+  const {
+    etfRendite,
+    inflation,
+    monatlichesWunschEinkommen,
+    gesetzlicheRente,
+    entnahmeModell,
+    kapitalverzehrJahre,
+    startYear,
+  } = inputs;
+
+  // Expected return and volatility for drawdown phase
+  const meanReturn = Math.max(0, etfRendite - 1) / 100; // conservative
+  const stdDev = 0.15; // ~15% annual volatility (typical for diversified equity)
+  const inf = inflation / 100;
+  const monthlyGap = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+
+  const rng = mulberry32(42); // deterministic seed
+  const balancesByYear: number[][] = Array.from(
+    { length: MC_DRAWDOWN_YEARS },
+    () => [],
+  );
+  let survivals = 0;
+
+  for (let sim = 0; sim < MC_SIMULATIONS; sim++) {
+    let balance = exitBalanceNominal;
+    let survived = true;
+
+    for (let y = 1; y <= MC_DRAWDOWN_YEARS; y++) {
+      if (balance <= 0) {
+        balancesByYear[y - 1].push(0);
+        survived = false;
+        continue;
+      }
+
+      // Stochastic return
+      const annualReturn = meanReturn + stdDev * normalRandom(rng);
+      const prevBalance = balance;
+      balance *= 1 + annualReturn;
+      const gains = balance - prevBalance;
+      const tax = calculateTax(gains, inputs);
+      balance -= tax;
+
+      // Withdrawal
+      let withdrawal: number;
+      if (entnahmeModell === "kapitalverzehr") {
+        const remaining = kapitalverzehrJahre - (y - 1);
+        if (remaining <= 1) {
+          withdrawal = balance;
+        } else {
+          const approxTaxDrag =
+            (1 - TEILFREISTELLUNG) *
+            (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE);
+          const netReturn = annualReturn * (1 - approxTaxDrag);
+          if (netReturn <= 0) {
+            withdrawal = balance / remaining;
+          } else {
+            withdrawal =
+              (balance * netReturn) /
+              (1 - Math.pow(1 + netReturn, -remaining));
+          }
+        }
+      } else {
+        withdrawal = monthlyGap * 12 * Math.pow(1 + inf, y);
+      }
+
+      withdrawal = Math.min(withdrawal, balance);
+      balance -= withdrawal;
+      if (balance <= 0) balance = 0;
+
+      const realFactor = Math.pow(1 + inf, exitYear + y);
+      balancesByYear[y - 1].push(balance / realFactor);
+    }
+
+    if (survived && balance > 0) survivals++;
+  }
+
+  // Calculate percentiles
+  const percentile = (arr: number[], p: number): number => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.floor(p * (sorted.length - 1));
+    return sorted[idx];
+  };
+
+  const years: number[] = [];
+  const p10: number[] = [];
+  const p25: number[] = [];
+  const p50: number[] = [];
+  const p75: number[] = [];
+  const p90: number[] = [];
+
+  for (let y = 0; y < MC_DRAWDOWN_YEARS; y++) {
+    years.push(startYear + exitYear + y + 1);
+    const vals = balancesByYear[y];
+    p10.push(Math.round(percentile(vals, 0.1)));
+    p25.push(Math.round(percentile(vals, 0.25)));
+    p50.push(Math.round(percentile(vals, 0.5)));
+    p75.push(Math.round(percentile(vals, 0.75)));
+    p90.push(Math.round(percentile(vals, 0.9)));
+  }
+
+  return {
+    successRate: survivals / MC_SIMULATIONS,
+    percentiles: { p10, p25, p50, p75, p90 },
+    years,
   };
 }
 
@@ -591,6 +748,11 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const drawdownResult = simulateDrawdown(exitBalanceNominal, inputs, exitIdx);
 
   // -----------------------------------------------------------------------
+  // Monte Carlo simulation
+  // -----------------------------------------------------------------------
+  const monteCarlo = simulateMonteCarlo(exitBalanceNominal, inputs, exitIdx);
+
+  // -----------------------------------------------------------------------
   // Scenario comparison (+/- 2 %)
   // -----------------------------------------------------------------------
   const scenarioOptimistic = simulateAccumulation(inputs, 2);
@@ -627,6 +789,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     totalTaxPaid,
     effectiveTaxRate,
     derivedFireNumber,
+    monteCarlo,
   };
 }
 
