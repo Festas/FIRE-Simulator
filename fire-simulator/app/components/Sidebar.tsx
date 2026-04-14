@@ -395,14 +395,14 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
           />
 
           <SliderField
-            label={t.grossIncome}
-            subLabel={t.grossIncomeSub}
-            tooltip={t.grossIncomeTooltip}
-            value={inputs.monatlichesBrutto}
+            label={t.netIncome}
+            subLabel={t.netIncomeSub}
+            tooltip={t.netIncomeTooltip}
+            value={inputs.monatlichesNetto}
             min={0}
             max={20_000}
             step={100}
-            onChange={(v) => onChange("monatlichesBrutto", v)}
+            onChange={(v) => onChange("monatlichesNetto", v)}
             format={fmtEuro}
           />
 

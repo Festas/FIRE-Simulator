@@ -30,8 +30,8 @@ export interface FireInputs {
   entnahmeModell: "ewigeRente" | "kapitalverzehr";
   kapitalverzehrJahre: number; // years to deplete (only for kapitalverzehr)
 
-  // Gross income for savings-rate display
-  monatlichesBrutto: number;
+  // Net income for savings-rate display
+  monatlichesNetto: number;
 }
 
 export interface MonteCarloResult {
@@ -89,7 +89,7 @@ export interface FireResult {
   // Reverse calculation
   requiredSparrate: number;
 
-  // Savings rate as % of gross income
+  // Savings rate as % of net income
   sparquote: number;
 
   // Scenario comparison
@@ -623,7 +623,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     monatlichesWunschEinkommen,
     gesetzlicheRente,
     swr,
-    monatlichesBrutto,
+    monatlichesNetto,
   } = inputs;
 
   const roi = etfRendite / 100;
@@ -788,8 +788,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const effectiveTaxRate = totalGains > 0 ? totalTaxPaid / totalGains : 0;
 
   const sparquote =
-    monatlichesBrutto > 0
-      ? (monatlicheSparrate / monatlichesBrutto) * 100
+    monatlichesNetto > 0
+      ? (monatlicheSparrate / monatlichesNetto) * 100
       : 0;
 
   const targetYears = fullFireYear !== null ? fullFireYear : MAX_YEARS;
@@ -907,7 +907,7 @@ export function calculateReverse(
     kirchensteuer,
     entnahmeModell,
     kapitalverzehrJahre,
-    monatlichesBrutto: 0,
+    monatlichesNetto: 0,
   };
 
   const requiredMonthlySavings = calculateRequiredSparrate(inputs, targetYears);

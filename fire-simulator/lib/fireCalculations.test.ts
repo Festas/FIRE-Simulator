@@ -29,7 +29,7 @@ const defaultInputs: FireInputs = {
   kirchensteuer: false,
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
-  monatlichesBrutto: 6_500,
+  monatlichesNetto: 6_500,
 };
 
 function makeInputs(overrides: Partial<FireInputs> = {}): FireInputs {
@@ -187,14 +187,14 @@ describe("Derived values", () => {
     const result = calculateFIRE(
       makeInputs({
         monatlicheSparrate: 3_000,
-        monatlichesBrutto: 6_000,
+        monatlichesNetto: 6_000,
       }),
     );
     expect(result.sparquote).toBeCloseTo(50, 0);
   });
 
-  it("handles zero gross income for savings rate", () => {
-    const result = calculateFIRE(makeInputs({ monatlichesBrutto: 0 }));
+  it("handles zero net income for savings rate", () => {
+    const result = calculateFIRE(makeInputs({ monatlichesNetto: 0 }));
     expect(result.sparquote).toBe(0);
   });
 
