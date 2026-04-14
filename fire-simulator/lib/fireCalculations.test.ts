@@ -22,6 +22,7 @@ const defaultInputs: FireInputs = {
   lzkJahre: 3,
   lzkRendite: 3.5,
   startYear: 2026,
+  currentAge: 29,
   monatlichesWunschEinkommen: 4_000,
   gesetzlicheRente: 1_500,
   swr: 3.5,
@@ -379,7 +380,7 @@ describe("Formatters", () => {
 // ---------------------------------------------------------------------------
 
 describe("LZK phase", () => {
-  it("LZK balance is zero before LZK phase", () => {
+  it("LZK balance is zero (sabbatical model — no separate financial account)", () => {
     const result = calculateFIRE(makeInputs());
     const prePhase = result.yearlyData.filter(
       (d) => d.year > 0 && d.year < result.lzkStartYear,
@@ -390,24 +391,70 @@ describe("LZK phase", () => {
     }
   });
 
-  it("LZK balance grows during LZK phase", () => {
+  it("ETF continues receiving contributions during LZK sabbatical phase", () => {
     const result = calculateFIRE(makeInputs());
     const lzkPhase = result.yearlyData.filter((d) => d.isLZKPhase);
-    if (lzkPhase.length > 1) {
-      for (let i = 1; i < lzkPhase.length; i++) {
-        expect(lzkPhase[i].lzkBalanceNominal).toBeGreaterThan(
-          lzkPhase[i - 1].lzkBalanceNominal,
-        );
-      }
+    expect(lzkPhase.length).toBeGreaterThan(0);
+    for (const d of lzkPhase) {
+      // In sabbatical model, salary continues so ETF contributions continue
+      expect(d.annualETFContrib).toBeGreaterThan(0);
+      // No separate LZK financial account
+      expect(d.lzkBalanceNominal).toBe(0);
+      expect(d.lzkBalanceReal).toBe(0);
     }
   });
 
-  it("ETF stops receiving contributions during LZK phase", () => {
+  it("isLZKPhase marks sabbatical years correctly", () => {
     const result = calculateFIRE(makeInputs());
     const lzkPhase = result.yearlyData.filter((d) => d.isLZKPhase);
+    expect(lzkPhase.length).toBeGreaterThan(0);
     for (const d of lzkPhase) {
-      expect(d.annualETFContrib).toBe(0);
-      expect(d.annualLZKContrib).toBeGreaterThan(0);
+      expect(d.year).toBeGreaterThanOrEqual(result.lzkStartYear);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Age tracking tests
+// ---------------------------------------------------------------------------
+
+describe("Age tracking", () => {
+  it("year 0 has currentAge", () => {
+    const result = calculateFIRE(makeInputs({ currentAge: 29 }));
+    expect(result.yearlyData[0].age).toBe(29);
+  });
+
+  it("age increments each year", () => {
+    const result = calculateFIRE(makeInputs({ currentAge: 29 }));
+    for (let i = 1; i < Math.min(10, result.yearlyData.length); i++) {
+      expect(result.yearlyData[i].age).toBe(29 + i);
+    }
+  });
+
+  it("fullFireAge matches currentAge + fullFireYear", () => {
+    const result = calculateFIRE(makeInputs({ currentAge: 29 }));
+    if (result.fullFireYear !== null) {
+      expect(result.fullFireAge).toBe(29 + result.fullFireYear);
+    }
+  });
+
+  it("coastFireAge matches currentAge + coastFireYear", () => {
+    const result = calculateFIRE(makeInputs({ currentAge: 29 }));
+    if (result.coastFireYear !== null) {
+      expect(result.coastFireAge).toBe(29 + result.coastFireYear);
+    }
+  });
+
+  it("lzkSabbaticalStartAge matches currentAge + lzkStartYear", () => {
+    const result = calculateFIRE(makeInputs({ currentAge: 29 }));
+    expect(result.lzkSabbaticalStartAge).toBe(29 + result.lzkStartYear);
+  });
+
+  it("drawdown data includes correct ages", () => {
+    const result = calculateFIRE(makeInputs({ currentAge: 29 }));
+    if (result.drawdownData.length > 0 && result.fullFireYear !== null) {
+      const firstDrawdown = result.drawdownData[0];
+      expect(firstDrawdown.age).toBe(29 + result.fullFireYear + 1);
     }
   });
 });

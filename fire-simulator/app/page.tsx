@@ -56,6 +56,7 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   lj: "lzkJahre",
   lr: "lzkRendite",
   sy: "startYear",
+  ca: "currentAge",
   wi: "monatlichesWunschEinkommen",
   gr: "gesetzlicheRente",
   sw: "swr",

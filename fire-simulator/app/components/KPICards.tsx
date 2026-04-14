@@ -61,14 +61,17 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     drawdownDepletionYear,
     derivedFireNumber,
     monteCarlo,
+    coastFireAge,
+    fullFireAge,
+    lzkSabbaticalStartAge,
   } = result;
 
-  const coastLabel = coastFireCalendarYear
-    ? t.kpiYearLabel(coastFireCalendarYear)
+  const coastLabel = coastFireAge
+    ? `${t.kpiAgeLabel(coastFireAge)}`
     : t.kpiOver30Years;
 
-  const fullLabel = targetReached && fullFireCalendarYear
-    ? t.kpiYearLabel(fullFireCalendarYear)
+  const fullLabel = targetReached && fullFireAge
+    ? `${t.kpiAgeLabel(fullFireAge)}`
     : t.kpiSavingsRateIncrease;
 
   const incomeLabel = formatCurrency(passiveIncomeAtExit) + ` ${t.perMonth}`;
@@ -111,7 +114,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         iconLabel={t.kpiCoastFire}
         title={t.kpiCoastFire}
         value={coastLabel}
-        sub={t.kpiThreshold(formatCurrencyShort(coastFireAmount))}
+        sub={coastFireCalendarYear ? `${coastFireCalendarYear} · ${t.kpiThreshold(formatCurrencyShort(coastFireAmount))}` : t.kpiThreshold(formatCurrencyShort(coastFireAmount))}
         accent={!!coastFireCalendarYear}
       />
       <KPICard
@@ -170,8 +173,8 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         icon="🔒"
         iconLabel={t.kpiLzkStart}
         title={t.kpiLzkStart}
-        value={t.kpiYearLabel(lzkStartCalendarYear)}
-        sub={t.kpiLzkStartSub}
+        value={t.kpiAgeLabel(lzkSabbaticalStartAge)}
+        sub={`${lzkStartCalendarYear} · ${t.kpiLzkStartSub}`}
       />
     </div>
   );

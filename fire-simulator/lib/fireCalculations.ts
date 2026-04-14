@@ -1168,6 +1168,7 @@ export function calculateReverse(
     lzkJahre: 3,
     lzkRendite: 3.5,
     startYear: new Date().getFullYear(),
+    currentAge: 30,
     monatlichesWunschEinkommen: targetMonthlyIncome,
     gesetzlicheRente: statePension,
     swr,
@@ -1193,7 +1194,7 @@ export function calculateReverse(
   // Exit balance at target year
   const exitIdx = Math.min(targetYears, yearlyProjection.length - 1);
   const exitData = yearlyProjection[exitIdx];
-  const exitBalanceNominal = exitData ? exitData.etfBalanceNominal + exitData.lzkBalanceNominal : 0;
+  const exitBalanceNominal = exitData ? exitData.etfBalanceNominal : 0;
 
   // Monte Carlo drawdown simulation (full percentile data)
   const monteCarlo = simulateMonteCarlo(exitBalanceNominal, projectionInputs, targetYears);
