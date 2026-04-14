@@ -46,15 +46,15 @@ export default function DetailTable({ result }: DetailTableProps) {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                <th className="px-4 py-3 text-left font-semibold">{t.tableYear}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableEtf}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableLzk}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableTotal}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableSavingsMonth}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableGains}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableTaxes}</th>
-                <th className="px-4 py-3 text-right font-semibold">{t.tableWithdrawal}</th>
-                <th className="px-4 py-3 text-center font-semibold">{t.tablePhase}</th>
+                <th scope="col" className="px-4 py-3 text-left font-semibold">{t.tableYear}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableEtf}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableLzk}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableTotal}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableSavingsMonth}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableGains}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableTaxes}</th>
+                <th scope="col" className="px-4 py-3 text-right font-semibold">{t.tableWithdrawal}</th>
+                <th scope="col" className="px-4 py-3 text-center font-semibold">{t.tablePhase}</th>
               </tr>
             </thead>
             <tbody>

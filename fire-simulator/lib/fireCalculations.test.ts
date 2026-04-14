@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   calculateFIRE,
+  calculateReverse,
   FireInputs,
   formatEuro,
   formatEuroShort,
@@ -406,5 +407,156 @@ describe("LZK phase", () => {
       expect(d.annualETFContrib).toBe(0);
       expect(d.annualLZKContrib).toBeGreaterThan(0);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Reverse planner tests
+// ---------------------------------------------------------------------------
+
+describe("Reverse planner (calculateReverse)", () => {
+  it("returns a positive required savings for a realistic scenario", () => {
+    const result = calculateReverse(
+      4_000, // target monthly income
+      15, // target years
+      1_500, // state pension
+      50_000, // start capital
+      7.0, // expected return
+      2.5, // inflation
+      3.5, // swr
+      2.0, // dynamic savings
+      8_000, // bav annual
+      "single",
+      false,
+      "ewigeRente",
+      30,
+    );
+    expect(result.requiredMonthlySavings).toBeGreaterThan(0);
+    expect(result.fireNumber).toBeGreaterThan(0);
+    expect(result.yearsToFire).toBe(15);
+  });
+
+  it("calculates FIRE number correctly", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 0, 7, 2.5, 4.0, 0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    // (4000 - 1500) * 12 / 0.04 = 750,000
+    expect(result.fireNumber).toBe(750_000);
+  });
+
+  it("returns Monte Carlo success rate between 0 and 1", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.monteCarlo.successRate).toBeGreaterThanOrEqual(0);
+    expect(result.monteCarlo.successRate).toBeLessThanOrEqual(1);
+  });
+
+  it("returns yearly projection data", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.yearlyProjection.length).toBeGreaterThan(0);
+  });
+
+  it("returns zero savings when start capital already exceeds FIRE number", () => {
+    const result = calculateReverse(
+      2_000, // low target
+      20,
+      1_500, // high pension covers most
+      5_000_000, // huge start capital
+      7, 2.5, 3.5, 0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.requiredMonthlySavings).toBe(0);
+  });
+
+  it("couples pay less tax and need less savings", () => {
+    const single = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    const couple = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "couple", false, "ewigeRente", 30,
+    );
+    expect(couple.requiredMonthlySavings).toBeLessThanOrEqual(single.requiredMonthlySavings);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Additional edge cases
+// ---------------------------------------------------------------------------
+
+describe("Additional edge cases", () => {
+  it("handles negative real return (inflation > return)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        etfRendite: 2.0,
+        inflation: 3.0,
+      }),
+    );
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    // Real return is negative, so Coast FIRE should be hard to reach
+    expect(result.targetReached).toBe(false);
+  });
+
+  it("handles very high savings rate", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        monatlicheSparrate: 20_000,
+        startKapital: 500_000,
+        zielvermoegen: 500_000,
+      }),
+    );
+    expect(result.targetReached).toBe(true);
+    expect(result.fullFireYear).toBe(0);
+  });
+
+  it("handles maximum SWR boundary", () => {
+    const result = calculateFIRE(
+      makeInputs({ swr: 5.0 }),
+    );
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    expect(result.derivedFireNumber).toBeGreaterThan(0);
+  });
+
+  it("handles zero SWR gracefully", () => {
+    const result = calculateFIRE(
+      makeInputs({ swr: 0 }),
+    );
+    expect(result.derivedFireNumber).toBe(0);
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+  });
+
+  it("handles zero state pension", () => {
+    const result = calculateFIRE(
+      makeInputs({ gesetzlicheRente: 0 }),
+    );
+    expect(result.derivedFireNumber).toBeGreaterThan(0);
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+  });
+
+  it("handles kapitalverzehr with very short depletion horizon", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        entnahmeModell: "kapitalverzehr",
+        kapitalverzehrJahre: 10,
+      }),
+    );
+    expect(result.drawdownData.length).toBeGreaterThan(0);
+  });
+
+  it("handles kapitalverzehr with very long depletion horizon", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        entnahmeModell: "kapitalverzehr",
+        kapitalverzehrJahre: 50,
+      }),
+    );
+    expect(result.drawdownData.length).toBeGreaterThan(0);
   });
 });

@@ -209,11 +209,19 @@ function HomeContent() {
 
   const handleShareLink = useCallback(() => {
     const url = inputsToURL(inputs);
-    navigator.clipboard.writeText(url).then(() => {
-      setShareTooltip(true);
-      setTimeout(() => setShareTooltip(false), 2000);
-    });
-  }, [inputs]);
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).then(() => {
+        setShareTooltip(true);
+        setTimeout(() => setShareTooltip(false), 2000);
+      }).catch(() => {
+        // Fallback: prompt user with the URL to copy manually
+        window.prompt(t.shareLink, url);
+      });
+    } else {
+      // Fallback for environments without clipboard API
+      window.prompt(t.shareLink, url);
+    }
+  }, [inputs, t]);
 
   const handleReset = useCallback(() => {
     if (window.confirm(t.resetConfirm)) {
@@ -359,7 +367,11 @@ function HomeContent() {
             </button>
           </div>
 
-          <ErrorBoundary>
+          <ErrorBoundary
+            errorTitle={t.errorTitle}
+            fallbackMessage={t.errorMessage}
+            errorRetryLabel={t.errorRetry}
+          >
             {activeTab === "forward" ? (
               <>
                 <Warnings inputs={inputs} />
