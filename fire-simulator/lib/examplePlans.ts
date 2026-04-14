@@ -14,7 +14,8 @@ export interface ExamplePlan {
   inputs: FireInputs;
 }
 
-const currentYear = new Date().getFullYear();
+/** Base year used for all example plans — will be updated to the current year at load time */
+const BASE_YEAR = 2026;
 
 /**
  * Helper to compute a FIRE number from monthly gap and SWR.
@@ -41,7 +42,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(2_000, 800, 3.5),
       lzkJahre: 2,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 22,
       monatlichesWunschEinkommen: 2_000,
       gesetzlicheRente: 800,
@@ -72,7 +73,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(2_200, 1_000, 3.5),
       lzkJahre: 2,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 25,
       monatlichesWunschEinkommen: 2_200,
       gesetzlicheRente: 1_000,
@@ -103,7 +104,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(3_000, 1_200, 3.5),
       lzkJahre: 3,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 30,
       monatlichesWunschEinkommen: 3_000,
       gesetzlicheRente: 1_200,
@@ -134,7 +135,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(4_500, 2_400, 3.5),
       lzkJahre: 3,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 32,
       monatlichesWunschEinkommen: 4_500,
       gesetzlicheRente: 2_400,
@@ -165,7 +166,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(5_000, 1_500, 3.5),
       lzkJahre: 3,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 28,
       monatlichesWunschEinkommen: 5_000,
       gesetzlicheRente: 1_500,
@@ -196,7 +197,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(3_000, 1_500, 3.5),
       lzkJahre: 2,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 40,
       monatlichesWunschEinkommen: 3_000,
       gesetzlicheRente: 1_500,
@@ -227,7 +228,7 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       zielvermoegen: fireNumber(2_500, 800, 3.5),
       lzkJahre: 2,
       lzkRendite: 3.5,
-      startYear: currentYear,
+      startYear: BASE_YEAR,
       currentAge: 25,
       monatlichesWunschEinkommen: 2_500,
       gesetzlicheRente: 800,

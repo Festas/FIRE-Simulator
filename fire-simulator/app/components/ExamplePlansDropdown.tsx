@@ -6,6 +6,12 @@ import { EXAMPLE_PLANS } from "@/lib/examplePlans";
 import { useI18n } from "@/lib/i18n";
 import type { Translations } from "@/lib/i18n/translations";
 
+/** Safely access a translation string by a dynamic key */
+function getTranslation(t: Translations, key: string): string {
+  const val = t[key as keyof Translations];
+  return typeof val === "string" ? val : key;
+}
+
 interface ExamplePlansDropdownProps {
   onLoad: (inputs: FireInputs) => void;
 }
@@ -65,16 +71,16 @@ export default function ExamplePlansDropdown({ onLoad }: ExamplePlansDropdownPro
                 key={plan.nameKey}
                 type="button"
                 onClick={() => {
-                  onLoad(plan.inputs);
+                  onLoad({ ...plan.inputs, startYear: new Date().getFullYear() });
                   setOpen(false);
                 }}
                 className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-50 dark:border-slate-700/50 last:border-b-0"
               >
                 <div className="text-sm font-medium text-slate-800 dark:text-slate-200">
-                  {t[plan.nameKey as keyof Translations] as string}
+                  {getTranslation(t, plan.nameKey)}
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  {t[plan.descKey as keyof Translations] as string}
+                  {getTranslation(t, plan.descKey)}
                 </div>
               </button>
             ))}
