@@ -29,6 +29,7 @@ const DEFAULT_INPUTS: FireInputs = {
   lzkJahre: 3,
   lzkRendite: 3.5,
   startYear: 2026,
+  currentAge: 29,
   monatlichesWunschEinkommen: 4_000,
   gesetzlicheRente: 1_500,
   swr: 3.5,
