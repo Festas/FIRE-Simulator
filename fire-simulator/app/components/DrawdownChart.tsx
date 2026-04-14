@@ -38,6 +38,7 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
   }
 
   const chartData = drawdownData.map((d) => ({
+    age: d.age,
     year: d.calendarYear,
     portfolio: Math.round(d.totalReal),
     withdrawal: Math.round(d.annualWithdrawal),
@@ -74,7 +75,7 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+          <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
           <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
           <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
           <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 2" strokeWidth={1} />

@@ -627,9 +627,9 @@ export const de: Translations = {
   lifecycleMCTitle: "Lebenszyklus Monte Carlo",
   lifecycleMCSubtitle: "500 stochastische Simulationen der Ansparphase",
   lifecycleMCSuccess: (rate: string) => `${rate} % erreichen FIRE`,
-  lifecycleMCYearsToFire: "Jahre bis FIRE",
-  lifecycleMCP50Years: (years: string) => `Median: ${years} Jahre`,
-  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90} Jahre`,
+  lifecycleMCYearsToFire: "FIRE-Alter",
+  lifecycleMCP50Years: (years: string) => `Median: Alter ${years}`,
+  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
 };
 
 export const en: Translations = {
@@ -927,9 +927,9 @@ export const en: Translations = {
   lifecycleMCTitle: "Lifecycle Monte Carlo",
   lifecycleMCSubtitle: "500 stochastic simulations of the accumulation phase",
   lifecycleMCSuccess: (rate: string) => `${rate}% reach FIRE`,
-  lifecycleMCYearsToFire: "Years to FIRE",
-  lifecycleMCP50Years: (years: string) => `Median: ${years} years`,
-  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90} years`,
+  lifecycleMCYearsToFire: "FIRE Age",
+  lifecycleMCP50Years: (years: string) => `Median: Age ${years}`,
+  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
 };
 
 const translations: Record<Locale, Translations> = { de, en };

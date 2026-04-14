@@ -4,6 +4,7 @@ interface TooltipEntry {
   name?: string;
   value?: number;
   color?: string;
+  payload?: Record<string, unknown>;
 }
 
 interface ChartTooltipContentProps {
@@ -15,9 +16,15 @@ interface ChartTooltipContentProps {
 
 export function ChartTooltipContent({ active, payload, label, formatValue }: ChartTooltipContentProps) {
   if (!active || !payload || !payload.length) return null;
+  const data = payload[0]?.payload;
+  const age = data?.age as number | undefined;
+  const year = data?.year as number | undefined;
+  const headerLabel = age !== undefined && year !== undefined
+    ? `${age} · ${year}`
+    : String(label);
   return (
     <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
-      <p className="font-semibold mb-2 text-slate-300">{label}</p>
+      <p className="font-semibold mb-2 text-slate-300">{headerLabel}</p>
       {payload.map((p, i) => (
         <div key={p.name ?? i} className="flex justify-between gap-4">
           <span style={{ color: p.color }} className="font-medium">{p.name}</span>
