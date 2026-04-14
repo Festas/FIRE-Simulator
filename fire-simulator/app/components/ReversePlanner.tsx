@@ -66,6 +66,10 @@ function SliderField({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+        aria-label={label}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
         style={{
           background: `linear-gradient(to right, #10b981 0%, #10b981 ${pct}%, #cbd5e1 ${pct}%, #cbd5e1 100%)`,
         }}
