@@ -234,6 +234,21 @@ export interface Translations {
   presetBalanced: string;
   presetAggressive: string;
   presetLabel: string;
+
+  // Error Boundary
+  errorTitle: string;
+  errorMessage: string;
+  errorRetry: string;
+
+  // Milestone labels
+  coastFireLabel: string;
+  fullFireLabel: string;
+
+  // KPI Monte Carlo title
+  kpiMonteCarlo: string;
+
+  // Phase label
+  phaseLabel: (n: number) => string;
 }
 
 export const de: Translations = {
@@ -445,6 +460,14 @@ export const de: Translations = {
   presetBalanced: "Ausgewogen",
   presetAggressive: "Aggressiv",
   presetLabel: "Schnellvorlagen",
+
+  errorTitle: "Etwas ist schiefgelaufen",
+  errorMessage: "Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu.",
+  errorRetry: "Erneut versuchen",
+  coastFireLabel: "Coast FIRE",
+  fullFireLabel: "Full FIRE",
+  kpiMonteCarlo: "Monte Carlo",
+  phaseLabel: (n: number) => `Phase ${n}`,
 };
 
 export const en: Translations = {
@@ -656,6 +679,14 @@ export const en: Translations = {
   presetBalanced: "Balanced",
   presetAggressive: "Aggressive",
   presetLabel: "Quick Presets",
+
+  errorTitle: "Something went wrong",
+  errorMessage: "An unexpected error occurred. Please try refreshing the page.",
+  errorRetry: "Try Again",
+  coastFireLabel: "Coast FIRE",
+  fullFireLabel: "Full FIRE",
+  kpiMonteCarlo: "Monte Carlo",
+  phaseLabel: (n: number) => `Phase ${n}`,
 };
 
 const translations: Record<Locale, Translations> = { de, en };

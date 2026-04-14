@@ -14,15 +14,10 @@ import {
 import { FireResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 import { ChartTooltipContent } from "@/app/components/ChartTooltip";
+import { yAxisFormatter } from "@/lib/chartUtils";
 
 interface MonteCarloChartProps {
   result: FireResult;
-}
-
-function yAxisFormatter(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
-  return String(value);
 }
 
 export default function MonteCarloChart({ result }: MonteCarloChartProps) {

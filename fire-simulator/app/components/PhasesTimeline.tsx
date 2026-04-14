@@ -160,7 +160,7 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
                       className="text-xs font-bold uppercase tracking-wider"
                       style={{ color: phase.color }}
                     >
-                      Phase {phase.number}
+                      {t.phaseLabel(phase.number)}
                     </span>
                     {phase.active && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 font-medium">

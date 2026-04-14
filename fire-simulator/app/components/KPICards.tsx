@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n";
 
 interface KPICardProps {
   icon: string;
+  iconLabel: string;
   title: string;
   value: string;
   sub?: string;
@@ -13,11 +14,11 @@ interface KPICardProps {
   warning?: boolean;
 }
 
-function KPICard({ icon, title, value, sub, accent, warning }: KPICardProps) {
+function KPICard({ icon, iconLabel, title, value, sub, accent, warning }: KPICardProps) {
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col gap-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-lg">{icon}</span>
+        <span className="text-lg" role="img" aria-label={iconLabel}>{icon}</span>
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           {title}
         </span>
@@ -86,6 +87,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       {/* Row 1 */}
       <KPICard
         icon="🎯"
+        iconLabel={t.kpiFullFire}
         title={t.kpiFullFire}
         value={fullLabel}
         sub={
@@ -98,6 +100,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="💰"
+        iconLabel={t.kpiPassiveIncome}
         title={t.kpiPassiveIncome}
         value={incomeLabel}
         sub={`SWR ${swRate.toFixed(1)}%`}
@@ -105,6 +108,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="🏖️"
+        iconLabel={t.kpiCoastFire}
         title={t.kpiCoastFire}
         value={coastLabel}
         sub={t.kpiThreshold(formatCurrencyShort(coastFireAmount))}
@@ -112,6 +116,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="📊"
+        iconLabel={t.kpiFireNumber}
         title={t.kpiFireNumber}
         value={formatCurrencyShort(derivedFireNumber)}
         sub={t.kpiGapPerMonth(formatCurrency(Math.max(0, inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente)))}
@@ -120,6 +125,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       {/* Row 2 */}
       <KPICard
         icon="📈"
+        iconLabel={t.kpiDrawdownPhase}
         title={t.kpiDrawdownPhase}
         value={drawdownLabel}
         sub={
@@ -132,7 +138,8 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="🎲"
-        title="Monte Carlo"
+        iconLabel={t.kpiMonteCarlo}
+        title={t.kpiMonteCarlo}
         value={`${mcSuccessPct}%`}
         sub={t.monteCarloSimulations}
         accent={monteCarlo.successRate >= 0.8}
@@ -140,6 +147,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="💡"
+        iconLabel={t.kpiRequiredSavings}
         title={t.kpiRequiredSavings}
         value={`${formatCurrency(requiredSparrate)} / M`}
         sub={t.kpiCurrentSavings(formatCurrency(inputs.monatlicheSparrate))}
@@ -148,6 +156,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="⏳"
+        iconLabel={t.kpiSavingsRate}
         title={t.kpiSavingsRate}
         value={`${sparquote.toFixed(1)}%`}
         sub={
@@ -159,6 +168,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       />
       <KPICard
         icon="🔒"
+        iconLabel={t.kpiLzkStart}
         title={t.kpiLzkStart}
         value={t.kpiYearLabel(lzkStartCalendarYear)}
         sub={t.kpiLzkStartSub}

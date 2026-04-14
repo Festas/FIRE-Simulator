@@ -17,16 +17,11 @@ import {
 import { FireResult, YearDataPoint } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 import { ChartTooltipContent } from "@/app/components/ChartTooltip";
+import { yAxisFormatter } from "@/lib/chartUtils";
 
 interface FireChartProps {
   result: FireResult;
   zielvermoegen: number;
-}
-
-function yAxisFormatter(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}k`;
-  return String(value);
 }
 
 export default function FireChart({ result, zielvermoegen }: FireChartProps) {
@@ -61,7 +56,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
   const milestoneLines = [
     coastFireYear !== null && {
       year: coastFireCalendarYear,
-      label: "Coast FIRE",
+      label: t.coastFireLabel,
       color: "#10b981",
     },
     lzkStartYear > 0 && {
@@ -71,7 +66,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     },
     fullFireYear !== null && {
       year: fullFireCalendarYear,
-      label: "Full FIRE",
+      label: t.fullFireLabel,
       color: "#6366f1",
     },
   ].filter(Boolean) as { year: number; label: string; color: string }[];
@@ -135,7 +130,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
-            <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Coast FIRE ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
+            <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `${t.coastFireLabel} ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
             {milestoneLines.map((m) => (
               <ReferenceLine key={m.label} x={m.year} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
             ))}
