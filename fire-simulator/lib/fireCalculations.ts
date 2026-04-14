@@ -1,6 +1,38 @@
 // ---------------------------------------------------------------------------
+// Imports
+// ---------------------------------------------------------------------------
+
+import { getTaxEngine, type TaxCountry, type TaxConfig } from "@/lib/tax";
+
+// ---------------------------------------------------------------------------
 // Interfaces
 // ---------------------------------------------------------------------------
+
+/** Life event types for cash-flow timeline modelling */
+export type LifeEventType =
+  | "home_purchase"
+  | "child"
+  | "career_change"
+  | "inheritance"
+  | "pension_start"
+  | "healthcare"
+  | "one_time_expense"
+  | "one_time_income"
+  | "side_income";
+
+export interface LifeEvent {
+  id: string;
+  type: LifeEventType;
+  name: string;
+  /** Calendar year the event starts */
+  startYear: number;
+  /** Calendar year the event ends (same as startYear for one-time) */
+  endYear: number;
+  /** Annual net cash-flow impact (negative = expense, positive = income) */
+  annualAmount: number;
+  /** Whether the amount should be inflation-adjusted over time */
+  inflationAdjusted: boolean;
+}
 
 export interface FireInputs {
   // Existing fields
@@ -26,12 +58,18 @@ export interface FireInputs {
   steuerModell: "single" | "couple"; // 1 000 € vs 2 000 € Freibetrag
   kirchensteuer: boolean; // adds church-tax surcharge
 
+  // Multi-country tax
+  taxCountry: TaxCountry;
+
   // Withdrawal mode
   entnahmeModell: "ewigeRente" | "kapitalverzehr";
   kapitalverzehrJahre: number; // years to deplete (only for kapitalverzehr)
 
   // Net income for savings-rate display
   monatlichesNetto: number;
+
+  // Life events timeline
+  lifeEvents: LifeEvent[];
 }
 
 export interface MonteCarloResult {
@@ -63,6 +101,28 @@ export interface YearDataPoint {
   annualGains: number;
   isDrawdownPhase: boolean;
   annualWithdrawal: number;
+}
+
+export interface LifecycleMonteCarloResult {
+  /** Confidence intervals for the year FIRE is reached */
+  fireYearPercentiles: {
+    p10: number | null;
+    p25: number | null;
+    p50: number | null;
+    p75: number | null;
+    p90: number | null;
+  };
+  /** Percentage of simulations that reach FIRE within MAX_YEARS */
+  fireSuccessRate: number;
+  /** Percentile bands for portfolio value during accumulation */
+  accumulationPercentiles: {
+    p10: number[];
+    p25: number[];
+    p50: number[];
+    p75: number[];
+    p90: number[];
+  };
+  accumulationYears: number[]; // calendar years
 }
 
 export interface FireResult {
@@ -103,8 +163,11 @@ export interface FireResult {
   // Derived FIRE number from desired income
   derivedFireNumber: number;
 
-  // Monte Carlo simulation
+  // Monte Carlo simulation (drawdown)
   monteCarlo: MonteCarloResult;
+
+  // Full lifecycle Monte Carlo
+  lifecycleMonteCarlo: LifecycleMonteCarloResult;
 }
 
 // ---------------------------------------------------------------------------
@@ -114,32 +177,49 @@ export interface FireResult {
 const MAX_YEARS = 50;
 const DRAWDOWN_YEARS = 40;
 
-// Teilfreistellung: 30 % of equity-ETF gains are tax-free
-const TEILFREISTELLUNG = 0.3;
-
-// 25 % Abgeltungssteuer + 5.5 % Solidaritätszuschlag
+// Legacy constants for backward compatibility
 const TAX_RATE_BASE = 0.26375;
-// With 8 % Kirchensteuer on the 25 % base
 const TAX_RATE_KIST = 0.2782;
 
 // ---------------------------------------------------------------------------
-// Tax helper — German Abgeltungssteuer
+// Tax helper — delegates to pluggable tax engine
 // ---------------------------------------------------------------------------
 
+function makeTaxConfig(inputs: FireInputs): TaxConfig {
+  return {
+    country: inputs.taxCountry,
+    filingStatus: inputs.steuerModell,
+    kirchensteuer: inputs.kirchensteuer,
+    annualIncome: inputs.monatlichesNetto * 12,
+  };
+}
+
 function calculateTax(gains: number, inputs: FireInputs): number {
-  if (gains <= 0) return 0;
+  const engine = getTaxEngine(inputs.taxCountry);
+  return engine.calculateTax(gains, makeTaxConfig(inputs));
+}
 
-  // Only 70 % of equity-ETF gains are taxable
-  const taxableGains = gains * (1 - TEILFREISTELLUNG);
+// ---------------------------------------------------------------------------
+// Life events helper — net cash-flow impact for a given calendar year
+// ---------------------------------------------------------------------------
 
-  // Sparerpauschbetrag
-  const freibetrag = inputs.steuerModell === "couple" ? 2_000 : 1_000;
-  const afterFreibetrag = Math.max(0, taxableGains - freibetrag);
-
-  if (afterFreibetrag <= 0) return 0;
-
-  const rate = inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE;
-  return afterFreibetrag * rate;
+function lifeEventCashFlow(
+  events: LifeEvent[],
+  calendarYear: number,
+  inflationRate: number,
+  simStartYear: number,
+): number {
+  let total = 0;
+  for (const evt of events) {
+    if (calendarYear < evt.startYear || calendarYear > evt.endYear) continue;
+    let amount = evt.annualAmount;
+    if (evt.inflationAdjusted) {
+      const yearsElapsed = calendarYear - simStartYear;
+      amount *= Math.pow(1 + inflationRate, yearsElapsed);
+    }
+    total += amount;
+  }
+  return total;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +241,7 @@ function simulateAccumulation(
     lzkRendite,
     zielvermoegen,
     startYear,
+    lifeEvents,
   } = inputs;
 
   const roi = (etfRendite + returnOffset) / 100;
@@ -178,6 +259,10 @@ function simulateAccumulation(
     tempBal = (tempBal + contrib) * (1 + roi);
     const gains = tempBal - prev - contrib;
     tempBal -= calculateTax(gains, inputs);
+    // Life events impact
+    const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    tempBal += eventCF;
+    tempBal = Math.max(0, tempBal);
     const realVal = tempBal / Math.pow(1 + inf, y);
     if (realVal >= zielvermoegen) {
       estimatedFireYear = y;
@@ -228,6 +313,11 @@ function simulateAccumulation(
       yearTax = etfTax;
       annualETFContrib = contrib;
     }
+
+    // Apply life events cash-flow to ETF balance
+    const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    etfBal += eventCF;
+    etfBal = Math.max(0, etfBal);
 
     const etfReal = etfBal / realFactor;
     const lzkReal = lzkBal / realFactor;
@@ -313,9 +403,12 @@ function simulateDrawdown(
         withdrawal = balance;
       } else {
         // Approximate net return after tax for the annuity formula
+        const engine = getTaxEngine(inputs.taxCountry);
         const approxTaxDrag =
-          (1 - TEILFREISTELLUNG) *
-          (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE);
+          (1 - engine.partialExemptionRate) *
+          (inputs.taxCountry === "DE"
+            ? (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE)
+            : engine.calculateTax(1, makeTaxConfig(inputs)));
         const netReturn = roi * (1 - approxTaxDrag);
         if (netReturn <= 0) {
           withdrawal = balance / remaining;
@@ -546,9 +639,12 @@ function simulateMonteCarlo(
         if (remaining <= 1) {
           withdrawal = balance;
         } else {
+          const engine = getTaxEngine(inputs.taxCountry);
           const approxTaxDrag =
-            (1 - TEILFREISTELLUNG) *
-            (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE);
+            (1 - engine.partialExemptionRate) *
+            (inputs.taxCountry === "DE"
+              ? (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE)
+              : engine.calculateTax(1, makeTaxConfig(inputs)));
           const netReturn = annualReturn * (1 - approxTaxDrag);
           if (netReturn <= 0) {
             withdrawal = balance / remaining;
@@ -605,6 +701,122 @@ function simulateMonteCarlo(
 }
 
 // ---------------------------------------------------------------------------
+// Full lifecycle Monte Carlo (accumulation phase)
+// ---------------------------------------------------------------------------
+
+const MC_LIFECYCLE_SIMULATIONS = 500; // fewer than drawdown for performance
+
+function simulateLifecycleMonteCarlo(
+  inputs: FireInputs,
+): LifecycleMonteCarloResult {
+  const {
+    startKapital,
+    monatlicheSparrate,
+    dynamikSparrate,
+    etfRendite,
+    inflation,
+    bavJaehrlich,
+    zielvermoegen,
+    startYear,
+    lifeEvents,
+  } = inputs;
+
+  const meanReturn = etfRendite / 100;
+  const stdDev = 0.15;
+  const inf = inflation / 100;
+  const dyn = dynamikSparrate / 100;
+
+  const rng = mulberry32(123); // different seed from drawdown
+  const fireYears: number[] = [];
+  const balancesByYear: number[][] = Array.from(
+    { length: MAX_YEARS },
+    () => [],
+  );
+
+  for (let sim = 0; sim < MC_LIFECYCLE_SIMULATIONS; sim++) {
+    let balance = startKapital;
+    let fireYear: number | null = null;
+
+    for (let y = 1; y <= MAX_YEARS; y++) {
+      const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+      const contrib = savings * 12 + bavJaehrlich;
+
+      const annualReturn = meanReturn + stdDev * normalRandom(rng);
+      const prev = balance;
+      balance = (balance + contrib) * (1 + annualReturn);
+      const gains = balance - prev - contrib;
+      balance -= calculateTax(Math.max(0, gains), inputs);
+
+      // Life events
+      const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+      balance += eventCF;
+      balance = Math.max(0, balance);
+
+      const realVal = balance / Math.pow(1 + inf, y);
+      balancesByYear[y - 1].push(realVal);
+
+      if (fireYear === null && realVal >= zielvermoegen) {
+        fireYear = y;
+      }
+    }
+
+    if (fireYear !== null) {
+      fireYears.push(fireYear);
+    }
+  }
+
+  // Percentiles for fire year
+  const sortedYears = [...fireYears].sort((a, b) => a - b);
+  const pctFire = (p: number): number | null => {
+    if (sortedYears.length === 0) return null;
+    const idx = Math.floor(p * (sortedYears.length - 1));
+    return sortedYears[idx];
+  };
+
+  const percentile = (arr: number[], p: number): number => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const idx = Math.floor(p * (sorted.length - 1));
+    return sorted[idx];
+  };
+
+  const accYears: number[] = [];
+  const accP10: number[] = [];
+  const accP25: number[] = [];
+  const accP50: number[] = [];
+  const accP75: number[] = [];
+  const accP90: number[] = [];
+
+  for (let y = 0; y < MAX_YEARS; y++) {
+    accYears.push(startYear + y + 1);
+    const vals = balancesByYear[y];
+    accP10.push(Math.round(percentile(vals, 0.1)));
+    accP25.push(Math.round(percentile(vals, 0.25)));
+    accP50.push(Math.round(percentile(vals, 0.5)));
+    accP75.push(Math.round(percentile(vals, 0.75)));
+    accP90.push(Math.round(percentile(vals, 0.9)));
+  }
+
+  return {
+    fireYearPercentiles: {
+      p10: pctFire(0.1),
+      p25: pctFire(0.25),
+      p50: pctFire(0.5),
+      p75: pctFire(0.75),
+      p90: pctFire(0.9),
+    },
+    fireSuccessRate: fireYears.length / MC_LIFECYCLE_SIMULATIONS,
+    accumulationPercentiles: {
+      p10: accP10,
+      p25: accP25,
+      p50: accP50,
+      p75: accP75,
+      p90: accP90,
+    },
+    accumulationYears: accYears,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Main calculation
 // ---------------------------------------------------------------------------
 
@@ -624,6 +836,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     gesetzlicheRente,
     swr,
     monatlichesNetto,
+    lifeEvents,
   } = inputs;
 
   const roi = etfRendite / 100;
@@ -642,7 +855,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
 
   // -----------------------------------------------------------------------
-  // Pass 1: estimate FIRE year without LZK (with tax)
+  // Pass 1: estimate FIRE year without LZK (with tax + life events)
   // -----------------------------------------------------------------------
   let etfBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
@@ -653,6 +866,10 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     etfBal = (etfBal + contrib) * (1 + roi);
     const gains = etfBal - prev - contrib;
     etfBal -= calculateTax(gains, inputs);
+    // Life events impact
+    const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    etfBal += eventCF;
+    etfBal = Math.max(0, etfBal);
     const realVal = etfBal / Math.pow(1 + inf, y);
     if (realVal >= zielvermoegen) {
       estimatedFireYear = y;
@@ -721,6 +938,11 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
 
     totalTaxPaid += yearTax;
     totalGains += yearGains;
+
+    // Apply life events cash-flow to ETF balance
+    const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    etfBal += eventCF;
+    etfBal = Math.max(0, etfBal);
 
     const etfReal = etfBal / realFactor;
     const lzkReal = lzkBal / realFactor;
@@ -806,6 +1028,11 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const monteCarlo = simulateMonteCarlo(exitBalanceNominal, inputs, exitIdx);
 
   // -----------------------------------------------------------------------
+  // Full lifecycle Monte Carlo
+  // -----------------------------------------------------------------------
+  const lifecycleMonteCarlo = simulateLifecycleMonteCarlo(inputs);
+
+  // -----------------------------------------------------------------------
   // Scenario comparison (+/- 2 %)
   // -----------------------------------------------------------------------
   const scenarioOptimistic = simulateAccumulation(inputs, 2);
@@ -843,6 +1070,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     effectiveTaxRate,
     derivedFireNumber,
     monteCarlo,
+    lifecycleMonteCarlo,
   };
 }
 
@@ -884,6 +1112,7 @@ export function calculateReverse(
   kirchensteuer: boolean,
   entnahmeModell: "ewigeRente" | "kapitalverzehr",
   kapitalverzehrJahre: number,
+  taxCountry: TaxCountry = "DE",
 ): ReverseResult {
   const monthlyGap = Math.max(0, targetMonthlyIncome - statePension);
   const swrDecimal = swr / 100;
@@ -908,6 +1137,8 @@ export function calculateReverse(
     entnahmeModell,
     kapitalverzehrJahre,
     monatlichesNetto: 0,
+    taxCountry,
+    lifeEvents: [],
   };
 
   const requiredMonthlySavings = calculateRequiredSparrate(inputs, targetYears);

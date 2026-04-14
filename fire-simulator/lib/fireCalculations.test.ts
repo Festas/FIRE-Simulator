@@ -30,6 +30,8 @@ const defaultInputs: FireInputs = {
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 6_500,
+  taxCountry: "DE",
+  lifeEvents: [],
 };
 
 function makeInputs(overrides: Partial<FireInputs> = {}): FireInputs {
@@ -558,5 +560,179 @@ describe("Additional edge cases", () => {
       }),
     );
     expect(result.drawdownData.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-country tax support
+// ---------------------------------------------------------------------------
+
+describe("Multi-country tax", () => {
+  it("Switzerland has zero tax", () => {
+    const result = calculateFIRE(makeInputs({ taxCountry: "CH" }));
+    expect(result.totalTaxPaid).toBe(0);
+    expect(result.effectiveTaxRate).toBe(0);
+  });
+
+  it("Austria has higher effective tax than Germany (no Teilfreistellung)", () => {
+    const de = calculateFIRE(makeInputs({ taxCountry: "DE" }));
+    const at = calculateFIRE(makeInputs({ taxCountry: "AT" }));
+    expect(at.totalTaxPaid).toBeGreaterThan(de.totalTaxPaid);
+  });
+
+  it("all supported countries produce valid results", () => {
+    const countries = ["DE", "US", "UK", "CH", "AT", "NL"] as const;
+    for (const tc of countries) {
+      const result = calculateFIRE(makeInputs({ taxCountry: tc }));
+      expect(result.yearlyData.length).toBeGreaterThan(0);
+      expect(result.drawdownData.length).toBeGreaterThan(0);
+      expect(result.monteCarlo.successRate).toBeGreaterThanOrEqual(0);
+      expect(result.monteCarlo.successRate).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("US applies capital gains correctly", () => {
+    const result = calculateFIRE(makeInputs({ taxCountry: "US" }));
+    expect(result.totalTaxPaid).toBeGreaterThan(0);
+    expect(result.effectiveTaxRate).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Life Events
+// ---------------------------------------------------------------------------
+
+describe("Life events", () => {
+  it("positive event (inheritance) accelerates FIRE", () => {
+    const without = calculateFIRE(makeInputs({ lifeEvents: [] }));
+    const withInheritance = calculateFIRE(
+      makeInputs({
+        lifeEvents: [
+          {
+            id: "1",
+            type: "inheritance",
+            name: "Inheritance",
+            startYear: 2028,
+            endYear: 2028,
+            annualAmount: 200_000,
+            inflationAdjusted: false,
+          },
+        ],
+      }),
+    );
+    expect(withInheritance.fullFireYear).not.toBeNull();
+    expect(without.fullFireYear).not.toBeNull();
+    expect(withInheritance.fullFireYear!).toBeLessThanOrEqual(without.fullFireYear!);
+  });
+
+  it("negative event (home purchase) delays FIRE", () => {
+    const without = calculateFIRE(makeInputs({ lifeEvents: [] }));
+    const withPurchase = calculateFIRE(
+      makeInputs({
+        lifeEvents: [
+          {
+            id: "2",
+            type: "home_purchase",
+            name: "Home",
+            startYear: 2027,
+            endYear: 2027,
+            annualAmount: -300_000,
+            inflationAdjusted: false,
+          },
+        ],
+      }),
+    );
+    expect(withPurchase.fullFireYear).not.toBeNull();
+    expect(without.fullFireYear).not.toBeNull();
+    expect(withPurchase.fullFireYear!).toBeGreaterThanOrEqual(without.fullFireYear!);
+  });
+
+  it("side income reduces years to FIRE", () => {
+    const without = calculateFIRE(makeInputs({ lifeEvents: [] }));
+    const withSide = calculateFIRE(
+      makeInputs({
+        lifeEvents: [
+          {
+            id: "3",
+            type: "side_income",
+            name: "Freelancing",
+            startYear: 2026,
+            endYear: 2036,
+            annualAmount: 12_000,
+            inflationAdjusted: true,
+          },
+        ],
+      }),
+    );
+    expect(withSide.fullFireYear).not.toBeNull();
+    expect(without.fullFireYear).not.toBeNull();
+    expect(withSide.fullFireYear!).toBeLessThanOrEqual(without.fullFireYear!);
+  });
+
+  it("events outside simulation range have no effect", () => {
+    const without = calculateFIRE(makeInputs({ lifeEvents: [] }));
+    const withFuture = calculateFIRE(
+      makeInputs({
+        lifeEvents: [
+          {
+            id: "4",
+            type: "inheritance",
+            name: "Far Future",
+            startYear: 2200,
+            endYear: 2200,
+            annualAmount: 1_000_000,
+            inflationAdjusted: false,
+          },
+        ],
+      }),
+    );
+    expect(withFuture.fullFireYear).toBe(without.fullFireYear);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Lifecycle Monte Carlo
+// ---------------------------------------------------------------------------
+
+describe("Lifecycle Monte Carlo", () => {
+  it("returns fire year percentiles", () => {
+    const result = calculateFIRE(makeInputs());
+    const lmc = result.lifecycleMonteCarlo;
+    expect(lmc.fireSuccessRate).toBeGreaterThan(0);
+    expect(lmc.fireSuccessRate).toBeLessThanOrEqual(1);
+    expect(lmc.accumulationYears.length).toBe(50);
+    expect(lmc.accumulationPercentiles.p50.length).toBe(50);
+  });
+
+  it("median fire year is close to deterministic result", () => {
+    const result = calculateFIRE(makeInputs());
+    const lmc = result.lifecycleMonteCarlo;
+    if (result.fullFireYear !== null && lmc.fireYearPercentiles.p50 !== null) {
+      expect(Math.abs(lmc.fireYearPercentiles.p50 - result.fullFireYear)).toBeLessThanOrEqual(5);
+    }
+  });
+
+  it("p10 <= p50 <= p90 for fire year", () => {
+    const result = calculateFIRE(makeInputs());
+    const lmc = result.lifecycleMonteCarlo;
+    if (
+      lmc.fireYearPercentiles.p10 !== null &&
+      lmc.fireYearPercentiles.p50 !== null &&
+      lmc.fireYearPercentiles.p90 !== null
+    ) {
+      expect(lmc.fireYearPercentiles.p10).toBeLessThanOrEqual(lmc.fireYearPercentiles.p50);
+      expect(lmc.fireYearPercentiles.p50).toBeLessThanOrEqual(lmc.fireYearPercentiles.p90);
+    }
+  });
+
+  it("accumulation percentiles are ordered p10 <= p25 <= p50 <= p75 <= p90", () => {
+    const result = calculateFIRE(makeInputs());
+    const lmc = result.lifecycleMonteCarlo;
+    for (let i = 0; i < lmc.accumulationYears.length; i++) {
+      expect(lmc.accumulationPercentiles.p10[i]).toBeLessThanOrEqual(lmc.accumulationPercentiles.p25[i]);
+      expect(lmc.accumulationPercentiles.p25[i]).toBeLessThanOrEqual(lmc.accumulationPercentiles.p50[i]);
+      expect(lmc.accumulationPercentiles.p50[i]).toBeLessThanOrEqual(lmc.accumulationPercentiles.p75[i]);
+      expect(lmc.accumulationPercentiles.p75[i]).toBeLessThanOrEqual(lmc.accumulationPercentiles.p90[i]);
+    }
   });
 });
