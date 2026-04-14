@@ -48,7 +48,6 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
   const { t, formatCurrency, formatCurrencyShort } = useI18n();
   const {
     coastFireCalendarYear,
-    fullFireCalendarYear,
     fullFireYear,
     passiveIncomeAtExit,
     targetReached,

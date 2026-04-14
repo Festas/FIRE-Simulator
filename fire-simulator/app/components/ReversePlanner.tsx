@@ -623,7 +623,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
-            <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <Area type="monotone" dataKey="p90" stroke="#10b981" strokeWidth={1} strokeDasharray="4 2" fill="url(#revMc90)" name={t.monteCarloP90} dot={false} />

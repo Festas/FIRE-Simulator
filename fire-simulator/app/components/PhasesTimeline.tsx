@@ -31,7 +31,7 @@ interface PhasesTimelineProps {
 
 export default function PhasesTimeline({ result, startYear }: PhasesTimelineProps) {
   const { t } = useI18n();
-  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate, coastFireAge, fullFireAge, lzkSabbaticalStartAge } = result;
+  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate, fullFireAge, lzkSabbaticalStartAge } = result;
 
   const fireYear = fullFireYear ?? 25;
   const lzkStart = lzkStartYear;
