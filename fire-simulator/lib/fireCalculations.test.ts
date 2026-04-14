@@ -30,6 +30,8 @@ const defaultInputs: FireInputs = {
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 6_500,
+  taxCountry: "DE",
+  lifeEvents: [],
 };
 
 function makeInputs(overrides: Partial<FireInputs> = {}): FireInputs {
