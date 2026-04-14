@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FireResult, FireInputs, formatEuro, formatEuroShort } from "@/lib/fireCalculations";
+import { FireResult, FireInputs } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 
 interface KPICardProps {
@@ -44,7 +44,7 @@ interface KPICardsProps {
 }
 
 export default function KPICards({ result, inputs }: KPICardsProps) {
-  const { t, formatCurrencyShort } = useI18n();
+  const { t, formatCurrency, formatCurrencyShort } = useI18n();
   const {
     coastFireCalendarYear,
     fullFireCalendarYear,
@@ -70,7 +70,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     ? t.kpiYearLabel(fullFireCalendarYear)
     : t.kpiSavingsRateIncrease;
 
-  const incomeLabel = formatEuro(passiveIncomeAtExit) + ` ${t.perMonth}`;
+  const incomeLabel = formatCurrency(passiveIncomeAtExit) + ` ${t.perMonth}`;
   const years = fullFireYear !== null ? fullFireYear : 0;
 
   const drawdownLabel = drawdownSurvives
@@ -82,7 +82,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
   const mcSuccessPct = (monteCarlo.successRate * 100).toFixed(0);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mb-6">
       {/* Row 1 */}
       <KPICard
         icon="🎯"
@@ -113,8 +113,8 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       <KPICard
         icon="📊"
         title={t.kpiFireNumber}
-        value={formatEuroShort(derivedFireNumber)}
-        sub={t.kpiGapPerMonth(formatEuro(Math.max(0, inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente)))}
+        value={formatCurrencyShort(derivedFireNumber)}
+        sub={t.kpiGapPerMonth(formatCurrency(Math.max(0, inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente)))}
       />
 
       {/* Row 2 */}
@@ -141,21 +141,27 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       <KPICard
         icon="💡"
         title={t.kpiRequiredSavings}
-        value={`${formatEuro(requiredSparrate)} / M`}
-        sub={t.kpiCurrentSavings(formatEuro(inputs.monatlicheSparrate))}
+        value={`${formatCurrency(requiredSparrate)} / M`}
+        sub={t.kpiCurrentSavings(formatCurrency(inputs.monatlicheSparrate))}
         accent={inputs.monatlicheSparrate >= requiredSparrate}
         warning={inputs.monatlicheSparrate < requiredSparrate}
       />
       <KPICard
         icon="⏳"
-        title={sparquote > 0 ? t.kpiSavingsRate : t.kpiLzkStart}
-        value={sparquote > 0 ? `${sparquote.toFixed(1)}%` : t.kpiYearLabel(lzkStartCalendarYear)}
+        title={t.kpiSavingsRate}
+        value={`${sparquote.toFixed(1)}%`}
         sub={
           sparquote > 0
-            ? t.kpiSavingsRateSub(formatEuro(inputs.monatlicheSparrate), formatEuro(inputs.monatlichesBrutto))
-            : t.kpiLzkStartSub
+            ? t.kpiSavingsRateSub(formatCurrency(inputs.monatlicheSparrate), formatCurrency(inputs.monatlichesBrutto))
+            : undefined
         }
         accent={sparquote >= 30}
+      />
+      <KPICard
+        icon="🔒"
+        title={t.kpiLzkStart}
+        value={t.kpiYearLabel(lzkStartCalendarYear)}
+        sub={t.kpiLzkStartSub}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { FireResult, formatEuro } from "@/lib/fireCalculations";
+import { FireResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 
 interface DetailTableProps {
@@ -10,7 +10,7 @@ interface DetailTableProps {
 
 export default function DetailTable({ result }: DetailTableProps) {
   const [open, setOpen] = useState(false);
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const { yearlyData, drawdownData } = result;
   const allData = [...yearlyData.slice(1), ...drawdownData]; // skip year 0
 
@@ -73,25 +73,25 @@ export default function DetailTable({ result }: DetailTableProps) {
                     {d.calendarYear}
                   </td>
                   <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
-                    {formatEuro(d.etfBalanceReal)}
+                    {formatCurrency(d.etfBalanceReal)}
                   </td>
                   <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
-                    {d.lzkBalanceReal > 0 ? formatEuro(d.lzkBalanceReal) : "—"}
+                    {d.lzkBalanceReal > 0 ? formatCurrency(d.lzkBalanceReal) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-right font-semibold text-[#0f294d] dark:text-white">
-                    {formatEuro(d.totalReal)}
+                    {formatCurrency(d.totalReal)}
                   </td>
                   <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
-                    {d.monthlySavings > 0 ? formatEuro(d.monthlySavings) : "—"}
+                    {d.monthlySavings > 0 ? formatCurrency(d.monthlySavings) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-right text-emerald-600 dark:text-emerald-400">
-                    {d.annualGains > 0 ? formatEuro(d.annualGains) : "—"}
+                    {d.annualGains > 0 ? formatCurrency(d.annualGains) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-right text-red-500 dark:text-red-400">
-                    {d.taxPaid > 0 ? formatEuro(d.taxPaid) : "—"}
+                    {d.taxPaid > 0 ? formatCurrency(d.taxPaid) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-right text-amber-600 dark:text-amber-400">
-                    {d.annualWithdrawal > 0 ? formatEuro(d.annualWithdrawal) : "—"}
+                    {d.annualWithdrawal > 0 ? formatCurrency(d.annualWithdrawal) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-center">
                     {d.isDrawdownPhase ? (

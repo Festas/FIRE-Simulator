@@ -187,6 +187,53 @@ export interface Translations {
 
   // Language
   language: string;
+
+  // Chart labels (i18n)
+  chartLabelETF: string;
+  chartLabelLZK: string;
+  chartLabelTotal: string;
+  chartLabelOptimistic: string;
+  chartLabelPessimistic: string;
+  chartLabelRealistic: string;
+  chartLabelPortfolio: string;
+  chartLabelWithdrawal: string;
+  calendarYear: string;
+
+  // Share / Copy
+  shareLink: string;
+  linkCopied: string;
+
+  // Reset
+  resetDefaults: string;
+  resetConfirm: string;
+
+  // Current age
+  currentAge: string;
+  currentAgeSub: string;
+  currentAgeTooltip: string;
+  retirementAge: string;
+
+  // Reverse Planner
+  reversePlannerTab: string;
+  forwardSimTab: string;
+  reversePlannerTitle: string;
+  reversePlannerSubtitle: string;
+  reverseTargetIncome: string;
+  reverseTargetIncomeSub: string;
+  reverseTargetYears: string;
+  reverseTargetYearsSub: string;
+  reverseResultSavings: string;
+  reverseResultFireNumber: string;
+  reverseResultMonteCarlo: string;
+  reverseCalculate: string;
+  reverseProjectionTitle: string;
+  reverseProjectionSubtitle: string;
+
+  // Presets
+  presetConservative: string;
+  presetBalanced: string;
+  presetAggressive: string;
+  presetLabel: string;
 }
 
 export const de: Translations = {
@@ -357,6 +404,47 @@ export const de: Translations = {
   darkMode: "Dunkel",
   lightMode: "Hell",
   language: "Sprache",
+
+  chartLabelETF: "ETF",
+  chartLabelLZK: "LZK",
+  chartLabelTotal: "Gesamt",
+  chartLabelOptimistic: "Optimistisch (+2%)",
+  chartLabelPessimistic: "Pessimistisch (−2%)",
+  chartLabelRealistic: "Realistisch",
+  chartLabelPortfolio: "Portfolio (real)",
+  chartLabelWithdrawal: "Entnahme",
+  calendarYear: "Kalenderjahr",
+
+  shareLink: "Link teilen",
+  linkCopied: "Link kopiert!",
+
+  resetDefaults: "Zurücksetzen",
+  resetConfirm: "Alle Eingaben auf Standardwerte zurücksetzen?",
+
+  currentAge: "Aktuelles Alter",
+  currentAgeSub: "Ihr heutiges Alter",
+  currentAgeTooltip: "Wird für altersbasierte Darstellungen und die Berechnung des Rentenbeginns verwendet.",
+  retirementAge: "Rentenalter",
+
+  reversePlannerTab: "🔄 Rückwärtsrechner",
+  forwardSimTab: "📊 Simulation",
+  reversePlannerTitle: "Rückwärtsrechner",
+  reversePlannerSubtitle: "Wie viel müssen Sie monatlich sparen, um Ihr Ziel zu erreichen?",
+  reverseTargetIncome: "Wunsch-Einkommen",
+  reverseTargetIncomeSub: "Netto monatlich im Ruhestand",
+  reverseTargetYears: "Zieljahre",
+  reverseTargetYearsSub: "FIRE in X Jahren erreichen",
+  reverseResultSavings: "Benötigte Sparrate",
+  reverseResultFireNumber: "FIRE-Zahl",
+  reverseResultMonteCarlo: "Erfolgswahrscheinlichkeit",
+  reverseCalculate: "Berechnen",
+  reverseProjectionTitle: "Spar-Projektion",
+  reverseProjectionSubtitle: "Vermögensentwicklung bei benötigter Sparrate",
+
+  presetConservative: "Konservativ",
+  presetBalanced: "Ausgewogen",
+  presetAggressive: "Aggressiv",
+  presetLabel: "Schnellvorlagen",
 };
 
 export const en: Translations = {
@@ -527,6 +615,47 @@ export const en: Translations = {
   darkMode: "Dark",
   lightMode: "Light",
   language: "Language",
+
+  chartLabelETF: "ETF",
+  chartLabelLZK: "LZK",
+  chartLabelTotal: "Total",
+  chartLabelOptimistic: "Optimistic (+2%)",
+  chartLabelPessimistic: "Pessimistic (−2%)",
+  chartLabelRealistic: "Realistic",
+  chartLabelPortfolio: "Portfolio (real)",
+  chartLabelWithdrawal: "Withdrawal",
+  calendarYear: "Calendar Year",
+
+  shareLink: "Share Link",
+  linkCopied: "Link copied!",
+
+  resetDefaults: "Reset",
+  resetConfirm: "Reset all inputs to default values?",
+
+  currentAge: "Current Age",
+  currentAgeSub: "Your current age",
+  currentAgeTooltip: "Used for age-based projections and to calculate when state pension begins.",
+  retirementAge: "Retirement age",
+
+  reversePlannerTab: "🔄 Reverse Planner",
+  forwardSimTab: "📊 Simulation",
+  reversePlannerTitle: "Reverse Planner",
+  reversePlannerSubtitle: "How much do you need to save monthly to reach your goal?",
+  reverseTargetIncome: "Desired Income",
+  reverseTargetIncomeSub: "Net monthly in retirement",
+  reverseTargetYears: "Target Years",
+  reverseTargetYearsSub: "Reach FIRE in X years",
+  reverseResultSavings: "Required Savings",
+  reverseResultFireNumber: "FIRE Number",
+  reverseResultMonteCarlo: "Success Probability",
+  reverseCalculate: "Calculate",
+  reverseProjectionTitle: "Savings Projection",
+  reverseProjectionSubtitle: "Portfolio growth at required savings rate",
+
+  presetConservative: "Conservative",
+  presetBalanced: "Balanced",
+  presetAggressive: "Aggressive",
+  presetLabel: "Quick Presets",
 };
 
 const translations: Record<Locale, Translations> = { de, en };
