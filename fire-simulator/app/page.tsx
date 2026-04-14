@@ -332,9 +332,11 @@ function HomeContent() {
         {/* Dashboard content */}
         <div className="px-6 py-6 max-w-7xl mx-auto">
           {/* Tab navigation */}
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2 mb-6" role="tablist">
             <button
               onClick={() => setActiveTab("forward")}
+              role="tab"
+              aria-selected={activeTab === "forward"}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "forward"
                   ? "bg-emerald-500 text-white shadow-sm"
@@ -345,6 +347,8 @@ function HomeContent() {
             </button>
             <button
               onClick={() => setActiveTab("reverse")}
+              role="tab"
+              aria-selected={activeTab === "reverse"}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === "reverse"
                   ? "bg-emerald-500 text-white shadow-sm"

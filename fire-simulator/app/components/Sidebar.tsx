@@ -130,6 +130,10 @@ function SliderField({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700"
+        aria-label={label}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
         style={{
           background: `linear-gradient(to right, #10b981 0%, #10b981 ${((value - min) / (max - min)) * 100}%, #334155 ${((value - min) / (max - min)) * 100}%, #334155 100%)`,
         }}
@@ -207,12 +211,14 @@ function SegmentToggle<T extends string>({
           {tooltip && <InfoTooltip text={tooltip} />}
         </div>
       )}
-      <div className="flex rounded-lg bg-slate-700 p-0.5">
+      <div className="flex rounded-lg bg-slate-700 p-0.5" role="radiogroup" aria-label={label}>
         {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
+            role="radio"
+            aria-checked={value === opt.value}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
               value === opt.value
                 ? "bg-emerald-500 text-white shadow-sm"
@@ -250,12 +256,14 @@ function SelectToggle<T extends string>({
         <span className="text-sm text-slate-300">{label}</span>
         {tooltip && <InfoTooltip text={tooltip} />}
       </div>
-      <div className="flex rounded-lg bg-slate-700 p-0.5">
+      <div className="flex rounded-lg bg-slate-700 p-0.5" role="radiogroup" aria-label={label}>
         {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
+            role="radio"
+            aria-checked={value === opt.value}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
               value === opt.value
                 ? "bg-emerald-500 text-white shadow-sm"
