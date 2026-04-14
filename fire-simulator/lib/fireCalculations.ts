@@ -177,6 +177,14 @@ export interface FireResult {
 const MAX_YEARS = 50;
 const DRAWDOWN_YEARS = 40;
 
+// Drawdown return deduction (percentage points) — conservative allocation assumption
+const DRAWDOWN_RETURN_DEDUCTION = 1;
+
+// Sensitivity analysis range for reverse planner
+const SENSITIVITY_MIN_RETURN = 4;
+const SENSITIVITY_MAX_RETURN = 10;
+const SENSITIVITY_STEP = 1;
+
 // Legacy constants for backward compatibility
 const TAX_RATE_BASE = 0.26375;
 const TAX_RATE_KIST = 0.2782;
@@ -471,6 +479,8 @@ function calculateRequiredSparrate(
     inflation,
     bavJaehrlich,
     zielvermoegen,
+    startYear,
+    lifeEvents,
   } = inputs;
 
   const roi = etfRendite / 100;
@@ -486,6 +496,10 @@ function calculateRequiredSparrate(
       bal = (bal + contrib) * (1 + roi);
       const gains = bal - prev - contrib;
       bal -= calculateTax(gains, inputs);
+      // Life events impact
+      const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+      bal += eventCF;
+      bal = Math.max(0, bal);
     }
     return bal / Math.pow(1 + inf, targetYears);
   }
@@ -1090,12 +1104,38 @@ export function formatEuro(value: number): string {
 // Reverse planner
 // ---------------------------------------------------------------------------
 
+export interface SensitivityRow {
+  returnRate: number;
+  requiredSavings: number;
+  fireNumber: number;
+}
+
 export interface ReverseResult {
   requiredMonthlySavings: number;
   fireNumber: number;
   yearsToFire: number;
   monteCarlo: MonteCarloResult;
   yearlyProjection: YearDataPoint[];
+
+  // Scenario bands (±2% return)
+  scenarioOptimistic: YearDataPoint[];
+  scenarioPessimistic: YearDataPoint[];
+
+  // Drawdown phase
+  drawdownData: YearDataPoint[];
+  drawdownSurvives: boolean;
+  drawdownDepletionYear: number | null;
+
+  // Additional KPI data
+  totalTaxPaid: number;
+  passiveIncomeAtFire: number;
+  coastFireYear: number | null;
+
+  // Current vs required comparison
+  currentProjection: YearDataPoint[] | null;
+
+  // Sensitivity analysis
+  sensitivity: SensitivityRow[];
 }
 
 export function calculateReverse(
@@ -1113,10 +1153,29 @@ export function calculateReverse(
   entnahmeModell: "ewigeRente" | "kapitalverzehr",
   kapitalverzehrJahre: number,
   taxCountry: TaxCountry = "DE",
+  lifeEvents: LifeEvent[] = [],
+  currentMonthlySavings: number = 0,
+  monatlichesNetto: number = 0,
 ): ReverseResult {
   const monthlyGap = Math.max(0, targetMonthlyIncome - statePension);
   const swrDecimal = swr / 100;
-  const fireNumber = swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+  const inf = inflation / 100;
+
+  // Better FIRE number for kapitalverzehr mode (present-value-of-annuity)
+  let fireNumber: number;
+  if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0 && swrDecimal > 0) {
+    // Use a conservative return (−1 pp) for drawdown, matching simulateDrawdown/simulateMonteCarlo
+    const conservativeReturn = Math.max(0, expectedReturn - DRAWDOWN_RETURN_DEDUCTION) / 100;
+    const realReturn = (1 + conservativeReturn) / (1 + inf) - 1;
+    const annualNeed = monthlyGap * 12;
+    if (realReturn <= 0) {
+      fireNumber = annualNeed * kapitalverzehrJahre;
+    } else {
+      fireNumber = annualNeed * (1 - Math.pow(1 + realReturn, -kapitalverzehrJahre)) / realReturn;
+    }
+  } else {
+    fireNumber = swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+  }
 
   const inputs: FireInputs = {
     startKapital: startCapital,
@@ -1136,9 +1195,9 @@ export function calculateReverse(
     kirchensteuer,
     entnahmeModell,
     kapitalverzehrJahre,
-    monatlichesNetto: 0,
+    monatlichesNetto,
     taxCountry,
-    lifeEvents: [],
+    lifeEvents,
   };
 
   const requiredMonthlySavings = calculateRequiredSparrate(inputs, targetYears);
@@ -1147,11 +1206,73 @@ export function calculateReverse(
   const projectionInputs = { ...inputs, monatlicheSparrate: requiredMonthlySavings };
   const yearlyProjection = simulateAccumulation(projectionInputs, 0);
 
-  // Run Monte Carlo on the projected exit balance
+  // Scenario bands (±2% return)
+  const scenarioOptimistic = simulateAccumulation(projectionInputs, 2);
+  const scenarioPessimistic = simulateAccumulation(projectionInputs, -2);
+
+  // Exit balance at target year
   const exitIdx = Math.min(targetYears, yearlyProjection.length - 1);
   const exitData = yearlyProjection[exitIdx];
   const exitBalanceNominal = exitData ? exitData.etfBalanceNominal + exitData.lzkBalanceNominal : 0;
+
+  // Monte Carlo drawdown simulation (full percentile data)
   const monteCarlo = simulateMonteCarlo(exitBalanceNominal, projectionInputs, targetYears);
+
+  // Deterministic drawdown simulation
+  const drawdownResult = simulateDrawdown(exitBalanceNominal, projectionInputs, targetYears);
+
+  // Total tax paid during accumulation
+  let totalTaxPaid = 0;
+  for (let i = 1; i <= exitIdx && i < yearlyProjection.length; i++) {
+    totalTaxPaid += yearlyProjection[i].taxPaid;
+  }
+
+  // Passive income at FIRE
+  const exitBalanceReal = exitData?.totalReal ?? 0;
+  const passiveIncomeAtFire = (exitBalanceReal * swrDecimal) / 12;
+
+  // Coast FIRE year — when you could stop saving and coast to FIRE number
+  const realReturn = (1 + expectedReturn / 100) / (1 + inf) - 1;
+  let coastFireYear: number | null = null;
+  for (let i = 1; i <= exitIdx && i < yearlyProjection.length; i++) {
+    const yearsRemaining = targetYears - i;
+    if (yearsRemaining <= 0) break;
+    const coastThreshold = fireNumber / Math.pow(1 + realReturn, yearsRemaining);
+    if (yearlyProjection[i].totalReal >= coastThreshold) {
+      coastFireYear = i;
+      break;
+    }
+  }
+
+  // Current savings projection (if user has a current savings rate)
+  let currentProjection: YearDataPoint[] | null = null;
+  if (currentMonthlySavings > 0 && currentMonthlySavings !== requiredMonthlySavings) {
+    const currentInputs = { ...inputs, monatlicheSparrate: currentMonthlySavings };
+    currentProjection = simulateAccumulation(currentInputs, 0);
+  }
+
+  // Sensitivity analysis — vary return rate
+  const sensitivity: SensitivityRow[] = [];
+  for (let r = SENSITIVITY_MIN_RETURN; r <= SENSITIVITY_MAX_RETURN; r += SENSITIVITY_STEP) {
+    const sensInputs = { ...inputs, etfRendite: r };
+    // Recalculate FIRE number for this return rate
+    let sensFireNumber: number;
+    if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0) {
+      const sensConservativeReturn = Math.max(0, r - DRAWDOWN_RETURN_DEDUCTION) / 100;
+      const sensRealReturn = (1 + sensConservativeReturn) / (1 + inf) - 1;
+      const annualNeed = monthlyGap * 12;
+      if (sensRealReturn <= 0) {
+        sensFireNumber = annualNeed * kapitalverzehrJahre;
+      } else {
+        sensFireNumber = annualNeed * (1 - Math.pow(1 + sensRealReturn, -kapitalverzehrJahre)) / sensRealReturn;
+      }
+    } else {
+      sensFireNumber = swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+    }
+    sensInputs.zielvermoegen = sensFireNumber;
+    const sensSavings = calculateRequiredSparrate(sensInputs, targetYears);
+    sensitivity.push({ returnRate: r, requiredSavings: sensSavings, fireNumber: sensFireNumber });
+  }
 
   return {
     requiredMonthlySavings,
@@ -1159,6 +1280,16 @@ export function calculateReverse(
     yearsToFire: targetYears,
     monteCarlo,
     yearlyProjection,
+    scenarioOptimistic,
+    scenarioPessimistic,
+    drawdownData: drawdownResult.data,
+    drawdownSurvives: drawdownResult.survives,
+    drawdownDepletionYear: drawdownResult.depletionYear,
+    totalTaxPaid,
+    passiveIncomeAtFire,
+    coastFireYear,
+    currentProjection,
+    sensitivity,
   };
 }
 

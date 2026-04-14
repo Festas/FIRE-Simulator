@@ -228,6 +228,36 @@ export interface Translations {
   reverseCalculate: string;
   reverseProjectionTitle: string;
   reverseProjectionSubtitle: string;
+  reverseReturnRate: string;
+  reverseReturnRateSub: string;
+  reverseInflation: string;
+  reverseInflationSub: string;
+  reverseSwr: string;
+  reverseSwrSub: string;
+  reverseTotalTaxPaid: string;
+  reversePassiveIncome: string;
+  reversePassiveIncomeSub: string;
+  reverseCoastFireYear: string;
+  reverseCoastFireYearSub: string;
+  reverseCoastFireNone: string;
+  reverseSavingsRate: string;
+  reverseSavingsRateSub: (savings: string, net: string) => string;
+  reverseDrawdownTitle: string;
+  reverseDrawdownSubtitle: string;
+  reverseDrawdownSurvives: string;
+  reverseDrawdownDepleted: (year: number) => string;
+  reverseMonteCarloTitle: string;
+  reverseMonteCarloSubtitle: string;
+  reverseSensitivityTitle: string;
+  reverseSensitivitySubtitle: string;
+  reverseSensitivityReturn: string;
+  reverseSensitivitySavings: string;
+  reverseSensitivityFireNum: string;
+  reverseCurrentVsRequired: string;
+  reverseCurrentLine: string;
+  reverseRequiredLine: string;
+  reverseTableTitle: string;
+  reverseTableSubtitle: string;
 
   // Presets
   presetConservative: string;
@@ -504,6 +534,36 @@ export const de: Translations = {
   reverseCalculate: "Berechnen",
   reverseProjectionTitle: "Spar-Projektion",
   reverseProjectionSubtitle: "Vermögensentwicklung bei benötigter Sparrate",
+  reverseReturnRate: "Erwartete Rendite",
+  reverseReturnRateSub: "Jährliche Rendite p.a.",
+  reverseInflation: "Inflation",
+  reverseInflationSub: "Jährliche Inflationsrate",
+  reverseSwr: "Entnahmerate (SWR)",
+  reverseSwrSub: "Sichere Entnahmerate p.a.",
+  reverseTotalTaxPaid: "Steuern gesamt",
+  reversePassiveIncome: "Passives Einkommen",
+  reversePassiveIncomeSub: "Monatlich bei FIRE",
+  reverseCoastFireYear: "Coast FIRE",
+  reverseCoastFireYearSub: "Ab dann nur noch wachsen lassen",
+  reverseCoastFireNone: "Nicht erreicht",
+  reverseSavingsRate: "Sparquote",
+  reverseSavingsRateSub: (savings: string, net: string) => `${savings} von ${net} Netto`,
+  reverseDrawdownTitle: "Entnahmephase",
+  reverseDrawdownSubtitle: "Vermögensentwicklung nach FIRE",
+  reverseDrawdownSurvives: "Portfolio überlebt 40 Jahre ✓",
+  reverseDrawdownDepleted: (year: number) => `Portfolio aufgebraucht in Jahr ${year}`,
+  reverseMonteCarloTitle: "Monte Carlo – Entnahmephase",
+  reverseMonteCarloSubtitle: "1.000 Simulationen mit zufälligen Renditen",
+  reverseSensitivityTitle: "Sensitivitätsanalyse",
+  reverseSensitivitySubtitle: "Wie sich Rendite-Annahmen auf die Sparrate auswirken",
+  reverseSensitivityReturn: "Rendite",
+  reverseSensitivitySavings: "Sparrate/Monat",
+  reverseSensitivityFireNum: "FIRE-Zahl",
+  reverseCurrentVsRequired: "Aktuell vs. Benötigt",
+  reverseCurrentLine: "Aktuelle Sparrate",
+  reverseRequiredLine: "Benötigte Sparrate",
+  reverseTableTitle: "Jahresübersicht",
+  reverseTableSubtitle: "Detaillierte Projektion Jahr für Jahr",
 
   presetConservative: "Konservativ",
   presetBalanced: "Ausgewogen",
@@ -772,6 +832,36 @@ export const en: Translations = {
   reverseCalculate: "Calculate",
   reverseProjectionTitle: "Savings Projection",
   reverseProjectionSubtitle: "Portfolio growth at required savings rate",
+  reverseReturnRate: "Expected Return",
+  reverseReturnRateSub: "Annual return p.a.",
+  reverseInflation: "Inflation",
+  reverseInflationSub: "Annual inflation rate",
+  reverseSwr: "Withdrawal Rate (SWR)",
+  reverseSwrSub: "Safe withdrawal rate p.a.",
+  reverseTotalTaxPaid: "Total Tax Paid",
+  reversePassiveIncome: "Passive Income",
+  reversePassiveIncomeSub: "Monthly at FIRE",
+  reverseCoastFireYear: "Coast FIRE",
+  reverseCoastFireYearSub: "Stop saving and coast from here",
+  reverseCoastFireNone: "Not reached",
+  reverseSavingsRate: "Savings Rate",
+  reverseSavingsRateSub: (savings: string, net: string) => `${savings} of ${net} net`,
+  reverseDrawdownTitle: "Drawdown Phase",
+  reverseDrawdownSubtitle: "Portfolio evolution after FIRE",
+  reverseDrawdownSurvives: "Portfolio survives 40 years ✓",
+  reverseDrawdownDepleted: (year: number) => `Portfolio depleted in year ${year}`,
+  reverseMonteCarloTitle: "Monte Carlo – Drawdown Phase",
+  reverseMonteCarloSubtitle: "1,000 simulations with random returns",
+  reverseSensitivityTitle: "Sensitivity Analysis",
+  reverseSensitivitySubtitle: "How return assumptions affect required savings",
+  reverseSensitivityReturn: "Return",
+  reverseSensitivitySavings: "Savings/Month",
+  reverseSensitivityFireNum: "FIRE Number",
+  reverseCurrentVsRequired: "Current vs. Required",
+  reverseCurrentLine: "Current Savings",
+  reverseRequiredLine: "Required Savings",
+  reverseTableTitle: "Year-by-Year Details",
+  reverseTableSubtitle: "Detailed projection year by year",
 
   presetConservative: "Conservative",
   presetBalanced: "Balanced",

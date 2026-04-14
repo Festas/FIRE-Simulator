@@ -487,6 +487,111 @@ describe("Reverse planner (calculateReverse)", () => {
     );
     expect(couple.requiredMonthlySavings).toBeLessThanOrEqual(single.requiredMonthlySavings);
   });
+
+  it("uses present-value-of-annuity for kapitalverzehr mode", () => {
+    const perpetual = calculateReverse(
+      4_000, 15, 1_500, 0, 7, 2.5, 4.0, 0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    const depletion = calculateReverse(
+      4_000, 15, 1_500, 0, 7, 2.5, 4.0, 0, 0,
+      "single", false, "kapitalverzehr", 30,
+    );
+    // Capital depletion should need a lower FIRE number than perpetual
+    expect(depletion.fireNumber).toBeLessThan(perpetual.fireNumber);
+    // And therefore lower required savings
+    expect(depletion.requiredMonthlySavings).toBeLessThanOrEqual(perpetual.requiredMonthlySavings);
+  });
+
+  it("returns scenario bands (optimistic/pessimistic)", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.scenarioOptimistic.length).toBeGreaterThan(0);
+    expect(result.scenarioPessimistic.length).toBeGreaterThan(0);
+    // Optimistic should end higher than pessimistic
+    const optEnd = result.scenarioOptimistic[result.scenarioOptimistic.length - 1].totalReal;
+    const pesEnd = result.scenarioPessimistic[result.scenarioPessimistic.length - 1].totalReal;
+    expect(optEnd).toBeGreaterThan(pesEnd);
+  });
+
+  it("returns drawdown phase data", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.drawdownData.length).toBeGreaterThan(0);
+    expect(typeof result.drawdownSurvives).toBe("boolean");
+  });
+
+  it("returns tax and passive income data", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.totalTaxPaid).toBeGreaterThan(0);
+    expect(result.passiveIncomeAtFire).toBeGreaterThan(0);
+  });
+
+  it("returns sensitivity analysis data", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    expect(result.sensitivity.length).toBeGreaterThan(0);
+    // Higher return rates should require lower savings
+    const low = result.sensitivity.find(s => s.returnRate === 4);
+    const high = result.sensitivity.find(s => s.returnRate === 10);
+    expect(low).toBeDefined();
+    expect(high).toBeDefined();
+    expect(high!.requiredSavings).toBeLessThan(low!.requiredSavings);
+  });
+
+  it("returns current projection when current savings differ from required", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE",
+      [], // lifeEvents
+      2_000, // currentMonthlySavings
+    );
+    expect(result.currentProjection).not.toBeNull();
+    expect(result.currentProjection!.length).toBeGreaterThan(0);
+  });
+
+  it("returns null current projection when current savings equals required", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE",
+      [], // lifeEvents
+      0, // currentMonthlySavings = 0 (no comparison)
+    );
+    expect(result.currentProjection).toBeNull();
+  });
+
+  it("incorporates life events into required savings", () => {
+    const noEvents = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE",
+      [],
+    );
+    // Add an inheritance event (positive cash flow)
+    const withInheritance = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE",
+      [{
+        id: "test-1",
+        type: "inheritance",
+        name: "Inheritance",
+        startYear: new Date().getFullYear() + 5,
+        endYear: new Date().getFullYear() + 5,
+        annualAmount: 100_000,
+        inflationAdjusted: false,
+      }],
+    );
+    // With a large inheritance, required savings should be lower
+    expect(withInheritance.requiredMonthlySavings).toBeLessThan(noEvents.requiredMonthlySavings);
+  });
 });
 
 // ---------------------------------------------------------------------------
