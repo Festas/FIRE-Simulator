@@ -13,6 +13,7 @@ import DetailTable from "@/app/components/DetailTable";
 import PhasesTimeline from "@/app/components/PhasesTimeline";
 import Warnings from "@/app/components/Warnings";
 import ErrorBoundary from "@/app/components/ErrorBoundary";
+import ReversePlanner from "@/app/components/ReversePlanner";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 50_000,
@@ -139,6 +140,7 @@ function HomeContent() {
   const [inputs, setInputs] = useState<FireInputs>(getInitialInputs);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareTooltip, setShareTooltip] = useState(false);
+  const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
 
@@ -175,7 +177,7 @@ function HomeContent() {
     const allData = [...result.yearlyData, ...result.drawdownData];
     const headers = [
       t.tableYear,
-      locale === "de" ? "Kalenderjahr" : "Calendar Year",
+      t.calendarYear,
       t.tableEtf,
       t.tableLzk,
       t.tableTotal,
@@ -203,7 +205,7 @@ function HomeContent() {
     a.download = `fire-simulation-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [result, t, locale]);
+  }, [result, t]);
 
   const handleShareLink = useCallback(() => {
     const url = inputsToURL(inputs);
@@ -212,6 +214,13 @@ function HomeContent() {
       setTimeout(() => setShareTooltip(false), 2000);
     });
   }, [inputs]);
+
+  const handleReset = useCallback(() => {
+    if (window.confirm(t.resetConfirm)) {
+      setInputs(DEFAULT_INPUTS);
+      saveInputs(DEFAULT_INPUTS);
+    }
+  }, [t]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
@@ -233,7 +242,7 @@ function HomeContent() {
           "overflow-y-auto sidebar-scroll",
         ].join(" ")}
       >
-        <Sidebar inputs={inputs} onChange={handleChange} />
+        <Sidebar inputs={inputs} onChange={handleChange} onReset={handleReset} />
       </aside>
 
       {/* Main area */}
@@ -263,29 +272,29 @@ function HomeContent() {
           <div className="relative">
             <button
               onClick={handleShareLink}
-              className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-              title={locale === "de" ? "Link kopieren" : "Copy link"}
+              className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+              title={t.shareLink}
             >
               <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" />
               </svg>
-              {locale === "de" ? "Link teilen" : "Share Link"}
+              <span className="hidden sm:inline">{t.shareLink}</span>
             </button>
             {shareTooltip && (
               <div className="absolute top-full mt-1 left-1/2 -translate-x-1/2 px-2 py-1 text-xs text-white bg-emerald-600 rounded whitespace-nowrap">
-                {locale === "de" ? "Link kopiert!" : "Link copied!"}
+                {t.linkCopied}
               </div>
             )}
           </div>
 
           <button
             onClick={handleExportCSV}
-            className="hidden sm:flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-            {t.csvExport}
+            <span className="hidden sm:inline">{t.csvExport}</span>
           </button>
 
           {/* Language toggle */}
@@ -322,14 +331,48 @@ function HomeContent() {
 
         {/* Dashboard content */}
         <div className="px-6 py-6 max-w-7xl mx-auto">
+          {/* Tab navigation */}
+          <div className="flex gap-2 mb-6" role="tablist">
+            <button
+              onClick={() => setActiveTab("forward")}
+              role="tab"
+              aria-selected={activeTab === "forward"}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "forward"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+              }`}
+            >
+              {t.forwardSimTab}
+            </button>
+            <button
+              onClick={() => setActiveTab("reverse")}
+              role="tab"
+              aria-selected={activeTab === "reverse"}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "reverse"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+              }`}
+            >
+              {t.reversePlannerTab}
+            </button>
+          </div>
+
           <ErrorBoundary>
-            <Warnings inputs={inputs} />
-            <KPICards result={result} inputs={inputs} />
-            <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
-            <MonteCarloChart result={result} />
-            <DrawdownChart result={result} inputs={inputs} />
-            <DetailTable result={result} />
-            <PhasesTimeline result={result} startYear={inputs.startYear} />
+            {activeTab === "forward" ? (
+              <>
+                <Warnings inputs={inputs} />
+                <KPICards result={result} inputs={inputs} />
+                <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
+                <MonteCarloChart result={result} />
+                <DrawdownChart result={result} inputs={inputs} />
+                <DetailTable result={result} />
+                <PhasesTimeline result={result} startYear={inputs.startYear} />
+              </>
+            ) : (
+              <ReversePlanner inputs={inputs} />
+            )}
           </ErrorBoundary>
 
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-6 pb-6">

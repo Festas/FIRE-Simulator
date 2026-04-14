@@ -11,36 +11,12 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { FireResult, formatEuro } from "@/lib/fireCalculations";
+import { FireResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
+import { ChartTooltipContent } from "@/app/components/ChartTooltip";
 
 interface MonteCarloChartProps {
   result: FireResult;
-}
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: Array<{
-    name: string;
-    value: number;
-    color: string;
-  }>;
-  label?: string | number;
-}
-
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
-      <p className="font-semibold mb-2 text-slate-300">{label}</p>
-      {payload.map((p) => (
-        <div key={p.name} className="flex justify-between gap-4">
-          <span style={{ color: p.color }} className="font-medium">{p.name}</span>
-          <span className="font-semibold">{formatEuro(p.value)}</span>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 function yAxisFormatter(value: number): string {
@@ -50,7 +26,7 @@ function yAxisFormatter(value: number): string {
 }
 
 export default function MonteCarloChart({ result }: MonteCarloChartProps) {
-  const { t } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const { monteCarlo, fullFireYear } = result;
 
   if (fullFireYear === null) return null;
@@ -125,7 +101,7 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
             axisLine={false}
             width={55}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
           <Area
             type="monotone"
             dataKey="p90"

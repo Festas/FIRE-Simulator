@@ -130,6 +130,10 @@ function SliderField({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full h-1.5 rounded-full appearance-none cursor-pointer bg-slate-700"
+        aria-label={label}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
         style={{
           background: `linear-gradient(to right, #10b981 0%, #10b981 ${((value - min) / (max - min)) * 100}%, #334155 ${((value - min) / (max - min)) * 100}%, #334155 100%)`,
         }}
@@ -207,12 +211,14 @@ function SegmentToggle<T extends string>({
           {tooltip && <InfoTooltip text={tooltip} />}
         </div>
       )}
-      <div className="flex rounded-lg bg-slate-700 p-0.5">
+      <div className="flex rounded-lg bg-slate-700 p-0.5" role="radiogroup" aria-label={label}>
         {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
+            role="radio"
+            aria-checked={value === opt.value}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
               value === opt.value
                 ? "bg-emerald-500 text-white shadow-sm"
@@ -250,12 +256,14 @@ function SelectToggle<T extends string>({
         <span className="text-sm text-slate-300">{label}</span>
         {tooltip && <InfoTooltip text={tooltip} />}
       </div>
-      <div className="flex rounded-lg bg-slate-700 p-0.5">
+      <div className="flex rounded-lg bg-slate-700 p-0.5" role="radiogroup" aria-label={label}>
         {options.map((opt) => (
           <button
             key={opt.value}
             type="button"
             onClick={() => onChange(opt.value)}
+            role="radio"
+            aria-checked={value === opt.value}
             className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-colors ${
               value === opt.value
                 ? "bg-emerald-500 text-white shadow-sm"
@@ -277,9 +285,10 @@ function SelectToggle<T extends string>({
 interface SidebarProps {
   inputs: FireInputs;
   onChange: (key: keyof FireInputs, value: number | string | boolean) => void;
+  onReset: () => void;
 }
 
-export default function Sidebar({ inputs, onChange }: SidebarProps) {
+export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
   const { t, formatCurrency, formatPercent } = useI18n();
   const fmtEuro = formatCurrency;
   const fmtPct = formatPercent;
@@ -355,7 +364,7 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
             tooltip={t.startCapitalTooltip}
             value={inputs.startKapital}
             min={0}
-            max={500_000}
+            max={2_000_000}
             step={5_000}
             onChange={(v) => onChange("startKapital", v)}
             format={fmtEuro}
@@ -367,7 +376,7 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
             tooltip={t.monthlySavingsTooltip}
             value={inputs.monatlicheSparrate}
             min={100}
-            max={10_000}
+            max={20_000}
             step={50}
             onChange={(v) => onChange("monatlicheSparrate", v)}
             format={fmtEuro}
@@ -540,19 +549,68 @@ export default function Sidebar({ inputs, onChange }: SidebarProps) {
             tooltip={t.targetWealthTooltip}
             value={inputs.zielvermoegen}
             min={100_000}
-            max={5_000_000}
+            max={10_000_000}
             step={50_000}
             onChange={(v) => onChange("zielvermoegen", v)}
             format={fmtEuro}
           />
         </div>
+
+        {/* ===== Quick Presets ===== */}
+        <div className="border-t border-slate-700 pt-5 mt-2">
+          <p className="text-xs uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+            {t.presetLabel}
+          </p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                onChange("etfRendite", 5.0);
+                onChange("swr", 3.0);
+                onChange("inflation", 3.0);
+              }}
+              className="flex-1 text-xs font-medium py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+            >
+              {t.presetConservative}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onChange("etfRendite", 7.0);
+                onChange("swr", 3.5);
+                onChange("inflation", 2.5);
+              }}
+              className="flex-1 text-xs font-medium py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+            >
+              {t.presetBalanced}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onChange("etfRendite", 9.0);
+                onChange("swr", 4.0);
+                onChange("inflation", 2.0);
+              }}
+              className="flex-1 text-xs font-medium py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+            >
+              {t.presetAggressive}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-3 border-t border-slate-700">
-        <p className="text-xs text-slate-600 text-center">
+      <div className="px-6 py-3 border-t border-slate-700 flex items-center justify-between gap-2">
+        <p className="text-xs text-slate-600">
           {t.simulationStart} {inputs.startYear} · SWR {inputs.swr.toFixed(1)} %
         </p>
+        <button
+          type="button"
+          onClick={onReset}
+          className="text-xs text-slate-500 hover:text-red-400 transition-colors px-2 py-1 rounded border border-slate-700 hover:border-red-400/50"
+        >
+          {t.resetDefaults}
+        </button>
       </div>
     </div>
   );
