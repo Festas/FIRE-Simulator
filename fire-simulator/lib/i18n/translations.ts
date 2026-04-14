@@ -249,6 +249,55 @@ export interface Translations {
 
   // Phase label
   phaseLabel: (n: number) => string;
+
+  // Tax Country
+  taxCountry: string;
+  taxCountryTooltip: string;
+  taxCountryDE: string;
+  taxCountryUS: string;
+  taxCountryUK: string;
+  taxCountryCH: string;
+  taxCountryAT: string;
+  taxCountryNL: string;
+
+  // Life Events
+  lifeEventsSection: string;
+  lifeEventsAdd: string;
+  lifeEventsName: string;
+  lifeEventsType: string;
+  lifeEventsStartYear: string;
+  lifeEventsEndYear: string;
+  lifeEventsAmount: string;
+  lifeEventsInflationAdj: string;
+  lifeEventsRemove: string;
+  lifeEventHomePurchase: string;
+  lifeEventChild: string;
+  lifeEventCareerChange: string;
+  lifeEventInheritance: string;
+  lifeEventPensionStart: string;
+  lifeEventHealthcare: string;
+  lifeEventOneTimeExpense: string;
+  lifeEventOneTimeIncome: string;
+  lifeEventSideIncome: string;
+  lifeEventsEmpty: string;
+
+  // Scenarios
+  scenariosSection: string;
+  scenariosSave: string;
+  scenariosLoad: string;
+  scenariosDelete: string;
+  scenariosName: string;
+  scenariosNamePrompt: string;
+  scenariosCurrent: string;
+  scenariosEmpty: string;
+
+  // Lifecycle Monte Carlo
+  lifecycleMCTitle: string;
+  lifecycleMCSubtitle: string;
+  lifecycleMCSuccess: (rate: string) => string;
+  lifecycleMCYearsToFire: string;
+  lifecycleMCP50Years: (years: string) => string;
+  lifecycleMCRange: (p10: string, p90: string) => string;
 }
 
 export const de: Translations = {
@@ -468,6 +517,55 @@ export const de: Translations = {
   fullFireLabel: "Full FIRE",
   kpiMonteCarlo: "Monte Carlo",
   phaseLabel: (n: number) => `Phase ${n}`,
+
+  // Tax Country
+  taxCountry: "Steuerland",
+  taxCountryTooltip: "Wählen Sie Ihr Steuerland für die Kapitalertragsbesteuerung.",
+  taxCountryDE: "🇩🇪 Deutschland",
+  taxCountryUS: "🇺🇸 USA",
+  taxCountryUK: "🇬🇧 Großbritannien",
+  taxCountryCH: "🇨🇭 Schweiz",
+  taxCountryAT: "🇦🇹 Österreich",
+  taxCountryNL: "🇳🇱 Niederlande",
+
+  // Life Events
+  lifeEventsSection: "Lebensereignisse",
+  lifeEventsAdd: "Ereignis hinzufügen",
+  lifeEventsName: "Bezeichnung",
+  lifeEventsType: "Typ",
+  lifeEventsStartYear: "Startjahr",
+  lifeEventsEndYear: "Endjahr",
+  lifeEventsAmount: "Jährl. Betrag",
+  lifeEventsInflationAdj: "Inflationsbereinigt",
+  lifeEventsRemove: "Entfernen",
+  lifeEventHomePurchase: "Immobilienkauf",
+  lifeEventChild: "Kind",
+  lifeEventCareerChange: "Karrierewechsel",
+  lifeEventInheritance: "Erbschaft",
+  lifeEventPensionStart: "Rentenbeginn",
+  lifeEventHealthcare: "Gesundheitskosten",
+  lifeEventOneTimeExpense: "Einmalausgabe",
+  lifeEventOneTimeIncome: "Einmaleinnahme",
+  lifeEventSideIncome: "Nebeneinkommen",
+  lifeEventsEmpty: "Keine Lebensereignisse geplant",
+
+  // Scenarios
+  scenariosSection: "Szenarien",
+  scenariosSave: "Speichern",
+  scenariosLoad: "Laden",
+  scenariosDelete: "Löschen",
+  scenariosName: "Szenario-Name",
+  scenariosNamePrompt: "Name für das Szenario:",
+  scenariosCurrent: "Aktuell",
+  scenariosEmpty: "Keine gespeicherten Szenarien",
+
+  // Lifecycle Monte Carlo
+  lifecycleMCTitle: "Lebenszyklus Monte Carlo",
+  lifecycleMCSubtitle: "500 stochastische Simulationen der Ansparphase",
+  lifecycleMCSuccess: (rate: string) => `${rate} % erreichen FIRE`,
+  lifecycleMCYearsToFire: "Jahre bis FIRE",
+  lifecycleMCP50Years: (years: string) => `Median: ${years} Jahre`,
+  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90} Jahre`,
 };
 
 export const en: Translations = {
@@ -687,6 +785,55 @@ export const en: Translations = {
   fullFireLabel: "Full FIRE",
   kpiMonteCarlo: "Monte Carlo",
   phaseLabel: (n: number) => `Phase ${n}`,
+
+  // Tax Country
+  taxCountry: "Tax Country",
+  taxCountryTooltip: "Select your tax country for capital gains taxation.",
+  taxCountryDE: "🇩🇪 Germany",
+  taxCountryUS: "🇺🇸 USA",
+  taxCountryUK: "🇬🇧 United Kingdom",
+  taxCountryCH: "🇨🇭 Switzerland",
+  taxCountryAT: "🇦🇹 Austria",
+  taxCountryNL: "🇳🇱 Netherlands",
+
+  // Life Events
+  lifeEventsSection: "Life Events",
+  lifeEventsAdd: "Add Event",
+  lifeEventsName: "Name",
+  lifeEventsType: "Type",
+  lifeEventsStartYear: "Start Year",
+  lifeEventsEndYear: "End Year",
+  lifeEventsAmount: "Annual Amount",
+  lifeEventsInflationAdj: "Inflation Adjusted",
+  lifeEventsRemove: "Remove",
+  lifeEventHomePurchase: "Home Purchase",
+  lifeEventChild: "Child",
+  lifeEventCareerChange: "Career Change",
+  lifeEventInheritance: "Inheritance",
+  lifeEventPensionStart: "Pension Start",
+  lifeEventHealthcare: "Healthcare Costs",
+  lifeEventOneTimeExpense: "One-Time Expense",
+  lifeEventOneTimeIncome: "One-Time Income",
+  lifeEventSideIncome: "Side Income",
+  lifeEventsEmpty: "No life events planned",
+
+  // Scenarios
+  scenariosSection: "Scenarios",
+  scenariosSave: "Save",
+  scenariosLoad: "Load",
+  scenariosDelete: "Delete",
+  scenariosName: "Scenario Name",
+  scenariosNamePrompt: "Name for this scenario:",
+  scenariosCurrent: "Current",
+  scenariosEmpty: "No saved scenarios",
+
+  // Lifecycle Monte Carlo
+  lifecycleMCTitle: "Lifecycle Monte Carlo",
+  lifecycleMCSubtitle: "500 stochastic simulations of the accumulation phase",
+  lifecycleMCSuccess: (rate: string) => `${rate}% reach FIRE`,
+  lifecycleMCYearsToFire: "Years to FIRE",
+  lifecycleMCP50Years: (years: string) => `Median: ${years} years`,
+  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90} years`,
 };
 
 const translations: Record<Locale, Translations> = { de, en };
