@@ -26,6 +26,7 @@ interface FireChartProps {
 
 export default function FireChart({ result, zielvermoegen }: FireChartProps) {
   const [showScenarios, setShowScenarios] = useState(false);
+  const [showNoInvestment, setShowNoInvestment] = useState(false);
   const { t, formatCurrency } = useI18n();
   const {
     yearlyData,
@@ -38,6 +39,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     coastFireAmount,
     scenarioOptimistic,
     scenarioPessimistic,
+    noInvestmentData,
     coastFireAge,
     fullFireAge,
     lzkSabbaticalStartAge,
@@ -55,6 +57,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     total: Math.round(d.totalReal),
     optimistic: scenarioOptimistic[i] ? Math.round(scenarioOptimistic[i].totalReal) : undefined,
     pessimistic: scenarioPessimistic[i] ? Math.round(scenarioPessimistic[i].totalReal) : undefined,
+    noInvestment: noInvestmentData[i] ? Math.round(noInvestmentData[i].totalReal) : undefined,
   }));
 
   const milestoneLines = [
@@ -87,6 +90,17 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
         </div>
         <div className="flex items-center gap-4 text-xs">
           <button
+            onClick={() => setShowNoInvestment((p) => !p)}
+            className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
+              showNoInvestment
+                ? "bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300"
+                : "bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600"
+            }`}
+            title={t.noInvestmentTooltip}
+          >
+            {t.noInvestmentLabel}
+          </button>
+          <button
             onClick={() => setShowScenarios((p) => !p)}
             className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
               showScenarios
@@ -118,6 +132,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             <Line type="monotone" dataKey="optimistic" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name={t.chartLabelOptimistic} />
             <Line type="monotone" dataKey="total" stroke="#0f294d" strokeWidth={2.5} dot={false} name={t.chartLabelRealistic} />
             <Line type="monotone" dataKey="pessimistic" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name={t.chartLabelPessimistic} />
+            {showNoInvestment && <Line type="monotone" dataKey="noInvestment" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} name={t.chartLabelNoInvestment} />}
             <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} />
           </LineChart>
         ) : (
@@ -143,6 +158,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             ))}
             <Area type="monotone" dataKey="lzk" stackId="portfolio" stroke="#60a5fa" strokeWidth={2} fill="url(#lzkGradient)" name={t.chartLabelLZK} dot={false} activeDot={{ r: 4 }} />
             <Area type="monotone" dataKey="etf" stackId="portfolio" stroke="#10b981" strokeWidth={2.5} fill="url(#etfGradient)" name={t.chartLabelETF} dot={false} activeDot={{ r: 5 }} />
+            {showNoInvestment && <Line type="monotone" dataKey="noInvestment" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} name={t.chartLabelNoInvestment} />}
             <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="circle" />
           </AreaChart>
         )}
