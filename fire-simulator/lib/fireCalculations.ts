@@ -111,7 +111,7 @@ export interface FireResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_YEARS = 30;
+const MAX_YEARS = 50;
 const DRAWDOWN_YEARS = 40;
 
 // Teilfreistellung: 30 % of equity-ETF gains are tax-free
@@ -157,43 +157,96 @@ function simulateAccumulation(
     etfRendite,
     inflation,
     bavJaehrlich,
+    lzkJahre,
+    lzkRendite,
+    zielvermoegen,
     startYear,
   } = inputs;
 
   const roi = (etfRendite + returnOffset) / 100;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
+  const lzkRoi = lzkRendite / 100;
 
+  // Pass 1: estimate FIRE year (with offset return) to determine LZK start
+  let tempBal = startKapital;
+  let estimatedFireYear = MAX_YEARS;
+  for (let y = 1; y <= MAX_YEARS; y++) {
+    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const contrib = savings * 12 + bavJaehrlich;
+    const prev = tempBal;
+    tempBal = (tempBal + contrib) * (1 + roi);
+    const gains = tempBal - prev - contrib;
+    tempBal -= calculateTax(gains, inputs);
+    const realVal = tempBal / Math.pow(1 + inf, y);
+    if (realVal >= zielvermoegen) {
+      estimatedFireYear = y;
+      break;
+    }
+  }
+
+  const lzkStartYear = Math.max(1, estimatedFireYear - lzkJahre);
+
+  // Pass 2: full simulation with LZK
   let etfBal = startKapital;
+  let lzkBal = 0;
   const data: YearDataPoint[] = [];
 
   data.push(makeYearZero(startKapital, monatlicheSparrate, startYear));
 
   for (let y = 1; y <= MAX_YEARS; y++) {
+    const isLZKPhase = y >= lzkStartYear;
     const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
-    const prevBal = etfBal;
-    etfBal = (etfBal + contrib) * (1 + roi);
-    const gains = etfBal - prevBal - contrib;
-    const tax = calculateTax(gains, inputs);
-    etfBal -= tax;
     const realFactor = Math.pow(1 + inf, y);
+
+    let annualETFContrib = 0;
+    let annualLZKContrib = 0;
+    let yearGains = 0;
+    let yearTax = 0;
+
+    if (isLZKPhase) {
+      const prevEtf = etfBal;
+      etfBal *= 1 + roi;
+      const etfGains = etfBal - prevEtf;
+      const etfTax = calculateTax(etfGains, inputs);
+      etfBal -= etfTax;
+
+      lzkBal = (lzkBal + contrib) * (1 + lzkRoi);
+
+      yearGains = etfGains;
+      yearTax = etfTax;
+      annualLZKContrib = contrib;
+    } else {
+      const prevEtf = etfBal;
+      etfBal = (etfBal + contrib) * (1 + roi);
+      const etfGains = etfBal - prevEtf - contrib;
+      const etfTax = calculateTax(etfGains, inputs);
+      etfBal -= etfTax;
+
+      yearGains = etfGains;
+      yearTax = etfTax;
+      annualETFContrib = contrib;
+    }
+
     const etfReal = etfBal / realFactor;
+    const lzkReal = lzkBal / realFactor;
+    const totalReal = etfReal + lzkReal;
 
     data.push({
       year: y,
       calendarYear: startYear + y,
       etfBalanceNominal: etfBal,
       etfBalanceReal: etfReal,
-      lzkBalanceNominal: 0,
-      lzkBalanceReal: 0,
-      totalReal: etfReal,
-      annualETFContrib: contrib,
-      annualLZKContrib: 0,
+      lzkBalanceNominal: lzkBal,
+      lzkBalanceReal: lzkReal,
+      totalReal,
+      annualETFContrib,
+      annualLZKContrib,
       monthlySavings: savings,
-      isLZKPhase: false,
-      taxPaid: tax,
-      annualGains: gains,
+      isLZKPhase,
+      taxPaid: yearTax,
+      annualGains: yearGains,
       isDrawdownPhase: false,
       annualWithdrawal: 0,
     });
@@ -506,7 +559,7 @@ function simulateMonteCarlo(
           }
         }
       } else {
-        withdrawal = monthlyGap * 12 * Math.pow(1 + inf, y);
+        withdrawal = monthlyGap * 12 * Math.pow(1 + inf, exitYear + y);
       }
 
       withdrawal = Math.min(withdrawal, balance);
@@ -803,6 +856,79 @@ export function formatEuro(value: number): string {
     currency: "EUR",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+// ---------------------------------------------------------------------------
+// Reverse planner
+// ---------------------------------------------------------------------------
+
+export interface ReverseResult {
+  requiredMonthlySavings: number;
+  fireNumber: number;
+  yearsToFire: number;
+  monteCarlo: MonteCarloResult;
+  yearlyProjection: YearDataPoint[];
+}
+
+export function calculateReverse(
+  targetMonthlyIncome: number,
+  targetYears: number,
+  statePension: number,
+  startCapital: number,
+  expectedReturn: number,
+  inflation: number,
+  swr: number,
+  dynamicSavings: number,
+  bavAnnual: number,
+  steuerModell: "single" | "couple",
+  kirchensteuer: boolean,
+  entnahmeModell: "ewigeRente" | "kapitalverzehr",
+  kapitalverzehrJahre: number,
+): ReverseResult {
+  const monthlyGap = Math.max(0, targetMonthlyIncome - statePension);
+  const swrDecimal = swr / 100;
+  const fireNumber = swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+
+  const inputs: FireInputs = {
+    startKapital: startCapital,
+    monatlicheSparrate: 0,
+    dynamikSparrate: dynamicSavings,
+    etfRendite: expectedReturn,
+    inflation,
+    bavJaehrlich: bavAnnual,
+    zielvermoegen: fireNumber,
+    lzkJahre: 3,
+    lzkRendite: 3.5,
+    startYear: new Date().getFullYear(),
+    monatlichesWunschEinkommen: targetMonthlyIncome,
+    gesetzlicheRente: statePension,
+    swr,
+    steuerModell,
+    kirchensteuer,
+    entnahmeModell,
+    kapitalverzehrJahre,
+    monatlichesBrutto: 0,
+  };
+
+  const requiredMonthlySavings = calculateRequiredSparrate(inputs, targetYears);
+
+  // Generate projection with the required savings
+  const projectionInputs = { ...inputs, monatlicheSparrate: requiredMonthlySavings };
+  const yearlyProjection = simulateAccumulation(projectionInputs, 0);
+
+  // Run Monte Carlo on the projected exit balance
+  const exitIdx = Math.min(targetYears, yearlyProjection.length - 1);
+  const exitData = yearlyProjection[exitIdx];
+  const exitBalanceNominal = exitData ? exitData.etfBalanceNominal + exitData.lzkBalanceNominal : 0;
+  const monteCarlo = simulateMonteCarlo(exitBalanceNominal, projectionInputs, targetYears);
+
+  return {
+    requiredMonthlySavings,
+    fireNumber,
+    yearsToFire: targetYears,
+    monteCarlo,
+    yearlyProjection,
+  };
 }
 
 export function formatEuroShort(value: number): string {
