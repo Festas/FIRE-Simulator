@@ -14,6 +14,8 @@ interface Phase {
   yearEnd: number | null;
   calStart: number;
   calEnd: number | null;
+  ageStart: number;
+  ageEnd: number | null;
   color: string;
   bgHex: string;
   bgHexDark: string;
@@ -29,10 +31,11 @@ interface PhasesTimelineProps {
 
 export default function PhasesTimeline({ result, startYear }: PhasesTimelineProps) {
   const { t } = useI18n();
-  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate } = result;
+  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate, fullFireAge, lzkSabbaticalStartAge } = result;
 
   const fireYear = fullFireYear ?? 25;
   const lzkStart = lzkStartYear;
+  const startAge = result.yearlyData[0]?.age ?? 29;
 
   const totalPreLZK = lzkStart - 1;
   const phaseLen = Math.max(1, Math.floor(totalPreLZK / 3));
@@ -52,6 +55,8 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       yearEnd: p1End,
       calStart: startYear + 1,
       calEnd: startYear + p1End,
+      ageStart: startAge + 1,
+      ageEnd: startAge + p1End,
       color: "#0f294d",
       bgHex: "#f8fafc",
       bgHexDark: "#1e293b",
@@ -68,6 +73,8 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       yearEnd: p2End,
       calStart: startYear + p1End + 1,
       calEnd: startYear + p2End,
+      ageStart: startAge + p1End + 1,
+      ageEnd: startAge + p2End,
       color: "#0369a1",
       bgHex: "#f0f9ff",
       bgHexDark: "#0c4a6e20",
@@ -84,6 +91,8 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       yearEnd: p3End,
       calStart: startYear + p2End + 1,
       calEnd: startYear + p3End,
+      ageStart: startAge + p2End + 1,
+      ageEnd: startAge + p3End,
       color: "#7c3aed",
       bgHex: "#f5f3ff",
       bgHexDark: "#4c1d9520",
@@ -100,6 +109,8 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       yearEnd: fireYear,
       calStart: lzkStartCalendarYear,
       calEnd: fullFireCalendarYear,
+      ageStart: lzkSabbaticalStartAge,
+      ageEnd: fullFireAge,
       color: "#d97706",
       bgHex: "#fffbeb",
       bgHexDark: "#78350f20",
@@ -117,6 +128,8 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       yearEnd: null,
       calStart: (fullFireCalendarYear ?? startYear + fireYear) + 1,
       calEnd: null,
+      ageStart: (fullFireAge ?? startAge + fireYear) + 1,
+      ageEnd: null,
       color: "#10b981",
       bgHex: "#ecfdf5",
       bgHexDark: "#06543420",
@@ -173,12 +186,12 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
                 </div>
                 <div className="text-right flex-shrink-0">
                   <div className="text-xs font-semibold" style={{ color: phase.color }}>
-                    {phase.calStart}
-                    {phase.calEnd ? ` – ${phase.calEnd}` : " →"}
+                    {t.kpiAgeLabel(phase.ageStart)}
+                    {phase.ageEnd ? ` – ${t.kpiAgeLabel(phase.ageEnd)}` : " →"}
                   </div>
                   <div className="text-xs text-slate-400 dark:text-slate-500">
-                    {t.tableYear} {phase.yearStart}
-                    {phase.yearEnd ? `–${phase.yearEnd}` : "+"}
+                    {phase.calStart}
+                    {phase.calEnd ? `–${phase.calEnd}` : "+"}
                   </div>
                 </div>
               </div>

@@ -352,6 +352,18 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
           format={fmtPct}
         />
 
+        <SliderField
+          label={t.currentAge}
+          subLabel={t.currentAgeSub}
+          tooltip={t.currentAgeTooltip}
+          value={inputs.currentAge}
+          min={18}
+          max={65}
+          step={1}
+          onChange={(v) => onChange("currentAge", v)}
+          format={(v) => `${v}`}
+        />
+
         {/* ===== SPARPHASE ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
@@ -541,23 +553,11 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             subLabel={t.lzkPhaseSub}
             tooltip={t.lzkPhaseTooltip}
             value={inputs.lzkJahre}
-            min={1}
+            min={0}
             max={7}
             step={1}
             onChange={(v) => onChange("lzkJahre", v)}
             format={fmtYrs}
-          />
-
-          <SliderField
-            label={t.lzkReturn}
-            subLabel={t.lzkReturnSub}
-            tooltip={t.lzkReturnTooltip}
-            value={inputs.lzkRendite}
-            min={0}
-            max={6}
-            step={0.1}
-            onChange={(v) => onChange("lzkRendite", v)}
-            format={fmtPct}
           />
         </div>
 

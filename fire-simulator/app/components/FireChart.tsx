@@ -38,6 +38,9 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     coastFireAmount,
     scenarioOptimistic,
     scenarioPessimistic,
+    coastFireAge,
+    fullFireAge,
+    lzkSabbaticalStartAge,
   } = result;
 
   const displayEnd = Math.min(
@@ -45,6 +48,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     yearlyData.length - 1
   );
   const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint, i: number) => ({
+    age: d.age,
     year: d.calendarYear,
     etf: Math.round(d.etfBalanceReal),
     lzk: Math.round(d.lzkBalanceReal),
@@ -54,22 +58,25 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
   }));
 
   const milestoneLines = [
-    coastFireYear !== null && {
-      year: coastFireCalendarYear,
+    coastFireYear !== null && coastFireAge !== null && {
+      age: coastFireAge,
       label: t.coastFireLabel,
       color: "#10b981",
+      year: coastFireCalendarYear,
     },
     lzkStartYear > 0 && {
-      year: lzkStartCalendarYear,
+      age: lzkSabbaticalStartAge,
       label: t.chartLabelLZK,
       color: "#f59e0b",
+      year: lzkStartCalendarYear,
     },
-    fullFireYear !== null && {
-      year: fullFireCalendarYear,
+    fullFireYear !== null && fullFireAge !== null && {
+      age: fullFireAge,
       label: t.fullFireLabel,
       color: "#6366f1",
+      year: fullFireCalendarYear,
     },
-  ].filter(Boolean) as { year: number; label: string; color: string }[];
+  ].filter(Boolean) as { age: number; label: string; color: string; year: number | null }[];
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
@@ -104,7 +111,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
         {showScenarios ? (
           <LineChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} />
@@ -126,13 +133,13 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
             <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `${t.coastFireLabel} ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
             {milestoneLines.map((m) => (
-              <ReferenceLine key={m.label} x={m.year} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
+              <ReferenceLine key={m.label} x={m.age} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
             ))}
             <Area type="monotone" dataKey="lzk" stackId="portfolio" stroke="#60a5fa" strokeWidth={2} fill="url(#lzkGradient)" name={t.chartLabelLZK} dot={false} activeDot={{ r: 4 }} />
             <Area type="monotone" dataKey="etf" stackId="portfolio" stroke="#10b981" strokeWidth={2.5} fill="url(#etfGradient)" name={t.chartLabelETF} dot={false} activeDot={{ r: 5 }} />
@@ -146,7 +153,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
         {milestoneLines.map((m) => (
           <div key={m.label} className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: m.color }} />
-            <span className="text-slate-700 dark:text-slate-300">{m.label} · {m.year}</span>
+            <span className="text-slate-700 dark:text-slate-300">{m.label} · {t.kpiAgeLabel(m.age)}</span>
           </div>
         ))}
       </div>

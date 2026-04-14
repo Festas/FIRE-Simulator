@@ -48,7 +48,6 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
   const { t, formatCurrency, formatCurrencyShort } = useI18n();
   const {
     coastFireCalendarYear,
-    fullFireCalendarYear,
     fullFireYear,
     passiveIncomeAtExit,
     targetReached,
@@ -61,14 +60,17 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     drawdownDepletionYear,
     derivedFireNumber,
     monteCarlo,
+    coastFireAge,
+    fullFireAge,
+    lzkSabbaticalStartAge,
   } = result;
 
-  const coastLabel = coastFireCalendarYear
-    ? t.kpiYearLabel(coastFireCalendarYear)
+  const coastLabel = coastFireAge
+    ? `${t.kpiAgeLabel(coastFireAge)}`
     : t.kpiOver30Years;
 
-  const fullLabel = targetReached && fullFireCalendarYear
-    ? t.kpiYearLabel(fullFireCalendarYear)
+  const fullLabel = targetReached && fullFireAge
+    ? `${t.kpiAgeLabel(fullFireAge)}`
     : t.kpiSavingsRateIncrease;
 
   const incomeLabel = formatCurrency(passiveIncomeAtExit) + ` ${t.perMonth}`;
@@ -81,6 +83,10 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
       : "—";
 
   const mcSuccessPct = (monteCarlo.successRate * 100).toFixed(0);
+
+  const coastSub = coastFireCalendarYear
+    ? `${coastFireCalendarYear} · ${t.kpiThreshold(formatCurrencyShort(coastFireAmount))}`
+    : t.kpiThreshold(formatCurrencyShort(coastFireAmount));
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mb-6">
@@ -111,7 +117,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         iconLabel={t.kpiCoastFire}
         title={t.kpiCoastFire}
         value={coastLabel}
-        sub={t.kpiThreshold(formatCurrencyShort(coastFireAmount))}
+        sub={coastSub}
         accent={!!coastFireCalendarYear}
       />
       <KPICard
@@ -170,8 +176,8 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         icon="🔒"
         iconLabel={t.kpiLzkStart}
         title={t.kpiLzkStart}
-        value={t.kpiYearLabel(lzkStartCalendarYear)}
-        sub={t.kpiLzkStartSub}
+        value={t.kpiAgeLabel(lzkSabbaticalStartAge)}
+        sub={`${lzkStartCalendarYear} · ${t.kpiLzkStartSub}`}
       />
     </div>
   );

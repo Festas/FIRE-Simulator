@@ -28,7 +28,10 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
 
   const successPct = (mc.fireSuccessRate * 100).toFixed(1);
 
+  // Convert calendar years to ages for X-axis
+  const startAge = result.yearlyData[0]?.age ?? 29;
   const chartData = mc.accumulationYears.map((year, i) => ({
+    age: startAge + i + 1,
     year,
     p90: mc.accumulationPercentiles.p90[i],
     p75: mc.accumulationPercentiles.p75[i],
@@ -38,6 +41,11 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
   }));
 
   const { fireYearPercentiles } = mc;
+
+  // Convert fire year percentiles (year offsets) to ages
+  const p50Age = fireYearPercentiles.p50 !== null ? startAge + fireYearPercentiles.p50 : null;
+  const p10Age = fireYearPercentiles.p10 !== null ? startAge + fireYearPercentiles.p10 : null;
+  const p90Age = fireYearPercentiles.p90 !== null ? startAge + fireYearPercentiles.p90 : null;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
@@ -62,17 +70,17 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
           >
             {t.lifecycleMCSuccess(successPct)}
           </div>
-          {fireYearPercentiles.p50 !== null && (
+          {p50Age !== null && (
             <div className="text-xs text-slate-500 dark:text-slate-400">
               <span className="font-semibold text-slate-700 dark:text-slate-300">
                 {t.lifecycleMCYearsToFire}:
               </span>{" "}
-              {t.lifecycleMCP50Years(String(fireYearPercentiles.p50))}
-              {fireYearPercentiles.p10 !== null && fireYearPercentiles.p90 !== null && (
+              {t.lifecycleMCP50Years(String(p50Age))}
+              {p10Age !== null && p90Age !== null && (
                 <span className="ml-2">
                   {t.lifecycleMCRange(
-                    String(fireYearPercentiles.p10),
-                    String(fireYearPercentiles.p90),
+                    String(p10Age),
+                    String(p90Age),
                   )}
                 </span>
               )}
@@ -99,7 +107,7 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
           <XAxis
-            dataKey="year"
+            dataKey="age"
             tick={{ fontSize: 12, fill: "#94a3b8" }}
             tickLine={false}
             axisLine={false}

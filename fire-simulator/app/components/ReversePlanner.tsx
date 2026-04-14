@@ -140,6 +140,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   // Accumulation chart data with scenario bands
   const chartData = reverseResult.yearlyProjection.map((d, i) => {
     const entry: Record<string, number> = {
+      age: d.age,
       year: d.calendarYear,
       totalReal: Math.round(d.totalReal),
     };
@@ -157,7 +158,9 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   });
 
   // Monte Carlo drawdown chart data
+  const exitAge = inputs.currentAge + targetYears;
   const mcChartData = reverseResult.monteCarlo.years.map((year, i) => ({
+    age: exitAge + i + 1,
     year,
     p90: reverseResult.monteCarlo.percentiles.p90[i],
     p75: reverseResult.monteCarlo.percentiles.p75[i],
@@ -168,6 +171,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
 
   // Drawdown chart data
   const drawdownData = reverseResult.drawdownData.map((d) => ({
+    age: d.age,
     year: d.calendarYear,
     portfolio: Math.round(d.totalReal),
     withdrawal: Math.round(d.annualWithdrawal),
@@ -434,7 +438,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
               <XAxis
-                dataKey="year"
+                dataKey="age"
                 tick={{ fontSize: 11, fill: "#94a3b8" }}
                 tickLine={false}
                 axisLine={false}
@@ -548,7 +552,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
-              <XAxis dataKey="year" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <XAxis dataKey="age" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
               <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
               <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
               <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 2" strokeWidth={1} />
@@ -619,7 +623,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
-            <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+            <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <Area type="monotone" dataKey="p90" stroke="#10b981" strokeWidth={1} strokeDasharray="4 2" fill="url(#revMc90)" name={t.monteCarloP90} dot={false} />

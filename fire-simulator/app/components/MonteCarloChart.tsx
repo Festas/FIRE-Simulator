@@ -22,13 +22,15 @@ interface MonteCarloChartProps {
 
 export default function MonteCarloChart({ result }: MonteCarloChartProps) {
   const { t, formatCurrency } = useI18n();
-  const { monteCarlo, fullFireYear } = result;
+  const { monteCarlo, fullFireYear, fullFireAge } = result;
 
   if (fullFireYear === null) return null;
 
   const successPct = (monteCarlo.successRate * 100).toFixed(1);
+  const exitAge = fullFireAge ?? 0;
 
   const chartData = monteCarlo.years.map((year, i) => ({
+    age: exitAge + i + 1,
     year,
     p90: monteCarlo.percentiles.p90[i],
     p75: monteCarlo.percentiles.p75[i],
@@ -84,7 +86,7 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
           <XAxis
-            dataKey="year"
+            dataKey="age"
             tick={{ fontSize: 12, fill: "#94a3b8" }}
             tickLine={false}
             axisLine={false}

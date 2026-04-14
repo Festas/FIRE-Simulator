@@ -46,6 +46,7 @@ export interface FireInputs {
   lzkJahre: number;
   lzkRendite: number;
   startYear: number;
+  currentAge: number;
 
   // Retirement income
   monatlichesWunschEinkommen: number; // desired monthly income in retirement
@@ -87,6 +88,7 @@ export interface MonteCarloResult {
 export interface YearDataPoint {
   year: number;
   calendarYear: number;
+  age: number;
   etfBalanceNominal: number;
   etfBalanceReal: number;
   lzkBalanceNominal: number;
@@ -137,6 +139,11 @@ export interface FireResult {
   passiveIncomeAtExit: number;
   swRate: number;
   targetReached: boolean;
+
+  // Age-based milestones
+  coastFireAge: number | null;
+  fullFireAge: number | null;
+  lzkSabbaticalStartAge: number;
 
   // Drawdown
   drawdownData: YearDataPoint[];
@@ -246,18 +253,17 @@ function simulateAccumulation(
     inflation,
     bavJaehrlich,
     lzkJahre,
-    lzkRendite,
     zielvermoegen,
     startYear,
+    currentAge,
     lifeEvents,
   } = inputs;
 
   const roi = (etfRendite + returnOffset) / 100;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
-  const lzkRoi = lzkRendite / 100;
 
-  // Pass 1: estimate FIRE year (with offset return) to determine LZK start
+  // Pass 1: estimate FIRE year (with offset return) to determine LZK sabbatical start
   let tempBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
@@ -278,14 +284,15 @@ function simulateAccumulation(
     }
   }
 
+  // LZK sabbatical: the last lzkJahre years before FIRE exit are the sabbatical
+  // During sabbatical, salary continues so ETF contributions continue normally
   const lzkStartYear = Math.max(1, estimatedFireYear - lzkJahre);
 
-  // Pass 2: full simulation with LZK
+  // Pass 2: full simulation — ETF contributions continue during LZK sabbatical
   let etfBal = startKapital;
-  let lzkBal = 0;
   const data: YearDataPoint[] = [];
 
-  data.push(makeYearZero(startKapital, monatlicheSparrate, startYear));
+  data.push(makeYearZero(startKapital, monatlicheSparrate, startYear, currentAge));
 
   for (let y = 1; y <= MAX_YEARS; y++) {
     const isLZKPhase = y >= lzkStartYear;
@@ -293,34 +300,12 @@ function simulateAccumulation(
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
-    let annualETFContrib = 0;
-    let annualLZKContrib = 0;
-    let yearGains = 0;
-    let yearTax = 0;
-
-    if (isLZKPhase) {
-      const prevEtf = etfBal;
-      etfBal *= 1 + roi;
-      const etfGains = etfBal - prevEtf;
-      const etfTax = calculateTax(etfGains, inputs);
-      etfBal -= etfTax;
-
-      lzkBal = (lzkBal + contrib) * (1 + lzkRoi);
-
-      yearGains = etfGains;
-      yearTax = etfTax;
-      annualLZKContrib = contrib;
-    } else {
-      const prevEtf = etfBal;
-      etfBal = (etfBal + contrib) * (1 + roi);
-      const etfGains = etfBal - prevEtf - contrib;
-      const etfTax = calculateTax(etfGains, inputs);
-      etfBal -= etfTax;
-
-      yearGains = etfGains;
-      yearTax = etfTax;
-      annualETFContrib = contrib;
-    }
+    // During LZK sabbatical, ETF contributions continue (salary still flows)
+    const prevEtf = etfBal;
+    etfBal = (etfBal + contrib) * (1 + roi);
+    const etfGains = etfBal - prevEtf - contrib;
+    const etfTax = calculateTax(etfGains, inputs);
+    etfBal -= etfTax;
 
     // Apply life events cash-flow to ETF balance
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
@@ -328,23 +313,23 @@ function simulateAccumulation(
     etfBal = Math.max(0, etfBal);
 
     const etfReal = etfBal / realFactor;
-    const lzkReal = lzkBal / realFactor;
-    const totalReal = etfReal + lzkReal;
+    const totalReal = etfReal;
 
     data.push({
       year: y,
       calendarYear: startYear + y,
+      age: currentAge + y,
       etfBalanceNominal: etfBal,
       etfBalanceReal: etfReal,
-      lzkBalanceNominal: lzkBal,
-      lzkBalanceReal: lzkReal,
+      lzkBalanceNominal: 0,
+      lzkBalanceReal: 0,
       totalReal,
-      annualETFContrib,
-      annualLZKContrib,
+      annualETFContrib: contrib,
+      annualLZKContrib: 0,
       monthlySavings: savings,
       isLZKPhase,
-      taxPaid: yearTax,
-      annualGains: yearGains,
+      taxPaid: etfTax,
+      annualGains: etfGains,
       isDrawdownPhase: false,
       annualWithdrawal: 0,
     });
@@ -374,6 +359,7 @@ function simulateDrawdown(
     entnahmeModell,
     kapitalverzehrJahre,
     startYear,
+    currentAge,
   } = inputs;
 
   // More conservative allocation in drawdown (−1 % return)
@@ -388,11 +374,12 @@ function simulateDrawdown(
 
   for (let y = 1; y <= DRAWDOWN_YEARS; y++) {
     const calYear = startYear + exitYear + y;
+    const age = currentAge + exitYear + y;
     // Inflation factor from simulation start (accumulation + drawdown years)
     const realFactor = Math.pow(1 + inf, exitYear + y);
 
     if (balance <= 0) {
-      data.push(makeEmptyDrawdownPoint(exitYear + y, calYear));
+      data.push(makeEmptyDrawdownPoint(exitYear + y, calYear, age));
       continue;
     }
 
@@ -443,6 +430,7 @@ function simulateDrawdown(
     data.push({
       year: exitYear + y,
       calendarYear: calYear,
+      age,
       etfBalanceNominal: balance,
       etfBalanceReal: balance / realFactor,
       lzkBalanceNominal: 0,
@@ -527,10 +515,12 @@ function makeYearZero(
   startKapital: number,
   monthlySavings: number,
   startYear: number,
+  currentAge: number,
 ): YearDataPoint {
   return {
     year: 0,
     calendarYear: startYear,
+    age: currentAge,
     etfBalanceNominal: startKapital,
     etfBalanceReal: startKapital,
     lzkBalanceNominal: 0,
@@ -550,10 +540,12 @@ function makeYearZero(
 function makeEmptyDrawdownPoint(
   year: number,
   calendarYear: number,
+  age: number,
 ): YearDataPoint {
   return {
     year,
     calendarYear,
+    age,
     etfBalanceNominal: 0,
     etfBalanceReal: 0,
     lzkBalanceNominal: 0,
@@ -844,8 +836,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     bavJaehrlich,
     zielvermoegen,
     lzkJahre,
-    lzkRendite,
     startYear,
+    currentAge,
     monatlichesWunschEinkommen,
     gesetzlicheRente,
     swr,
@@ -856,7 +848,6 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const roi = etfRendite / 100;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
-  const lzkRoi = lzkRendite / 100;
   const swrDecimal = swr / 100;
   const realReturn = (1 + roi) / (1 + inf) - 1;
 
@@ -869,7 +860,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
 
   // -----------------------------------------------------------------------
-  // Pass 1: estimate FIRE year without LZK (with tax + life events)
+  // Pass 1: estimate FIRE year (with tax + life events)
   // -----------------------------------------------------------------------
   let etfBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
@@ -891,18 +882,19 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     }
   }
 
+  // LZK sabbatical starts lzkJahre before FIRE exit
+  // During sabbatical: user is free but salary continues → ETF contributions continue
   const lzkStartYear = Math.max(1, estimatedFireYear - lzkJahre);
 
   // -----------------------------------------------------------------------
-  // Pass 2: full simulation with LZK and tax
+  // Pass 2: full simulation — ETF contributions continue during LZK sabbatical
   // -----------------------------------------------------------------------
   etfBal = startKapital;
-  let lzkBal = 0;
   const yearlyData: YearDataPoint[] = [];
   let totalTaxPaid = 0;
   let totalGains = 0;
 
-  yearlyData.push(makeYearZero(startKapital, monatlicheSparrate, startYear));
+  yearlyData.push(makeYearZero(startKapital, monatlicheSparrate, startYear, currentAge));
 
   let coastFireYear: number | null = null;
   let fullFireYear: number | null = null;
@@ -921,34 +913,15 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
-    let annualETFContrib = 0;
-    let annualLZKContrib = 0;
-    let yearGains = 0;
-    let yearTax = 0;
+    // During LZK sabbatical, ETF contributions continue (salary still flows)
+    const prevEtf = etfBal;
+    etfBal = (etfBal + contrib) * (1 + roi);
+    const etfGains = etfBal - prevEtf - contrib;
+    const etfTax = calculateTax(etfGains, inputs);
+    etfBal -= etfTax;
 
-    if (isLZKPhase) {
-      const prevEtf = etfBal;
-      etfBal *= 1 + roi;
-      const etfGains = etfBal - prevEtf;
-      const etfTax = calculateTax(etfGains, inputs);
-      etfBal -= etfTax;
-
-      lzkBal = (lzkBal + contrib) * (1 + lzkRoi);
-
-      yearGains = etfGains;
-      yearTax = etfTax;
-      annualLZKContrib = contrib;
-    } else {
-      const prevEtf = etfBal;
-      etfBal = (etfBal + contrib) * (1 + roi);
-      const etfGains = etfBal - prevEtf - contrib;
-      const etfTax = calculateTax(etfGains, inputs);
-      etfBal -= etfTax;
-
-      yearGains = etfGains;
-      yearTax = etfTax;
-      annualETFContrib = contrib;
-    }
+    const yearGains = etfGains;
+    const yearTax = etfTax;
 
     totalTaxPaid += yearTax;
     totalGains += yearGains;
@@ -959,19 +932,19 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     etfBal = Math.max(0, etfBal);
 
     const etfReal = etfBal / realFactor;
-    const lzkReal = lzkBal / realFactor;
-    const totalReal = etfReal + lzkReal;
+    const totalReal = etfReal;
 
     yearlyData.push({
       year: y,
       calendarYear: startYear + y,
+      age: currentAge + y,
       etfBalanceNominal: etfBal,
       etfBalanceReal: etfReal,
-      lzkBalanceNominal: lzkBal,
-      lzkBalanceReal: lzkReal,
+      lzkBalanceNominal: 0,
+      lzkBalanceReal: 0,
       totalReal,
-      annualETFContrib,
-      annualLZKContrib,
+      annualETFContrib: contrib,
+      annualLZKContrib: 0,
       monthlySavings: savings,
       isLZKPhase,
       taxPaid: yearTax,
@@ -1014,7 +987,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const exitData = yearlyData[exitIdx];
   const exitBalance = exitData?.totalReal ?? 0;
   const exitBalanceNominal = exitData
-    ? exitData.etfBalanceNominal + exitData.lzkBalanceNominal
+    ? exitData.etfBalanceNominal
     : 0;
   const passiveIncomeAtExit = (exitBalance * swrDecimal) / 12;
 
@@ -1068,6 +1041,13 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     passiveIncomeAtExit,
     swRate: swr,
     targetReached: fullFireYear !== null,
+
+    // Age-based milestones
+    coastFireAge:
+      coastFireYear !== null ? currentAge + coastFireYear : null,
+    fullFireAge:
+      fullFireYear !== null ? currentAge + fullFireYear : null,
+    lzkSabbaticalStartAge: currentAge + lzkStartYear,
 
     drawdownData: drawdownResult.data,
     drawdownSurvives: drawdownResult.survives,
@@ -1188,6 +1168,7 @@ export function calculateReverse(
     lzkJahre: 3,
     lzkRendite: 3.5,
     startYear: new Date().getFullYear(),
+    currentAge: 30,
     monatlichesWunschEinkommen: targetMonthlyIncome,
     gesetzlicheRente: statePension,
     swr,
@@ -1213,7 +1194,7 @@ export function calculateReverse(
   // Exit balance at target year
   const exitIdx = Math.min(targetYears, yearlyProjection.length - 1);
   const exitData = yearlyProjection[exitIdx];
-  const exitBalanceNominal = exitData ? exitData.etfBalanceNominal + exitData.lzkBalanceNominal : 0;
+  const exitBalanceNominal = exitData ? exitData.etfBalanceNominal : 0;
 
   // Monte Carlo drawdown simulation (full percentile data)
   const monteCarlo = simulateMonteCarlo(exitBalanceNominal, projectionInputs, targetYears);

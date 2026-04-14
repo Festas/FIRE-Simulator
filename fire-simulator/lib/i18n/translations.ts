@@ -96,6 +96,7 @@ export interface Translations {
   kpiTargetReached: (years: number, target: string) => string;
   kpiTargetNotReached: string;
   kpiYearLabel: (year: number) => string;
+  kpiAgeLabel: (age: number) => string;
   kpiOver30Years: string;
   kpiThreshold: (amount: string) => string;
   kpiGapPerMonth: (amount: string) => string;
@@ -139,6 +140,7 @@ export interface Translations {
   tableTitle: string;
   tableSubtitle: string;
   tableYear: string;
+  tableAge: string;
   tableEtf: string;
   tableLzk: string;
   tableTotal: string;
@@ -326,7 +328,7 @@ export interface Translations {
   lifecycleMCSubtitle: string;
   lifecycleMCSuccess: (rate: string) => string;
   lifecycleMCYearsToFire: string;
-  lifecycleMCP50Years: (years: string) => string;
+  lifecycleMCP50Years: (age: string) => string;
   lifecycleMCRange: (p10: string, p90: string) => string;
 }
 
@@ -344,7 +346,7 @@ export const de: Translations = {
   returnMarket: "📈 Rendite & Markt",
   taxes: "🏛️ Steuern",
   withdrawalStrategy: "📤 Entnahme-Strategie",
-  lzkSection: "🔒 Langzeitkonto (LZK)",
+  lzkSection: "🔒 Langzeitkonto (LZK / Sabbatical)",
   manualTarget: "Manuelles Zielvermögen",
 
   desiredIncome: "Wunsch-Einkommen",
@@ -390,12 +392,12 @@ export const de: Translations = {
   withdrawalDuration: "Entnahme-Dauer",
   withdrawalDurationSub: "Kapital in X Jahren aufbrauchen",
   withdrawalDurationTooltip: "Über wie viele Jahre soll das Kapital verteilt werden?",
-  lzkPhase: "LZK-Phase (Jahre)",
-  lzkPhaseSub: "Endspurt-Dauer vor dem FIRE-Exit",
-  lzkPhaseTooltip: "In den letzten Jahren vor dem Exit fließen Ihre Beiträge in ein risikoarmes Langzeitkonto.",
+  lzkPhase: "Sabbatical (Jahre)",
+  lzkPhaseSub: "Freistellung vor dem FIRE-Exit",
+  lzkPhaseTooltip: "Langzeitkonto auffüllen und vor dem endgültigen Ausstieg ein Sabbatical nehmen. Gehalt fließt weiter, ETF-Beiträge laufen.",
   lzkReturn: "LZK-Rendite",
-  lzkReturnSub: "Zinssatz des Langzeitkontos",
-  lzkReturnTooltip: "Rendite des LZK (z.B. Festgeld, Tagesgeld). Typisch: 2-4% p.a.",
+  lzkReturnSub: "Wird nicht mehr verwendet",
+  lzkReturnTooltip: "Im Sabbatical-Modell gibt es kein separates Finanzkonto mehr.",
   targetWealth: "Zielvermögen (Override)",
   targetWealthSub: "Überschreibt die automatische FIRE-Zahl",
   targetWealthTooltip: "Standardmäßig wird Ihr Zielvermögen aus dem Wunsch-Einkommen, der Rente und der SWR berechnet. Hier können Sie es manuell überschreiben.",
@@ -413,10 +415,11 @@ export const de: Translations = {
   kpiTotalTaxes: "Steuern gesamt",
   kpiRequiredSavings: "Benötigte Sparrate",
   kpiSavingsRate: "Sparquote",
-  kpiLzkStart: "LZK Start",
+  kpiLzkStart: "Sabbatical Start",
   kpiTargetReached: (years, target) => `Zielvermögen ${target} in ${years} Jahren`,
   kpiTargetNotReached: "Sparrate oder Rendite erhöhen",
   kpiYearLabel: (year) => `Jahr ${year}`,
+  kpiAgeLabel: (age) => `Alter ${age}`,
   kpiOver30Years: "> 50 Jahre",
   kpiThreshold: (amount) => `Schwelle: ${amount} (real)`,
   kpiGapPerMonth: (amount) => `${amount} Lücke/Monat`,
@@ -427,7 +430,7 @@ export const de: Translations = {
   kpiEffectiveTaxRate: (rate) => `Eff. Steuersatz: ${rate} %`,
   kpiCurrentSavings: (amount) => `Aktuell: ${amount} / Monat`,
   kpiSavingsRateSub: (savings, net) => `${savings} von ${net} netto`,
-  kpiLzkStartSub: "ETF-Beiträge enden · Konto läuft weiter",
+  kpiLzkStartSub: "Sabbatical beginnt · Gehalt läuft weiter",
   kpiSavingsRateIncrease: "Ziel > 50 Jahre",
 
   chartTitle: "Portfolio-Entwicklung",
@@ -456,6 +459,7 @@ export const de: Translations = {
   tableTitle: "Jahr-für-Jahr Übersicht",
   tableSubtitle: "Detaillierte Tabelle aller Spar- und Entnahmejahre",
   tableYear: "Jahr",
+  tableAge: "Alter",
   tableEtf: "ETF (real)",
   tableLzk: "LZK (real)",
   tableTotal: "Gesamt (real)",
@@ -465,7 +469,7 @@ export const de: Translations = {
   tableWithdrawal: "Entnahme",
   tablePhase: "Phase",
   phaseWithdrawal: "Entnahme",
-  phaseLzk: "LZK",
+  phaseLzk: "Sabbatical",
   phaseSaving: "Sparen",
 
   phasesTitle: "Die 5 Phasen Ihres FIRE-Plans",
@@ -479,12 +483,12 @@ export const de: Translations = {
   phase3Title: "Souveränität & Teilzeit",
   phase3Subtitle: "Freiheit gewinnen",
   phase3Desc: "Teilzeitmodelle prüfen, passives Einkommen ausbauen, Familie und Finanzen ausbalancieren. Weniger Stress, mehr Lebensqualität.",
-  phase4Title: "Langzeitkonto (LZK) Endspurt",
-  phase4Subtitle: "Risiko reduzieren",
-  phase4Desc: "ETF-Beiträge stoppen. Monatliche Sparrate fließt in ein risikofreies Langzeitkonto (Festgeld/Tagesgeld). ETF wächst durch Zinseszins weiter.",
+  phase4Title: "Sabbatical (LZK)",
+  phase4Subtitle: "Frei bei vollem Gehalt",
+  phase4Desc: "Langzeitkonto wird eingelöst. Sie sind freigestellt, erhalten aber weiter Ihr volles Gehalt. ETF-Beiträge und Zinseszins laufen weiter.",
   phase5Title: "Exit & Entnahme",
   phase5Subtitle: "FIRE erreicht",
-  phase5Desc: (swr) => `Finanzieller Ruhestand. Entnahme nach der Safe Withdrawal Rate (${swr} %). ETF und LZK decken alle Lebenshaltungskosten. Arbeit optional.`,
+  phase5Desc: (swr) => `Finanzieller Ruhestand. Entnahme nach der Safe Withdrawal Rate (${swr} %). ETF deckt alle Lebenshaltungskosten. Arbeit optional.`,
   phaseCritical: "Kritisch",
 
   warnReturnBelowInflation: (ret, inf) => `⚠️ Ihre erwartete Rendite (${ret}%) liegt unter oder gleich der Inflation (${inf}%). Ihr Vermögen verliert real an Kaufkraft.`,
@@ -500,7 +504,7 @@ export const de: Translations = {
   language: "Sprache",
 
   chartLabelETF: "ETF",
-  chartLabelLZK: "LZK",
+  chartLabelLZK: "Sabbatical",
   chartLabelTotal: "Gesamt",
   chartLabelOptimistic: "Optimistisch (+2%)",
   chartLabelPessimistic: "Pessimistisch (−2%)",
@@ -623,9 +627,9 @@ export const de: Translations = {
   lifecycleMCTitle: "Lebenszyklus Monte Carlo",
   lifecycleMCSubtitle: "500 stochastische Simulationen der Ansparphase",
   lifecycleMCSuccess: (rate: string) => `${rate} % erreichen FIRE`,
-  lifecycleMCYearsToFire: "Jahre bis FIRE",
-  lifecycleMCP50Years: (years: string) => `Median: ${years} Jahre`,
-  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90} Jahre`,
+  lifecycleMCYearsToFire: "FIRE-Alter",
+  lifecycleMCP50Years: (age: string) => `Median: Alter ${age}`,
+  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
 };
 
 export const en: Translations = {
@@ -642,7 +646,7 @@ export const en: Translations = {
   returnMarket: "📈 Returns & Market",
   taxes: "🏛️ Taxes",
   withdrawalStrategy: "📤 Withdrawal Strategy",
-  lzkSection: "🔒 Safe Account (LZK)",
+  lzkSection: "🔒 Sabbatical (LZK)",
   manualTarget: "Manual Target Wealth",
 
   desiredIncome: "Desired Income",
@@ -688,12 +692,12 @@ export const en: Translations = {
   withdrawalDuration: "Withdrawal Duration",
   withdrawalDurationSub: "Spend down capital over X years",
   withdrawalDurationTooltip: "Over how many years should the capital be distributed?",
-  lzkPhase: "LZK Phase (Years)",
-  lzkPhaseSub: "Final sprint before FIRE exit",
-  lzkPhaseTooltip: "In the last years before exit, your contributions flow into a low-risk safe account.",
+  lzkPhase: "Sabbatical (Years)",
+  lzkPhaseSub: "Paid leave before FIRE exit",
+  lzkPhaseTooltip: "Fill up your Langzeitkonto and take a long sabbatical before your final exit. Salary continues to flow, ETF contributions keep going.",
   lzkReturn: "LZK Return",
-  lzkReturnSub: "Interest rate of safe account",
-  lzkReturnTooltip: "Return on the LZK (e.g., fixed deposit). Typical: 2-4% p.a.",
+  lzkReturnSub: "No longer used",
+  lzkReturnTooltip: "In the sabbatical model, there is no separate financial account.",
   targetWealth: "Target Wealth (Override)",
   targetWealthSub: "Overrides the automatic FIRE number",
   targetWealthTooltip: "By default, your target wealth is calculated from desired income, pension, and SWR. Here you can override it manually.",
@@ -711,10 +715,11 @@ export const en: Translations = {
   kpiTotalTaxes: "Total Taxes",
   kpiRequiredSavings: "Required Savings",
   kpiSavingsRate: "Savings Rate",
-  kpiLzkStart: "LZK Start",
+  kpiLzkStart: "Sabbatical Start",
   kpiTargetReached: (years, target) => `Target ${target} in ${years} years`,
   kpiTargetNotReached: "Increase savings rate or return",
   kpiYearLabel: (year) => `Year ${year}`,
+  kpiAgeLabel: (age) => `Age ${age}`,
   kpiOver30Years: "> 50 years",
   kpiThreshold: (amount) => `Threshold: ${amount} (real)`,
   kpiGapPerMonth: (amount) => `${amount} gap/month`,
@@ -725,7 +730,7 @@ export const en: Translations = {
   kpiEffectiveTaxRate: (rate) => `Eff. tax rate: ${rate}%`,
   kpiCurrentSavings: (amount) => `Current: ${amount} / month`,
   kpiSavingsRateSub: (savings, net) => `${savings} of ${net} net`,
-  kpiLzkStartSub: "ETF contributions end · Account continues",
+  kpiLzkStartSub: "Sabbatical begins · Salary continues",
   kpiSavingsRateIncrease: "Target > 50 years",
 
   chartTitle: "Portfolio Growth",
@@ -754,6 +759,7 @@ export const en: Translations = {
   tableTitle: "Year-by-Year Overview",
   tableSubtitle: "Detailed table of all savings and withdrawal years",
   tableYear: "Year",
+  tableAge: "Age",
   tableEtf: "ETF (real)",
   tableLzk: "LZK (real)",
   tableTotal: "Total (real)",
@@ -763,7 +769,7 @@ export const en: Translations = {
   tableWithdrawal: "Withdrawal",
   tablePhase: "Phase",
   phaseWithdrawal: "Withdrawal",
-  phaseLzk: "LZK",
+  phaseLzk: "Sabbatical",
   phaseSaving: "Saving",
 
   phasesTitle: "The 5 Phases of Your FIRE Plan",
@@ -777,12 +783,12 @@ export const en: Translations = {
   phase3Title: "Sovereignty & Part-Time",
   phase3Subtitle: "Gain freedom",
   phase3Desc: "Evaluate part-time models, expand passive income, balance family and finances. Less stress, more quality of life.",
-  phase4Title: "Safe Account (LZK) Final Sprint",
-  phase4Subtitle: "Reduce risk",
-  phase4Desc: "Stop ETF contributions. Monthly savings flow into a risk-free safe account (fixed/call deposit). ETF continues to grow through compound interest.",
+  phase4Title: "Sabbatical (LZK)",
+  phase4Subtitle: "Free with full salary",
+  phase4Desc: "Langzeitkonto is redeemed. You are on leave but still receive your full salary. ETF contributions and compound interest continue.",
   phase5Title: "Exit & Withdrawal",
   phase5Subtitle: "FIRE achieved",
-  phase5Desc: (swr) => `Financial retirement. Withdrawal at Safe Withdrawal Rate (${swr}%). ETF and LZK cover all living expenses. Work is optional.`,
+  phase5Desc: (swr) => `Financial retirement. Withdrawal at Safe Withdrawal Rate (${swr}%). ETF covers all living expenses. Work is optional.`,
   phaseCritical: "Critical",
 
   warnReturnBelowInflation: (ret, inf) => `⚠️ Your expected return (${ret}%) is at or below inflation (${inf}%). Your wealth loses purchasing power in real terms.`,
@@ -798,7 +804,7 @@ export const en: Translations = {
   language: "Language",
 
   chartLabelETF: "ETF",
-  chartLabelLZK: "LZK",
+  chartLabelLZK: "Sabbatical",
   chartLabelTotal: "Total",
   chartLabelOptimistic: "Optimistic (+2%)",
   chartLabelPessimistic: "Pessimistic (−2%)",
@@ -921,9 +927,9 @@ export const en: Translations = {
   lifecycleMCTitle: "Lifecycle Monte Carlo",
   lifecycleMCSubtitle: "500 stochastic simulations of the accumulation phase",
   lifecycleMCSuccess: (rate: string) => `${rate}% reach FIRE`,
-  lifecycleMCYearsToFire: "Years to FIRE",
-  lifecycleMCP50Years: (years: string) => `Median: ${years} years`,
-  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90} years`,
+  lifecycleMCYearsToFire: "FIRE Age",
+  lifecycleMCP50Years: (age: string) => `Median: Age ${age}`,
+  lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
 };
 
 const translations: Record<Locale, Translations> = { de, en };
