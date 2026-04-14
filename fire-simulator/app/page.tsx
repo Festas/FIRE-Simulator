@@ -17,6 +17,7 @@ import ErrorBoundary from "@/app/components/ErrorBoundary";
 import ReversePlanner from "@/app/components/ReversePlanner";
 import LifeEventsEditor from "@/app/components/LifeEventsEditor";
 import ScenarioManager from "@/app/components/ScenarioManager";
+import ExamplePlansDropdown from "@/app/components/ExamplePlansDropdown";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 50_000,
@@ -364,8 +365,11 @@ function HomeContent() {
 
         {/* Dashboard content */}
         <div className="px-6 py-6 max-w-7xl mx-auto">
-          {/* Scenario Manager */}
+          {/* Scenario Manager & Example Plans */}
           <ScenarioManager currentInputs={inputs} onLoad={handleScenarioLoad} />
+          <div className="mb-6">
+            <ExamplePlansDropdown onLoad={handleScenarioLoad} />
+          </div>
 
           {/* Tab navigation */}
           <div className="flex gap-2 mb-6" role="tablist">

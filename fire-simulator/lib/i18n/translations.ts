@@ -330,6 +330,30 @@ export interface Translations {
   lifecycleMCYearsToFire: string;
   lifecycleMCP50Years: (age: string) => string;
   lifecycleMCRange: (p10: string, p90: string) => string;
+
+  // Example Plans
+  examplePlansSection: string;
+  examplePlansSelect: string;
+  examplePlansDescription: string;
+  examplePlanStudentStarter: string;
+  examplePlanStudentStarterDesc: string;
+  examplePlanBlueCollar: string;
+  examplePlanBlueCollarDesc: string;
+  examplePlanMedianEarner: string;
+  examplePlanMedianEarnerDesc: string;
+  examplePlanDualIncome: string;
+  examplePlanDualIncomeDesc: string;
+  examplePlanHighEarner: string;
+  examplePlanHighEarnerDesc: string;
+  examplePlanLateStarter: string;
+  examplePlanLateStarterDesc: string;
+  examplePlanAggressiveSaver: string;
+  examplePlanAggressiveSaverDesc: string;
+
+  // No-investment comparison
+  noInvestmentLabel: string;
+  noInvestmentTooltip: string;
+  chartLabelNoInvestment: string;
 }
 
 export const de: Translations = {
@@ -630,6 +654,30 @@ export const de: Translations = {
   lifecycleMCYearsToFire: "FIRE-Alter",
   lifecycleMCP50Years: (age: string) => `Median: Alter ${age}`,
   lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
+
+  // Example Plans
+  examplePlansSection: "Beispiel-FIRE-Pläne",
+  examplePlansSelect: "Beispielplan laden…",
+  examplePlansDescription: "Vordefinierte, realistische FIRE-Pläne für verschiedene Einkommensgruppen",
+  examplePlanStudentStarter: "🎓 Student / Berufseinsteiger (1.800 € netto)",
+  examplePlanStudentStarterDesc: "22 Jahre, 300 €/Monat sparen — selbst kleine Beträge wirken über die Zeit",
+  examplePlanBlueCollar: "🔧 Facharbeiter (2.200 € netto)",
+  examplePlanBlueCollarDesc: "25 Jahre, 400 €/Monat — solides Fundament durch frühen Start",
+  examplePlanMedianEarner: "💼 Durchschnittsverdiener (3.000 € netto)",
+  examplePlanMedianEarnerDesc: "30 Jahre, 800 €/Monat — der klassische FIRE-Weg",
+  examplePlanDualIncome: "👫 Doppelverdiener (5.500 € netto zusammen)",
+  examplePlanDualIncomeDesc: "32 Jahre, Paar-Strategie mit 1.800 €/Monat",
+  examplePlanHighEarner: "🚀 Gutverdiener (6.500 € netto)",
+  examplePlanHighEarnerDesc: "28 Jahre, aggressive 3.000 €/Monat — FIRE in unter 15 Jahren",
+  examplePlanLateStarter: "⏰ Spätstarter (3.500 € netto)",
+  examplePlanLateStarterDesc: "40 Jahre, 1.200 €/Monat — es ist nie zu spät!",
+  examplePlanAggressiveSaver: "🔥 Extrem-Sparer (4.000 € netto)",
+  examplePlanAggressiveSaverDesc: "25 Jahre, 2.500 €/Monat (62 % Sparquote) — FIRE in ~10 Jahren",
+
+  // No-investment comparison
+  noInvestmentLabel: "Ohne Investment vergleichen",
+  noInvestmentTooltip: "Zeigt was passiert wäre, wenn das gleiche Geld nur gespart, aber nie investiert worden wäre (nur Inflation-Erosion)",
+  chartLabelNoInvestment: "Ohne Investment (nur Sparen)",
 };
 
 export const en: Translations = {
@@ -930,6 +978,30 @@ export const en: Translations = {
   lifecycleMCYearsToFire: "FIRE Age",
   lifecycleMCP50Years: (age: string) => `Median: Age ${age}`,
   lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
+
+  // Example Plans
+  examplePlansSection: "Example FIRE Plans",
+  examplePlansSelect: "Load example plan…",
+  examplePlansDescription: "Pre-built, realistic FIRE plans for every income group",
+  examplePlanStudentStarter: "🎓 Student / Career Starter (€1,800 net)",
+  examplePlanStudentStarterDesc: "Age 22, saving €300/mo — even small amounts compound massively over time",
+  examplePlanBlueCollar: "🔧 Blue-Collar Worker (€2,200 net)",
+  examplePlanBlueCollarDesc: "Age 25, €400/mo — a solid foundation through an early start",
+  examplePlanMedianEarner: "💼 Median Earner (€3,000 net)",
+  examplePlanMedianEarnerDesc: "Age 30, €800/mo — the classic FIRE path",
+  examplePlanDualIncome: "👫 Dual Income Couple (€5,500 net combined)",
+  examplePlanDualIncomeDesc: "Age 32, couple strategy saving €1,800/mo together",
+  examplePlanHighEarner: "🚀 High Earner (€6,500 net)",
+  examplePlanHighEarnerDesc: "Age 28, aggressive €3,000/mo — FIRE in under 15 years",
+  examplePlanLateStarter: "⏰ Late Starter (€3,500 net)",
+  examplePlanLateStarterDesc: "Age 40, €1,200/mo — it's never too late!",
+  examplePlanAggressiveSaver: "🔥 Extreme Saver (€4,000 net)",
+  examplePlanAggressiveSaverDesc: "Age 25, €2,500/mo (62% savings rate) — FIRE in ~10 years",
+
+  // No-investment comparison
+  noInvestmentLabel: "Compare without investing",
+  noInvestmentTooltip: "Shows what would have happened if the same money was saved but never invested (inflation erosion only)",
+  chartLabelNoInvestment: "No Investment (savings only)",
 };
 
 const translations: Record<Locale, Translations> = { de, en };

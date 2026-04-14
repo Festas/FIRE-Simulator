@@ -175,6 +175,9 @@ export interface FireResult {
 
   // Full lifecycle Monte Carlo
   lifecycleMonteCarlo: LifecycleMonteCarloResult;
+
+  // No-investment comparison (savings only, inflation-eroded)
+  noInvestmentData: YearDataPoint[];
 }
 
 // ---------------------------------------------------------------------------
@@ -330,6 +333,63 @@ function simulateAccumulation(
       isLZKPhase,
       taxPaid: etfTax,
       annualGains: etfGains,
+      isDrawdownPhase: false,
+      annualWithdrawal: 0,
+    });
+  }
+
+  return data;
+}
+
+// ---------------------------------------------------------------------------
+// No-investment comparison (savings only, eroded by inflation)
+// Shows what would happen if you saved the same amounts but never invested
+// ---------------------------------------------------------------------------
+
+function simulateNoInvestment(inputs: FireInputs): YearDataPoint[] {
+  const {
+    startKapital,
+    monatlicheSparrate,
+    dynamikSparrate,
+    inflation,
+    bavJaehrlich,
+    startYear,
+    currentAge,
+  } = inputs;
+
+  const inf = inflation / 100;
+  const dyn = dynamikSparrate / 100;
+
+  let nominalBalance = startKapital;
+  const data: YearDataPoint[] = [];
+
+  data.push(makeYearZero(startKapital, monatlicheSparrate, startYear, currentAge));
+
+  for (let y = 1; y <= MAX_YEARS; y++) {
+    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const contrib = savings * 12 + bavJaehrlich;
+    const realFactor = Math.pow(1 + inf, y);
+
+    // No return — just add contributions
+    nominalBalance += contrib;
+
+    const realValue = nominalBalance / realFactor;
+
+    data.push({
+      year: y,
+      calendarYear: startYear + y,
+      age: currentAge + y,
+      etfBalanceNominal: nominalBalance,
+      etfBalanceReal: realValue,
+      lzkBalanceNominal: 0,
+      lzkBalanceReal: 0,
+      totalReal: realValue,
+      annualETFContrib: contrib,
+      annualLZKContrib: 0,
+      monthlySavings: savings,
+      isLZKPhase: false,
+      taxPaid: 0,
+      annualGains: 0,
       isDrawdownPhase: false,
       annualWithdrawal: 0,
     });
@@ -1026,6 +1086,11 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const scenarioPessimistic = simulateAccumulation(inputs, -2);
 
   // -----------------------------------------------------------------------
+  // No-investment comparison
+  // -----------------------------------------------------------------------
+  const noInvestmentData = simulateNoInvestment(inputs);
+
+  // -----------------------------------------------------------------------
   // Return
   // -----------------------------------------------------------------------
   return {
@@ -1065,6 +1130,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     derivedFireNumber,
     monteCarlo,
     lifecycleMonteCarlo,
+    noInvestmentData,
   };
 }
 
