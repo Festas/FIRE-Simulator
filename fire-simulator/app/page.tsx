@@ -13,6 +13,7 @@ import DetailTable from "@/app/components/DetailTable";
 import PhasesTimeline from "@/app/components/PhasesTimeline";
 import Warnings from "@/app/components/Warnings";
 import ErrorBoundary from "@/app/components/ErrorBoundary";
+import ReversePlanner from "@/app/components/ReversePlanner";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 50_000,
@@ -139,6 +140,7 @@ function HomeContent() {
   const [inputs, setInputs] = useState<FireInputs>(getInitialInputs);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareTooltip, setShareTooltip] = useState(false);
+  const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale } = useI18n();
 
@@ -203,7 +205,7 @@ function HomeContent() {
     a.download = `fire-simulation-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [result, t, locale]);
+  }, [result, t]);
 
   const handleShareLink = useCallback(() => {
     const url = inputsToURL(inputs);
@@ -212,6 +214,13 @@ function HomeContent() {
       setTimeout(() => setShareTooltip(false), 2000);
     });
   }, [inputs]);
+
+  const handleReset = useCallback(() => {
+    if (window.confirm(t.resetConfirm)) {
+      setInputs(DEFAULT_INPUTS);
+      saveInputs(DEFAULT_INPUTS);
+    }
+  }, [t]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
@@ -233,7 +242,7 @@ function HomeContent() {
           "overflow-y-auto sidebar-scroll",
         ].join(" ")}
       >
-        <Sidebar inputs={inputs} onChange={handleChange} />
+        <Sidebar inputs={inputs} onChange={handleChange} onReset={handleReset} />
       </aside>
 
       {/* Main area */}
@@ -322,14 +331,44 @@ function HomeContent() {
 
         {/* Dashboard content */}
         <div className="px-6 py-6 max-w-7xl mx-auto">
+          {/* Tab navigation */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setActiveTab("forward")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "forward"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+              }`}
+            >
+              {t.forwardSimTab}
+            </button>
+            <button
+              onClick={() => setActiveTab("reverse")}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === "reverse"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+              }`}
+            >
+              {t.reversePlannerTab}
+            </button>
+          </div>
+
           <ErrorBoundary>
-            <Warnings inputs={inputs} />
-            <KPICards result={result} inputs={inputs} />
-            <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
-            <MonteCarloChart result={result} />
-            <DrawdownChart result={result} inputs={inputs} />
-            <DetailTable result={result} />
-            <PhasesTimeline result={result} startYear={inputs.startYear} />
+            {activeTab === "forward" ? (
+              <>
+                <Warnings inputs={inputs} />
+                <KPICards result={result} inputs={inputs} />
+                <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
+                <MonteCarloChart result={result} />
+                <DrawdownChart result={result} inputs={inputs} />
+                <DetailTable result={result} />
+                <PhasesTimeline result={result} startYear={inputs.startYear} />
+              </>
+            ) : (
+              <ReversePlanner inputs={inputs} />
+            )}
           </ErrorBoundary>
 
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-6 pb-6">

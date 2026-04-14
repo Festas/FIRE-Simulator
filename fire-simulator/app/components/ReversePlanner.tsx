@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { calculateReverse, FireInputs, ReverseResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
+import { SimpleTooltipContent } from "@/app/components/ChartTooltip";
 
 interface ReversePlannerProps {
   inputs: FireInputs;
@@ -78,7 +79,7 @@ function SliderField({
 }
 
 export default function ReversePlanner({ inputs }: ReversePlannerProps) {
-  const { t, formatCurrency, formatCurrencyShort, formatPercent } = useI18n();
+  const { t, formatCurrency, formatCurrencyShort } = useI18n();
 
   const [targetIncome, setTargetIncome] = useState(inputs.monatlichesWunschEinkommen);
   const [targetYears, setTargetYears] = useState(15);
@@ -126,24 +127,6 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
     year: d.calendarYear,
     totalReal: Math.round(d.totalReal),
   }));
-
-  function ChartTooltip({
-    active,
-    payload,
-    label,
-  }: {
-    active?: boolean;
-    payload?: Array<{ value: number }>;
-    label?: string | number;
-  }) {
-    if (!active || !payload || !payload.length) return null;
-    return (
-      <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-3 text-sm min-w-[160px]">
-        <p className="font-semibold mb-1 text-slate-300">{label}</p>
-        <p className="font-semibold">{formatCurrency(payload[0].value)}</p>
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
@@ -280,7 +263,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
               axisLine={false}
               width={50}
             />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<SimpleTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine
               y={reverseResult.fireNumber}
               stroke="#0f294d"

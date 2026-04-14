@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { FireResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
+import { ChartTooltipContent } from "@/app/components/ChartTooltip";
 
 interface MonteCarloChartProps {
   result: FireResult;
@@ -40,22 +41,6 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
     p25: monteCarlo.percentiles.p25[i],
     p10: monteCarlo.percentiles.p10[i],
   }));
-
-  // Custom tooltip using i18n-aware formatter
-  function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string | number }) {
-    if (!active || !payload || !payload.length) return null;
-    return (
-      <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
-        <p className="font-semibold mb-2 text-slate-300">{label}</p>
-        {payload.map((p) => (
-          <div key={p.name} className="flex justify-between gap-4">
-            <span style={{ color: p.color }} className="font-medium">{p.name}</span>
-            <span className="font-semibold">{formatCurrency(p.value)}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
@@ -116,7 +101,7 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
             axisLine={false}
             width={55}
           />
-          <Tooltip content={<ChartTooltip />} />
+          <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
           <Area
             type="monotone"
             dataKey="p90"

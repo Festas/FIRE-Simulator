@@ -323,7 +323,7 @@ export const de: Translations = {
   kpiTargetReached: (years, target) => `Zielvermögen ${target} in ${years} Jahren`,
   kpiTargetNotReached: "Sparrate oder Rendite erhöhen",
   kpiYearLabel: (year) => `Jahr ${year}`,
-  kpiOver30Years: "> 30 Jahre",
+  kpiOver30Years: "> 50 Jahre",
   kpiThreshold: (amount) => `Schwelle: ${amount} (real)`,
   kpiGapPerMonth: (amount) => `${amount} Lücke/Monat`,
   kpiPortfolioSurvives: "✅ Portfolio überlebt",
@@ -334,7 +334,7 @@ export const de: Translations = {
   kpiCurrentSavings: (amount) => `Aktuell: ${amount} / Monat`,
   kpiSavingsRateSub: (savings, gross) => `${savings} von ${gross} brutto`,
   kpiLzkStartSub: "ETF-Beiträge enden · Konto läuft weiter",
-  kpiSavingsRateIncrease: "Ziel > 30 Jahre",
+  kpiSavingsRateIncrease: "Ziel > 50 Jahre",
 
   chartTitle: "Portfolio-Entwicklung",
   chartSubtitle: "Kaufkraftbereinigt in heutigen € (real, nach Steuern)",
@@ -347,7 +347,7 @@ export const de: Translations = {
   drawdownSpendSub: (years) => `Kapitalverzehr über ${years} Jahre`,
   drawdownSurvives40: "✅ Portfolio überlebt 40 Jahre",
   drawdownDepleted: (year) => `⚠️ Aufgebraucht ${year}`,
-  drawdownNoTarget: "Das FIRE-Ziel wurde innerhalb von 30 Jahren nicht erreicht. Passen Sie Ihre Parameter an.",
+  drawdownNoTarget: "Das FIRE-Ziel wurde innerhalb von 50 Jahren nicht erreicht. Passen Sie Ihre Parameter an.",
 
   monteCarloTitle: "Monte-Carlo-Simulation",
   monteCarloSubtitle: "1.000 stochastische Szenarien der Entnahmephase",
@@ -534,7 +534,7 @@ export const en: Translations = {
   kpiTargetReached: (years, target) => `Target ${target} in ${years} years`,
   kpiTargetNotReached: "Increase savings rate or return",
   kpiYearLabel: (year) => `Year ${year}`,
-  kpiOver30Years: "> 30 years",
+  kpiOver30Years: "> 50 years",
   kpiThreshold: (amount) => `Threshold: ${amount} (real)`,
   kpiGapPerMonth: (amount) => `${amount} gap/month`,
   kpiPortfolioSurvives: "✅ Portfolio survives",
@@ -545,7 +545,7 @@ export const en: Translations = {
   kpiCurrentSavings: (amount) => `Current: ${amount} / month`,
   kpiSavingsRateSub: (savings, gross) => `${savings} of ${gross} gross`,
   kpiLzkStartSub: "ETF contributions end · Account continues",
-  kpiSavingsRateIncrease: "Target > 30 years",
+  kpiSavingsRateIncrease: "Target > 50 years",
 
   chartTitle: "Portfolio Growth",
   chartSubtitle: "Inflation-adjusted in today's € (real, after taxes)",
@@ -558,7 +558,7 @@ export const en: Translations = {
   drawdownSpendSub: (years) => `Capital spend-down over ${years} years`,
   drawdownSurvives40: "✅ Portfolio survives 40 years",
   drawdownDepleted: (year) => `⚠️ Depleted ${year}`,
-  drawdownNoTarget: "The FIRE target was not reached within 30 years. Please adjust your parameters.",
+  drawdownNoTarget: "The FIRE target was not reached within 50 years. Please adjust your parameters.",
 
   monteCarloTitle: "Monte Carlo Simulation",
   monteCarloSubtitle: "1,000 stochastic scenarios of the withdrawal phase",

@@ -16,6 +16,7 @@ import {
 } from "recharts";
 import { FireResult, YearDataPoint } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
+import { ChartTooltipContent } from "@/app/components/ChartTooltip";
 
 interface FireChartProps {
   result: FireResult;
@@ -75,22 +76,6 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     },
   ].filter(Boolean) as { year: number; label: string; color: string }[];
 
-  // Custom tooltip using i18n-aware formatter
-  function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string | number }) {
-    if (!active || !payload || !payload.length) return null;
-    return (
-      <div className="bg-[#0f294d] dark:bg-slate-700 text-white rounded-xl shadow-xl p-4 text-sm min-w-[200px]">
-        <p className="font-semibold mb-2 text-slate-300">{label}</p>
-        {payload.map((p) => (
-          <div key={p.name} className="flex justify-between gap-4">
-            <span style={{ color: p.color }} className="font-medium">{p.name}</span>
-            <span className="font-semibold">{formatCurrency(p.value)}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
@@ -126,7 +111,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} />
             <Line type="monotone" dataKey="optimistic" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name={t.chartLabelOptimistic} />
             <Line type="monotone" dataKey="total" stroke="#0f294d" strokeWidth={2.5} dot={false} name={t.chartLabelRealistic} />
@@ -148,7 +133,7 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis dataKey="year" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
-            <Tooltip content={<ChartTooltip />} />
+            <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
             <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `Coast FIRE ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
             {milestoneLines.map((m) => (
