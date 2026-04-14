@@ -177,6 +177,14 @@ export interface FireResult {
 const MAX_YEARS = 50;
 const DRAWDOWN_YEARS = 40;
 
+// Drawdown return deduction (percentage points) — conservative allocation assumption
+const DRAWDOWN_RETURN_DEDUCTION = 1;
+
+// Sensitivity analysis range for reverse planner
+const SENSITIVITY_MIN_RETURN = 4;
+const SENSITIVITY_MAX_RETURN = 10;
+const SENSITIVITY_STEP = 1;
+
 // Legacy constants for backward compatibility
 const TAX_RATE_BASE = 0.26375;
 const TAX_RATE_KIST = 0.2782;
@@ -1156,8 +1164,8 @@ export function calculateReverse(
   // Better FIRE number for kapitalverzehr mode (present-value-of-annuity)
   let fireNumber: number;
   if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0 && swrDecimal > 0) {
-    // Real return used for annuity PV calculation
-    const conservativeReturn = Math.max(0, expectedReturn - 1) / 100;
+    // Use a conservative return (−1 pp) for drawdown, matching simulateDrawdown/simulateMonteCarlo
+    const conservativeReturn = Math.max(0, expectedReturn - DRAWDOWN_RETURN_DEDUCTION) / 100;
     const realReturn = (1 + conservativeReturn) / (1 + inf) - 1;
     const annualNeed = monthlyGap * 12;
     if (realReturn <= 0) {
@@ -1245,12 +1253,12 @@ export function calculateReverse(
 
   // Sensitivity analysis — vary return rate
   const sensitivity: SensitivityRow[] = [];
-  for (let r = 4; r <= 10; r += 1) {
+  for (let r = SENSITIVITY_MIN_RETURN; r <= SENSITIVITY_MAX_RETURN; r += SENSITIVITY_STEP) {
     const sensInputs = { ...inputs, etfRendite: r };
     // Recalculate FIRE number for this return rate
     let sensFireNumber: number;
     if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0) {
-      const sensConservativeReturn = Math.max(0, r - 1) / 100;
+      const sensConservativeReturn = Math.max(0, r - DRAWDOWN_RETURN_DEDUCTION) / 100;
       const sensRealReturn = (1 + sensConservativeReturn) / (1 + inf) - 1;
       const annualNeed = monthlyGap * 12;
       if (sensRealReturn <= 0) {
