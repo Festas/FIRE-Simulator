@@ -328,7 +328,7 @@ export interface Translations {
   lifecycleMCSubtitle: string;
   lifecycleMCSuccess: (rate: string) => string;
   lifecycleMCYearsToFire: string;
-  lifecycleMCP50Years: (years: string) => string;
+  lifecycleMCP50Years: (age: string) => string;
   lifecycleMCRange: (p10: string, p90: string) => string;
 }
 
@@ -628,7 +628,7 @@ export const de: Translations = {
   lifecycleMCSubtitle: "500 stochastische Simulationen der Ansparphase",
   lifecycleMCSuccess: (rate: string) => `${rate} % erreichen FIRE`,
   lifecycleMCYearsToFire: "FIRE-Alter",
-  lifecycleMCP50Years: (years: string) => `Median: Alter ${years}`,
+  lifecycleMCP50Years: (age: string) => `Median: Alter ${age}`,
   lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
 };
 
@@ -928,7 +928,7 @@ export const en: Translations = {
   lifecycleMCSubtitle: "500 stochastic simulations of the accumulation phase",
   lifecycleMCSuccess: (rate: string) => `${rate}% reach FIRE`,
   lifecycleMCYearsToFire: "FIRE Age",
-  lifecycleMCP50Years: (years: string) => `Median: Age ${years}`,
+  lifecycleMCP50Years: (age: string) => `Median: Age ${age}`,
   lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
 };
 

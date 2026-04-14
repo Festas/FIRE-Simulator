@@ -84,6 +84,10 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
 
   const mcSuccessPct = (monteCarlo.successRate * 100).toFixed(0);
 
+  const coastSub = coastFireCalendarYear
+    ? `${coastFireCalendarYear} · ${t.kpiThreshold(formatCurrencyShort(coastFireAmount))}`
+    : t.kpiThreshold(formatCurrencyShort(coastFireAmount));
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 mb-6">
       {/* Row 1 */}
@@ -113,7 +117,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         iconLabel={t.kpiCoastFire}
         title={t.kpiCoastFire}
         value={coastLabel}
-        sub={coastFireCalendarYear ? `${coastFireCalendarYear} · ${t.kpiThreshold(formatCurrencyShort(coastFireAmount))}` : t.kpiThreshold(formatCurrencyShort(coastFireAmount))}
+        sub={coastSub}
         accent={!!coastFireCalendarYear}
       />
       <KPICard
