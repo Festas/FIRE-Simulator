@@ -177,8 +177,7 @@ export interface FireResult {
 const MAX_YEARS = 50;
 const DRAWDOWN_YEARS = 40;
 
-// Legacy constants kept for backward compatibility in tests
-const TEILFREISTELLUNG = 0.3;
+// Legacy constants for backward compatibility
 const TAX_RATE_BASE = 0.26375;
 const TAX_RATE_KIST = 0.2782;
 

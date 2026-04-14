@@ -197,7 +197,8 @@ const netherlandsEngine: TaxEngine = {
     return config.filingStatus === "couple" ? NL_THRESHOLD_COUPLE : NL_THRESHOLD_SINGLE;
   },
 
-  calculateTax(gains, config) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  calculateTax(gains, _config) {
     // In reality Box 3 applies to total balance — here we approximate with
     // an effective rate on gains.
     if (gains <= 0) return 0;

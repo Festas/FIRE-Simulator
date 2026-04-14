@@ -456,6 +456,27 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             {t.taxes}
           </p>
 
+          {/* Tax Country Selector */}
+          <div className="mb-4">
+            <div className="flex items-center mb-2">
+              <span className="text-sm text-slate-300">{t.taxCountry}</span>
+              <InfoTooltip text={t.taxCountryTooltip} />
+            </div>
+            <select
+              value={inputs.taxCountry}
+              onChange={(e) => onChange("taxCountry", e.target.value)}
+              className="w-full text-sm font-medium py-2 px-3 rounded-lg bg-slate-700 text-white border border-slate-600 focus:border-emerald-400 focus:outline-none appearance-none cursor-pointer"
+              aria-label={t.taxCountry}
+            >
+              <option value="DE">{t.taxCountryDE}</option>
+              <option value="US">{t.taxCountryUS}</option>
+              <option value="UK">{t.taxCountryUK}</option>
+              <option value="CH">{t.taxCountryCH}</option>
+              <option value="AT">{t.taxCountryAT}</option>
+              <option value="NL">{t.taxCountryNL}</option>
+            </select>
+          </div>
+
           <SelectToggle
             label={t.taxFiling}
             tooltip={t.taxFilingTooltip}
@@ -467,12 +488,14 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             onChange={(v) => onChange("steuerModell", v)}
           />
 
-          <ToggleSwitch
-            label={t.churchTax}
-            tooltip={t.churchTaxTooltip}
-            checked={inputs.kirchensteuer}
-            onChange={(v) => onChange("kirchensteuer", v)}
-          />
+          {inputs.taxCountry === "DE" && (
+            <ToggleSwitch
+              label={t.churchTax}
+              tooltip={t.churchTaxTooltip}
+              checked={inputs.kirchensteuer}
+              onChange={(v) => onChange("kirchensteuer", v)}
+            />
+          )}
         </div>
 
         {/* ===== ENTNAHME ===== */}

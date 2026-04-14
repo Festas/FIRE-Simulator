@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import { calculateFIRE, FireInputs } from "@/lib/fireCalculations";
+import { calculateFIRE, FireInputs, LifeEvent } from "@/lib/fireCalculations";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
 import Sidebar from "@/app/components/Sidebar";
@@ -9,11 +9,14 @@ import KPICards from "@/app/components/KPICards";
 import FireChart from "@/app/components/FireChart";
 import DrawdownChart from "@/app/components/DrawdownChart";
 import MonteCarloChart from "@/app/components/MonteCarloChart";
+import LifecycleMonteCarloChart from "@/app/components/LifecycleMonteCarloChart";
 import DetailTable from "@/app/components/DetailTable";
 import PhasesTimeline from "@/app/components/PhasesTimeline";
 import Warnings from "@/app/components/Warnings";
 import ErrorBoundary from "@/app/components/ErrorBoundary";
 import ReversePlanner from "@/app/components/ReversePlanner";
+import LifeEventsEditor from "@/app/components/LifeEventsEditor";
+import ScenarioManager from "@/app/components/ScenarioManager";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 50_000,
@@ -31,9 +34,11 @@ const DEFAULT_INPUTS: FireInputs = {
   swr: 3.5,
   steuerModell: "single",
   kirchensteuer: false,
+  taxCountry: "DE",
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 6_500,
+  lifeEvents: [],
 };
 
 const LS_KEY = "fire-simulator-inputs";
@@ -55,6 +60,7 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   sw: "swr",
   sm: "steuerModell",
   ks: "kirchensteuer",
+  tc: "taxCountry",
   em: "entnahmeModell",
   kj: "kapitalverzehrJahre",
   mb: "monatlichesNetto",
@@ -79,6 +85,9 @@ function parseURLInputs(): Partial<FireInputs> | null {
       result[full] = val === "1";
     } else if (full === "entnahmeModell") {
       result[full] = val === "kapitalverzehr" ? "kapitalverzehr" : "ewigeRente";
+    } else if (full === "taxCountry") {
+      const valid = ["DE", "US", "UK", "CH", "AT", "NL"];
+      result[full] = valid.includes(val) ? val : "DE";
     } else {
       const num = parseFloat(val);
       if (!isNaN(num)) result[full] = num;
@@ -230,6 +239,20 @@ function HomeContent() {
     }
   }, [t]);
 
+  const handleLifeEventsChange = useCallback((events: LifeEvent[]) => {
+    setInputs((prev) => {
+      const next = { ...prev, lifeEvents: events };
+      saveInputs(next);
+      return next;
+    });
+  }, []);
+
+  const handleScenarioLoad = useCallback((loaded: FireInputs) => {
+    const merged = { ...DEFAULT_INPUTS, ...loaded };
+    setInputs(merged);
+    saveInputs(merged);
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
       {/* Mobile overlay */}
@@ -339,6 +362,9 @@ function HomeContent() {
 
         {/* Dashboard content */}
         <div className="px-6 py-6 max-w-7xl mx-auto">
+          {/* Scenario Manager */}
+          <ScenarioManager currentInputs={inputs} onLoad={handleScenarioLoad} />
+
           {/* Tab navigation */}
           <div className="flex gap-2 mb-6" role="tablist">
             <button
@@ -377,8 +403,14 @@ function HomeContent() {
                 <Warnings inputs={inputs} />
                 <KPICards result={result} inputs={inputs} />
                 <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
+                <LifecycleMonteCarloChart result={result} />
                 <MonteCarloChart result={result} />
                 <DrawdownChart result={result} inputs={inputs} />
+                <LifeEventsEditor
+                  events={inputs.lifeEvents}
+                  onChange={handleLifeEventsChange}
+                  startYear={inputs.startYear}
+                />
                 <DetailTable result={result} />
                 <PhasesTimeline result={result} startYear={inputs.startYear} />
               </>

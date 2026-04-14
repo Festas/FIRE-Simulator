@@ -4,12 +4,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "FIRE Masterplan Simulator – Family Office Dashboard",
   description:
-    "Simulate your path to financial independence with the FIRE Masterplan Simulator. German tax model, Monte Carlo simulation, and more. Simulieren Sie Ihren Weg zur finanziellen Unabhängigkeit.",
-  keywords: ["FIRE", "Financial Independence", "Retire Early", "Simulator", "German Tax", "Abgeltungssteuer", "Monte Carlo", "ETF"],
+    "Simulate your path to financial independence with the FIRE Masterplan Simulator. Multi-country tax models, Monte Carlo simulation, life events, and more.",
+  keywords: ["FIRE", "Financial Independence", "Retire Early", "Simulator", "Tax", "Abgeltungssteuer", "Monte Carlo", "ETF", "Life Events"],
   authors: [{ name: "FIRE Simulator" }],
+  manifest: "/manifest.json",
   openGraph: {
     title: "FIRE Masterplan Simulator",
-    description: "Plan your path to financial independence with Monte Carlo simulation, German tax modeling, and real-time projections.",
+    description: "Plan your path to financial independence with Monte Carlo simulation, multi-country tax modeling, life events, and real-time projections.",
     type: "website",
     locale: "de_DE",
     alternateLocale: "en_US",
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "FIRE Masterplan Simulator",
-    description: "Plan your path to financial independence with Monte Carlo simulation, German tax modeling, and real-time projections.",
+    description: "Plan your path to financial independence with Monte Carlo simulation, multi-country tax modeling, life events, and real-time projections.",
   },
   robots: {
     index: true,
@@ -26,6 +27,11 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "/",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent",
   },
 };
 
@@ -37,6 +43,8 @@ export default function RootLayout({
   return (
     <html lang="de" className="h-full antialiased" suppressHydrationWarning>
       <head>
+        <meta name="theme-color" content="#10b981" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -46,6 +54,9 @@ export default function RootLayout({
                   document.documentElement.classList.add('dark');
                 }
               } catch(e) {}
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+              }
             `,
           }}
         />

@@ -101,6 +101,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
         inputs.kirchensteuer,
         inputs.entnahmeModell,
         inputs.kapitalverzehrJahre,
+        inputs.taxCountry,
       ),
     [
       targetIncome,
@@ -116,6 +117,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
       inputs.kirchensteuer,
       inputs.entnahmeModell,
       inputs.kapitalverzehrJahre,
+      inputs.taxCountry,
     ],
   );
 
