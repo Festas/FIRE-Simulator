@@ -42,9 +42,9 @@ export interface Translations {
   dynamicSavings: string;
   dynamicSavingsSub: string;
   dynamicSavingsTooltip: string;
-  grossIncome: string;
-  grossIncomeSub: string;
-  grossIncomeTooltip: string;
+  netIncome: string;
+  netIncomeSub: string;
+  netIncomeTooltip: string;
   bavContribution: string;
   bavContributionSub: string;
   bavContributionTooltip: string;
@@ -105,7 +105,7 @@ export interface Translations {
   kpiPerpetualIncome: string;
   kpiEffectiveTaxRate: (rate: string) => string;
   kpiCurrentSavings: (amount: string) => string;
-  kpiSavingsRateSub: (savings: string, gross: string) => string;
+  kpiSavingsRateSub: (savings: string, net: string) => string;
   kpiLzkStartSub: string;
   kpiSavingsRateIncrease: string;
 
@@ -286,9 +286,9 @@ export const de: Translations = {
   dynamicSavings: "Dynamik Sparrate",
   dynamicSavingsSub: "Jährliche Erhöhung der Sparrate",
   dynamicSavingsTooltip: "Prozentuale Steigerung der Sparrate pro Jahr, z.B. durch Gehaltserhöhungen.",
-  grossIncome: "Bruttoeinkommen",
-  grossIncomeSub: "Für Sparquoten-Berechnung",
-  grossIncomeTooltip: "Ihr monatliches Bruttoeinkommen. Wird nur zur Berechnung Ihrer Sparquote verwendet.",
+  netIncome: "Nettoeinkommen",
+  netIncomeSub: "Für Sparquoten-Berechnung",
+  netIncomeTooltip: "Ihr monatliches Nettoeinkommen. Wird nur zur Berechnung Ihrer Sparquote verwendet.",
   bavContribution: "BAV-Zuschuss",
   bavContributionSub: "Betriebliche Altersversorgung p.a.",
   bavContributionTooltip: "Jährlicher Gesamtbetrag der betrieblichen Altersversorgung inkl. Arbeitgeberanteil.",
@@ -347,7 +347,7 @@ export const de: Translations = {
   kpiPerpetualIncome: "Ewige Rente (Kapital erhalten)",
   kpiEffectiveTaxRate: (rate) => `Eff. Steuersatz: ${rate} %`,
   kpiCurrentSavings: (amount) => `Aktuell: ${amount} / Monat`,
-  kpiSavingsRateSub: (savings, gross) => `${savings} von ${gross} brutto`,
+  kpiSavingsRateSub: (savings, net) => `${savings} von ${net} netto`,
   kpiLzkStartSub: "ETF-Beiträge enden · Konto läuft weiter",
   kpiSavingsRateIncrease: "Ziel > 50 Jahre",
 
@@ -505,9 +505,9 @@ export const en: Translations = {
   dynamicSavings: "Savings Growth",
   dynamicSavingsSub: "Annual savings increase",
   dynamicSavingsTooltip: "Percentage increase in savings rate per year, e.g., from salary raises.",
-  grossIncome: "Gross Income",
-  grossIncomeSub: "For savings rate calculation",
-  grossIncomeTooltip: "Your monthly gross income. Only used to calculate your savings rate.",
+  netIncome: "Net Income",
+  netIncomeSub: "For savings rate calculation",
+  netIncomeTooltip: "Your monthly net income. Only used to calculate your savings rate.",
   bavContribution: "Employer Pension",
   bavContributionSub: "Occupational pension p.a.",
   bavContributionTooltip: "Annual total of occupational pension including employer contribution.",
@@ -566,7 +566,7 @@ export const en: Translations = {
   kpiPerpetualIncome: "Perpetual income (preserve capital)",
   kpiEffectiveTaxRate: (rate) => `Eff. tax rate: ${rate}%`,
   kpiCurrentSavings: (amount) => `Current: ${amount} / month`,
-  kpiSavingsRateSub: (savings, gross) => `${savings} of ${gross} gross`,
+  kpiSavingsRateSub: (savings, net) => `${savings} of ${net} net`,
   kpiLzkStartSub: "ETF contributions end · Account continues",
   kpiSavingsRateIncrease: "Target > 50 years",
 

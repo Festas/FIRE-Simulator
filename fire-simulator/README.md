@@ -14,7 +14,7 @@ Built with **Next.js** (App Router), **TypeScript**, **Tailwind CSS**, and **Rec
 
 ### 💰 Accumulation Phase
 - **15+ Interactive Parameters** with sliders AND clickable number inputs for precision
-- Startkapital, Monatliche Sparrate, Dynamik Sparrate, Bruttoeinkommen
+- Startkapital, Monatliche Sparrate, Dynamik Sparrate, Nettoeinkommen
 - ETF-Rendite, Inflation, BAV-Zuschuss
 - Zielvermögen (auto or manual), LZK-Phase & LZK-Rendite
 

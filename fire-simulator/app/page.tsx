@@ -33,7 +33,7 @@ const DEFAULT_INPUTS: FireInputs = {
   kirchensteuer: false,
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
-  monatlichesBrutto: 6_500,
+  monatlichesNetto: 6_500,
 };
 
 const LS_KEY = "fire-simulator-inputs";
@@ -57,7 +57,7 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   ks: "kirchensteuer",
   em: "entnahmeModell",
   kj: "kapitalverzehrJahre",
-  mb: "monatlichesBrutto",
+  mb: "monatlichesNetto",
 };
 
 function parseURLInputs(): Partial<FireInputs> | null {

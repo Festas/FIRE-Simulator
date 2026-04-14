@@ -161,7 +161,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         value={`${sparquote.toFixed(1)}%`}
         sub={
           sparquote > 0
-            ? t.kpiSavingsRateSub(formatCurrency(inputs.monatlicheSparrate), formatCurrency(inputs.monatlichesBrutto))
+            ? t.kpiSavingsRateSub(formatCurrency(inputs.monatlicheSparrate), formatCurrency(inputs.monatlichesNetto))
             : undefined
         }
         accent={sparquote >= 30}
