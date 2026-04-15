@@ -138,7 +138,7 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       yearEnd: fireYear,
       calStart: phase4EndCalYear + 1,
       calEnd: fullFireCalendarYear,
-      ageStart: freistellungEndAge! + 1,
+      ageStart: (freistellungEndAge ?? 0) + 1,
       ageEnd: fullFireAge,
       color: "#7c3aed",
       bgHex: "#f5f3ff",
