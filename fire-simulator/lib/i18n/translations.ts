@@ -234,6 +234,15 @@ export interface Translations {
   currentAgeSub: string;
   currentAgeTooltip: string;
   retirementAge: string;
+  retirementAgeSub: string;
+  retirementAgeTooltip: string;
+
+  // Life events — savings rate change
+  lifeEventSavingsRateChange: string;
+
+  // Inflation-adjusted spending at FIRE
+  kpiInflationAdjustedSpending: string;
+  kpiInflationAdjustedSpendingSub: (today: string, atFire: string, years: number) => string;
 
   // Reverse Planner
   reversePlannerTab: string;
@@ -583,7 +592,14 @@ export const de: Translations = {
   currentAge: "Aktuelles Alter",
   currentAgeSub: "Ihr heutiges Alter",
   currentAgeTooltip: "Wird für altersbasierte Darstellungen und die Berechnung des Rentenbeginns verwendet.",
-  retirementAge: "Rentenalter",
+  retirementAge: "Renteneintrittsalter",
+  retirementAgeSub: "Beginn der gesetzlichen Rente",
+  retirementAgeTooltip: "Ab diesem Alter erhalten Sie die gesetzliche Rente. Vorher müssen Sie Ihren gesamten Bedarf aus dem Portfolio decken. Standard: 67 (Regelaltersgrenze).",
+
+  lifeEventSavingsRateChange: "Sparraten-Änderung",
+
+  kpiInflationAdjustedSpending: "Bedarf bei FIRE",
+  kpiInflationAdjustedSpendingSub: (today, atFire, years) => `${today} heute = ${atFire} in ${years} Jahren (inflationsbereinigt)`,
 
   reversePlannerTab: "🔄 Rückwärtsrechner",
   forwardSimTab: "📊 Simulation",
@@ -924,7 +940,14 @@ export const en: Translations = {
   currentAge: "Current Age",
   currentAgeSub: "Your current age",
   currentAgeTooltip: "Used for age-based projections and to calculate when state pension begins.",
-  retirementAge: "Retirement age",
+  retirementAge: "Pension Start Age",
+  retirementAgeSub: "When state pension begins",
+  retirementAgeTooltip: "The age at which you start receiving your state pension. Before this age, your entire desired income must come from your portfolio. Default: 67.",
+
+  lifeEventSavingsRateChange: "Savings Rate Change",
+
+  kpiInflationAdjustedSpending: "Spending at FIRE",
+  kpiInflationAdjustedSpendingSub: (today, atFire, years) => `${today} today = ${atFire} in ${years} years (inflation-adjusted)`,
 
   reversePlannerTab: "🔄 Reverse Planner",
   forwardSimTab: "📊 Simulation",

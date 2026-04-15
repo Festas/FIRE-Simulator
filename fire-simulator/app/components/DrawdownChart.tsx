@@ -51,7 +51,7 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
           <h2 className="text-lg font-bold text-[#0f294d] dark:text-white">{t.drawdownTitle}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             {inputs.entnahmeModell === "ewigeRente"
-              ? t.drawdownPerpetualSub(formatCurrency(inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente))
+              ? t.drawdownPerpetualSub(formatCurrency(inputs.monatlichesWunschEinkommen))
               : t.drawdownSpendSub(inputs.kapitalverzehrJahre)}
           </p>
         </div>

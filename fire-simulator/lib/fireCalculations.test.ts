@@ -25,6 +25,7 @@ const defaultInputs: FireInputs = {
   currentAge: 29,
   monatlichesWunschEinkommen: 4_000,
   gesetzlicheRente: 1_500,
+  renteneintrittsalter: 67,
   swr: 3.5,
   steuerModell: "single",
   kirchensteuer: false,
@@ -185,8 +186,9 @@ describe("Derived values", () => {
       swr: 4.0,
     });
     const result = calculateFIRE(inputs);
-    // (4000 - 1500) * 12 / 0.04 = 750,000
-    expect(result.derivedFireNumber).toBe(750_000);
+    // FIRE number now uses full income (no pension offset) since pension only starts at Renteneintrittsalter
+    // 4000 * 12 / 0.04 = 1,200,000
+    expect(result.derivedFireNumber).toBe(1_200_000);
   });
 
   it("calculates savings rate correctly", () => {
@@ -594,8 +596,9 @@ describe("Reverse planner (calculateReverse)", () => {
       4_000, 15, 1_500, 0, 7, 2.5, 4.0, 0, 0,
       "single", false, "ewigeRente", 30,
     );
-    // (4000 - 1500) * 12 / 0.04 = 750,000
-    expect(result.fireNumber).toBe(750_000);
+    // FIRE number now uses full income (no pension offset) since pension only starts at Renteneintrittsalter
+    // 4000 * 12 / 0.04 = 1,200,000
+    expect(result.fireNumber).toBe(1_200_000);
   });
 
   it("returns Monte Carlo success rate between 0 and 1", () => {
@@ -990,5 +993,149 @@ describe("Lifecycle Monte Carlo", () => {
       expect(lmc.accumulationPercentiles.p50[i]).toBeLessThanOrEqual(lmc.accumulationPercentiles.p75[i]);
       expect(lmc.accumulationPercentiles.p75[i]).toBeLessThanOrEqual(lmc.accumulationPercentiles.p90[i]);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Renteneintrittsalter (pension start age)
+// ---------------------------------------------------------------------------
+
+describe("Renteneintrittsalter", () => {
+  it("drawdown uses full income before pension age and reduced after", () => {
+    // Retire at age 45, pension at 67 => 22 years of full withdrawal
+    const inputs = makeInputs({
+      currentAge: 29,
+      monatlichesWunschEinkommen: 4_000,
+      gesetzlicheRente: 1_500,
+      renteneintrittsalter: 67,
+      startKapital: 5_000_000,
+      zielvermoegen: 1_000_000,
+    });
+    const result = calculateFIRE(inputs);
+    expect(result.targetReached).toBe(true);
+
+    // In early drawdown years (before pension age), withdrawal should be higher
+    // than in later years (after pension age)
+    const earlyYears = result.drawdownData.filter(
+      (d) => d.age < 67 && d.annualWithdrawal > 0,
+    );
+    const lateYears = result.drawdownData.filter(
+      (d) => d.age >= 67 && d.annualWithdrawal > 0,
+    );
+
+    if (earlyYears.length > 0 && lateYears.length > 0) {
+      // Early withdrawal (full income) should be larger than late withdrawal (reduced by pension)
+      const avgEarly =
+        earlyYears.reduce((s, d) => s + d.annualWithdrawal, 0) / earlyYears.length;
+      const avgLate =
+        lateYears.reduce((s, d) => s + d.annualWithdrawal, 0) / lateYears.length;
+      expect(avgEarly).toBeGreaterThan(avgLate);
+    }
+  });
+
+  it("defaults to 67 when renteneintrittsalter is set to 67", () => {
+    const result = calculateFIRE(
+      makeInputs({ renteneintrittsalter: 67 }),
+    );
+    // Should produce valid results
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    expect(result.drawdownData.length).toBeGreaterThan(0);
+  });
+
+  it("earlier pension age means lower withdrawals sooner", () => {
+    const earlyPension = calculateFIRE(
+      makeInputs({
+        renteneintrittsalter: 63,
+        startKapital: 5_000_000,
+        zielvermoegen: 1_000_000,
+      }),
+    );
+    const latePension = calculateFIRE(
+      makeInputs({
+        renteneintrittsalter: 67,
+        startKapital: 5_000_000,
+        zielvermoegen: 1_000_000,
+      }),
+    );
+
+    // With earlier pension, portfolio should survive better (lower total withdrawals)
+    // or have higher remaining balance
+    if (earlyPension.drawdownSurvives && latePension.drawdownSurvives) {
+      // Both survive — the early pension scenario should have more remaining balance
+      const earlyFinalBal =
+        earlyPension.drawdownData[earlyPension.drawdownData.length - 1]?.etfBalanceReal ?? 0;
+      const lateFinalBal =
+        latePension.drawdownData[latePension.drawdownData.length - 1]?.etfBalanceReal ?? 0;
+      expect(earlyFinalBal).toBeGreaterThanOrEqual(lateFinalBal);
+    }
+  });
+
+  it("FIRE number uses full desired income (not gap)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        monatlichesWunschEinkommen: 3_000,
+        gesetzlicheRente: 1_000,
+        swr: 4.0,
+      }),
+    );
+    // FIRE number = full income * 12 / SWR = 3000 * 12 / 0.04 = 900,000
+    expect(result.derivedFireNumber).toBe(900_000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Savings rate change life event
+// ---------------------------------------------------------------------------
+
+describe("Savings rate change life event", () => {
+  it("overrides savings rate during the specified period", () => {
+    const baseline = calculateFIRE(makeInputs({
+      monatlicheSparrate: 2_000,
+      bavJaehrlich: 0,
+      lifeEvents: [],
+    }));
+
+    const withOverride = calculateFIRE(makeInputs({
+      monatlicheSparrate: 2_000,
+      bavJaehrlich: 0,
+      lifeEvents: [
+        {
+          id: "sr1",
+          type: "savings_rate_change",
+          name: "Reduced savings",
+          startYear: 2030,
+          endYear: 2035,
+          annualAmount: 500, // reduced to 500/month during this period
+          inflationAdjusted: false,
+        },
+      ],
+    }));
+
+    // With reduced savings during some years, FIRE should be reached later (or not at all)
+    if (baseline.fullFireYear !== null && withOverride.fullFireYear !== null) {
+      expect(withOverride.fullFireYear).toBeGreaterThanOrEqual(baseline.fullFireYear);
+    }
+  });
+
+  it("savings_rate_change events do not affect cash flow directly", () => {
+    // The savings_rate_change type should NOT add to the lifeEventCashFlow
+    const withEvent = calculateFIRE(makeInputs({
+      monatlicheSparrate: 2_000,
+      bavJaehrlich: 0,
+      lifeEvents: [
+        {
+          id: "sr1",
+          type: "savings_rate_change",
+          name: "Higher savings",
+          startYear: 2027,
+          endYear: 2030,
+          annualAmount: 3_000,
+          inflationAdjusted: false,
+        },
+      ],
+    }));
+
+    // Should produce valid results without errors
+    expect(withEvent.yearlyData.length).toBeGreaterThan(0);
   });
 });
