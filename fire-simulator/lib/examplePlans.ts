@@ -54,6 +54,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 1_800,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 
@@ -85,6 +88,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 2_200,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 
@@ -116,6 +122,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 3_000,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 
@@ -147,6 +156,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 5_500,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 
@@ -178,6 +190,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 6_500,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 
@@ -209,6 +224,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 3_500,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 
@@ -240,6 +258,9 @@ export const EXAMPLE_PLANS: ExamplePlan[] = [
       kapitalverzehrJahre: 30,
       monatlichesNetto: 4_000,
       lifeEvents: [],
+      arbeitszeitkontoEnabled: true,
+      stundenProJahr: 200,
+      wochenStunden: 40,
     },
   },
 ];

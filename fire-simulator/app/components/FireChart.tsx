@@ -43,6 +43,8 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     coastFireAge,
     fullFireAge,
     lzkSabbaticalStartAge,
+    freistellungStartAge,
+    freistellungEndAge,
   } = result;
 
   const displayEnd = Math.min(
@@ -67,7 +69,19 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
       color: "#10b981",
       year: coastFireCalendarYear,
     },
-    lzkStartYear > 0 && {
+    freistellungStartAge !== null && {
+      age: freistellungStartAge,
+      label: t.chartLabelLZK,
+      color: "#f59e0b",
+      year: null,
+    },
+    freistellungEndAge !== null && {
+      age: freistellungEndAge,
+      label: t.phaseCoast,
+      color: "#7c3aed",
+      year: null,
+    },
+    lzkStartYear > 0 && freistellungStartAge === null && {
       age: lzkSabbaticalStartAge,
       label: t.chartLabelLZK,
       color: "#f59e0b",

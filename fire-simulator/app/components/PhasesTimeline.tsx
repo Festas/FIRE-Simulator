@@ -31,7 +31,7 @@ interface PhasesTimelineProps {
 
 export default function PhasesTimeline({ result, startYear }: PhasesTimelineProps) {
   const { t } = useI18n();
-  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate, fullFireAge, lzkSabbaticalStartAge } = result;
+  const { lzkStartYear, fullFireYear, lzkStartCalendarYear, fullFireCalendarYear, swRate, fullFireAge, lzkSabbaticalStartAge, freistellungStartAge, freistellungEndAge, freistellungJahre } = result;
 
   const fireYear = fullFireYear ?? 25;
   const lzkStart = lzkStartYear;
@@ -43,6 +43,14 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
   const p1End = phaseLen;
   const p2End = phaseLen * 2;
   const p3End = lzkStart - 1;
+
+  // Freistellung end age determines phase 4 end
+  const phase4EndAge = freistellungEndAge ?? fullFireAge;
+  const phase4EndYear = phase4EndAge !== null ? phase4EndAge - startAge : fireYear;
+  const phase4EndCalYear = startYear + phase4EndYear;
+
+  // Phase 4b: Coasting (if Freistellung ends before Full FIRE)
+  const hasCoastingPhase = freistellungEndAge !== null && fullFireAge !== null && freistellungEndAge < fullFireAge;
 
   const phases: Phase[] = [
     {
@@ -101,16 +109,18 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
     },
     {
       number: 4,
-      icon: "🔒",
+      icon: "🏖️",
       title: t.phase4Title,
-      subtitle: t.phase4Subtitle,
+      subtitle: freistellungJahre > 0
+        ? `${freistellungJahre.toFixed(1)} ${t.years}`
+        : t.phase4Subtitle,
       description: t.phase4Desc,
       yearStart: lzkStart,
-      yearEnd: fireYear,
+      yearEnd: phase4EndYear,
       calStart: lzkStartCalendarYear,
-      calEnd: fullFireCalendarYear,
-      ageStart: lzkSabbaticalStartAge,
-      ageEnd: fullFireAge,
+      calEnd: phase4EndCalYear,
+      ageStart: freistellungStartAge ?? lzkSabbaticalStartAge,
+      ageEnd: phase4EndAge,
       color: "#d97706",
       bgHex: "#fffbeb",
       bgHexDark: "#78350f20",
@@ -118,8 +128,26 @@ export default function PhasesTimeline({ result, startYear }: PhasesTimelineProp
       borderColor: "border-amber-200 dark:border-amber-800",
       active: true,
     },
-    {
+    ...(hasCoastingPhase ? [{
       number: 5,
+      icon: "🔄",
+      title: t.phaseCoast,
+      subtitle: t.phase3Subtitle,
+      description: t.phase3Desc,
+      yearStart: phase4EndYear + 1,
+      yearEnd: fireYear,
+      calStart: phase4EndCalYear + 1,
+      calEnd: fullFireCalendarYear,
+      ageStart: freistellungEndAge! + 1,
+      ageEnd: fullFireAge,
+      color: "#7c3aed",
+      bgHex: "#f5f3ff",
+      bgHexDark: "#4c1d9520",
+      bgColor: "bg-violet-50 dark:bg-violet-900/20",
+      borderColor: "border-violet-200 dark:border-violet-800",
+    }] : []),
+    {
+      number: hasCoastingPhase ? 6 : 5,
       icon: "🎯",
       title: t.phase5Title,
       subtitle: t.phase5Subtitle,

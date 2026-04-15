@@ -542,23 +542,80 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
           )}
         </div>
 
-        {/* ===== LZK ===== */}
+        {/* ===== Arbeitszeitkonto ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
             {t.lzkSection}
           </p>
 
-          <SliderField
-            label={t.lzkPhase}
-            subLabel={t.lzkPhaseSub}
-            tooltip={t.lzkPhaseTooltip}
-            value={inputs.lzkJahre}
-            min={0}
-            max={7}
-            step={1}
-            onChange={(v) => onChange("lzkJahre", v)}
-            format={fmtYrs}
-          />
+          {/* Toggle for Arbeitszeitkonto */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-slate-300">{t.azkEnabled}</span>
+              <InfoTooltip text={t.azkEnabledTooltip} />
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={inputs.arbeitszeitkontoEnabled}
+              onClick={() => onChange("arbeitszeitkontoEnabled", !inputs.arbeitszeitkontoEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#0f294d] ${
+                inputs.arbeitszeitkontoEnabled ? "bg-emerald-500" : "bg-slate-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  inputs.arbeitszeitkontoEnabled ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {inputs.arbeitszeitkontoEnabled ? (
+            <>
+              <SliderField
+                label={t.azkHoursPerYear}
+                subLabel={t.azkHoursPerYearSub}
+                tooltip={t.azkHoursPerYearTooltip}
+                value={inputs.stundenProJahr}
+                min={0}
+                max={500}
+                step={10}
+                onChange={(v) => onChange("stundenProJahr", v)}
+                format={(v) => `${v} h`}
+              />
+              <SliderField
+                label={t.azkWeeklyHours}
+                subLabel={t.azkWeeklyHoursSub}
+                tooltip={t.azkWeeklyHoursTooltip}
+                value={inputs.wochenStunden}
+                min={20}
+                max={50}
+                step={1}
+                onChange={(v) => onChange("wochenStunden", v)}
+                format={(v) => `${v} h`}
+              />
+              {/* Computed Freistellung duration display */}
+              <div className="mt-2 px-1 py-2 bg-slate-700/50 rounded-lg text-center">
+                <p className="text-xs text-slate-400">{t.azkFreistellungDuration}</p>
+                <p className="text-lg font-bold text-emerald-400">
+                  {(inputs.stundenProJahr / (inputs.wochenStunden * 52)).toFixed(2)} {t.years} / {t.perYear}
+                </p>
+              </div>
+            </>
+          ) : (
+            <SliderField
+              label={t.lzkPhase}
+              subLabel={t.lzkPhaseSub}
+              tooltip={t.lzkPhaseTooltip}
+              value={inputs.lzkJahre}
+              min={0}
+              max={7}
+              step={1}
+              onChange={(v) => onChange("lzkJahre", v)}
+              format={fmtYrs}
+            />
+          )}
         </div>
 
         {/* ===== Override Target ===== */}
