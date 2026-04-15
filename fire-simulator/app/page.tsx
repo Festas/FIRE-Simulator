@@ -26,7 +26,7 @@ const DEFAULT_INPUTS: FireInputs = {
   etfRendite: 7.0,
   inflation: 2.5,
   bavJaehrlich: 0,
-  zielvermoegen: 857_143, // (2_500 * 12) / 0.035 — based on full income (no pension offset before age 67)
+  zielvermoegen: Math.round((2_500 * 12) / 0.035), // auto-calculated: (desiredIncome * 12) / SWR
   lzkJahre: 0,
   lzkRendite: 0,
   startYear: 2026,

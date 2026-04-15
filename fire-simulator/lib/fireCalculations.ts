@@ -261,7 +261,8 @@ function lifeEventCashFlow(
 /**
  * Returns the overridden monthly savings rate if a savings_rate_change event
  * is active for the given calendar year, otherwise returns null.
- * The annualAmount field stores the new monthly savings rate during that period.
+ * Note: For savings_rate_change events, the `annualAmount` field stores
+ * the new *monthly* savings rate (not an annual amount).
  */
 function getSavingsRateOverride(
   events: LifeEvent[],
