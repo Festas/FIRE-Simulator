@@ -23,6 +23,24 @@ export interface Translations {
   lzkSection: string;
   manualTarget: string;
 
+  // Arbeitszeitkonto sidebar fields
+  azkEnabled: string;
+  azkEnabledTooltip: string;
+  azkHoursPerYear: string;
+  azkHoursPerYearSub: string;
+  azkHoursPerYearTooltip: string;
+  azkWeeklyHours: string;
+  azkWeeklyHoursSub: string;
+  azkWeeklyHoursTooltip: string;
+  azkFreistellungDuration: string;
+
+  // KPI cards — Freistellung
+  kpiFreistellungStart: string;
+  kpiFreistellungStartSub: string;
+  kpiFreistellungEnd: string;
+  kpiFreistellungEndSub: string;
+  kpiFreistellungDuration: (years: string) => string;
+
   // Sidebar fields
   desiredIncome: string;
   desiredIncomeSub: string;
@@ -152,6 +170,8 @@ export interface Translations {
   phaseWithdrawal: string;
   phaseLzk: string;
   phaseSaving: string;
+  phaseFreistellung: string;
+  phaseCoast: string;
 
   // Phases Timeline
   phasesTitle: string;
@@ -370,8 +390,23 @@ export const de: Translations = {
   returnMarket: "📈 Rendite & Markt",
   taxes: "🏛️ Steuern",
   withdrawalStrategy: "📤 Entnahme-Strategie",
-  lzkSection: "🔒 Langzeitkonto (LZK / Sabbatical)",
+  lzkSection: "🔒 Arbeitszeitkonto",
   manualTarget: "Manuelles Zielvermögen",
+
+  azkEnabled: "Arbeitszeitkonto aktiv",
+  azkEnabledTooltip: "Aktiviert das Arbeitszeitkonto-Modell: Stunden ansammeln, ab Coast FIRE bezahlt freigestellt werden, danach ins Full FIRE coasten.",
+  azkHoursPerYear: "Stunden / Jahr",
+  azkHoursPerYearSub: "Auf dem Arbeitszeitkonto ansparen",
+  azkHoursPerYearTooltip: "Wie viele Arbeitsstunden Sie pro Jahr auf Ihrem Zeitkonto ansammeln können.",
+  azkWeeklyHours: "Wochenstunden",
+  azkWeeklyHoursSub: "Reguläre Arbeitszeit",
+  azkWeeklyHoursTooltip: "Ihre reguläre Wochenarbeitszeit — wird zur Umrechnung der gesammelten Stunden in Freistellungsjahre verwendet.",
+  azkFreistellungDuration: "Freistellungsdauer",
+  kpiFreistellungStart: "Freistellung Start",
+  kpiFreistellungStartSub: "Bezahlt freigestellt · Kein Sparen",
+  kpiFreistellungEnd: "Freistellung Ende",
+  kpiFreistellungEndSub: "Stundenabbau abgeschlossen",
+  kpiFreistellungDuration: (years) => `${years} Jahre bezahlte Freistellung`,
 
   desiredIncome: "Wunsch-Einkommen",
   desiredIncomeSub: "Netto monatlich im Ruhestand (heute)",
@@ -454,7 +489,7 @@ export const de: Translations = {
   kpiEffectiveTaxRate: (rate) => `Eff. Steuersatz: ${rate} %`,
   kpiCurrentSavings: (amount) => `Aktuell: ${amount} / Monat`,
   kpiSavingsRateSub: (savings, net) => `${savings} von ${net} netto`,
-  kpiLzkStartSub: "Sabbatical beginnt · Gehalt läuft weiter",
+  kpiLzkStartSub: "Freistellung beginnt · Kein neues Sparen",
   kpiSavingsRateIncrease: "Ziel > 50 Jahre",
 
   chartTitle: "Portfolio-Entwicklung",
@@ -495,6 +530,8 @@ export const de: Translations = {
   phaseWithdrawal: "Entnahme",
   phaseLzk: "Sabbatical",
   phaseSaving: "Sparen",
+  phaseFreistellung: "Freistellung",
+  phaseCoast: "Coasting",
 
   phasesTitle: "Die 5 Phasen Ihres FIRE-Plans",
   phasesSubtitle: "Strategischer Fahrplan von heute bis zum finanziellen Exit",
@@ -507,9 +544,9 @@ export const de: Translations = {
   phase3Title: "Souveränität & Teilzeit",
   phase3Subtitle: "Freiheit gewinnen",
   phase3Desc: "Teilzeitmodelle prüfen, passives Einkommen ausbauen, Familie und Finanzen ausbalancieren. Weniger Stress, mehr Lebensqualität.",
-  phase4Title: "Sabbatical (LZK)",
-  phase4Subtitle: "Frei bei vollem Gehalt",
-  phase4Desc: "Langzeitkonto wird eingelöst. Sie sind freigestellt, erhalten aber weiter Ihr volles Gehalt. ETF-Beiträge und Zinseszins laufen weiter.",
+  phase4Title: "Freistellung (AZK)",
+  phase4Subtitle: "Bezahlt freigestellt",
+  phase4Desc: "Arbeitszeitkonto wird eingelöst. Sie sind voll bezahlt freigestellt. Keine neuen ETF-Beiträge, aber Ihr Portfolio wächst durch Rendite weiter.",
   phase5Title: "Exit & Entnahme",
   phase5Subtitle: "FIRE erreicht",
   phase5Desc: (swr) => `Finanzieller Ruhestand. Entnahme nach der Safe Withdrawal Rate (${swr} %). ETF deckt alle Lebenshaltungskosten. Arbeit optional.`,
@@ -528,7 +565,7 @@ export const de: Translations = {
   language: "Sprache",
 
   chartLabelETF: "ETF",
-  chartLabelLZK: "Sabbatical",
+  chartLabelLZK: "Freistellung",
   chartLabelTotal: "Gesamt",
   chartLabelOptimistic: "Optimistisch (+2%)",
   chartLabelPessimistic: "Pessimistisch (−2%)",
@@ -694,8 +731,23 @@ export const en: Translations = {
   returnMarket: "📈 Returns & Market",
   taxes: "🏛️ Taxes",
   withdrawalStrategy: "📤 Withdrawal Strategy",
-  lzkSection: "🔒 Sabbatical (LZK)",
+  lzkSection: "🔒 Working Time Account",
   manualTarget: "Manual Target Wealth",
+
+  azkEnabled: "Working Time Account",
+  azkEnabledTooltip: "Enable the working-time-account model: accumulate hours, get paid leave from Coast FIRE, then coast into Full FIRE.",
+  azkHoursPerYear: "Hours / Year",
+  azkHoursPerYearSub: "Saved on working time account",
+  azkHoursPerYearTooltip: "How many work hours you can accumulate per year on your time account.",
+  azkWeeklyHours: "Weekly Hours",
+  azkWeeklyHoursSub: "Regular working hours",
+  azkWeeklyHoursTooltip: "Your regular weekly working hours — used to convert accumulated hours into years of paid leave.",
+  azkFreistellungDuration: "Leave Duration",
+  kpiFreistellungStart: "Paid Leave Start",
+  kpiFreistellungStartSub: "On paid leave · No new savings",
+  kpiFreistellungEnd: "Paid Leave End",
+  kpiFreistellungEndSub: "Hours exhausted",
+  kpiFreistellungDuration: (years) => `${years} years of paid leave`,
 
   desiredIncome: "Desired Income",
   desiredIncomeSub: "Net monthly in retirement (today's €)",
@@ -778,7 +830,7 @@ export const en: Translations = {
   kpiEffectiveTaxRate: (rate) => `Eff. tax rate: ${rate}%`,
   kpiCurrentSavings: (amount) => `Current: ${amount} / month`,
   kpiSavingsRateSub: (savings, net) => `${savings} of ${net} net`,
-  kpiLzkStartSub: "Sabbatical begins · Salary continues",
+  kpiLzkStartSub: "Paid leave begins · No new savings",
   kpiSavingsRateIncrease: "Target > 50 years",
 
   chartTitle: "Portfolio Growth",
@@ -819,6 +871,8 @@ export const en: Translations = {
   phaseWithdrawal: "Withdrawal",
   phaseLzk: "Sabbatical",
   phaseSaving: "Saving",
+  phaseFreistellung: "Paid Leave",
+  phaseCoast: "Coasting",
 
   phasesTitle: "The 5 Phases of Your FIRE Plan",
   phasesSubtitle: "Strategic roadmap from today to financial exit",
@@ -831,9 +885,9 @@ export const en: Translations = {
   phase3Title: "Sovereignty & Part-Time",
   phase3Subtitle: "Gain freedom",
   phase3Desc: "Evaluate part-time models, expand passive income, balance family and finances. Less stress, more quality of life.",
-  phase4Title: "Sabbatical (LZK)",
-  phase4Subtitle: "Free with full salary",
-  phase4Desc: "Langzeitkonto is redeemed. You are on leave but still receive your full salary. ETF contributions and compound interest continue.",
+  phase4Title: "Paid Leave (AZK)",
+  phase4Subtitle: "Paid leave from time account",
+  phase4Desc: "Working time account is redeemed. You are on fully paid leave. No new ETF contributions, but your portfolio continues to grow through returns.",
   phase5Title: "Exit & Withdrawal",
   phase5Subtitle: "FIRE achieved",
   phase5Desc: (swr) => `Financial retirement. Withdrawal at Safe Withdrawal Rate (${swr}%). ETF covers all living expenses. Work is optional.`,
@@ -852,7 +906,7 @@ export const en: Translations = {
   language: "Language",
 
   chartLabelETF: "ETF",
-  chartLabelLZK: "Sabbatical",
+  chartLabelLZK: "Paid Leave",
   chartLabelTotal: "Total",
   chartLabelOptimistic: "Optimistic (+2%)",
   chartLabelPessimistic: "Pessimistic (−2%)",

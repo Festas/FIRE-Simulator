@@ -41,6 +41,9 @@ const DEFAULT_INPUTS: FireInputs = {
   kapitalverzehrJahre: 30,
   monatlichesNetto: 6_500,
   lifeEvents: [],
+  arbeitszeitkontoEnabled: true,
+  stundenProJahr: 200,
+  wochenStunden: 40,
 };
 
 const LS_KEY = "fire-simulator-inputs";
@@ -67,6 +70,9 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   em: "entnahmeModell",
   kj: "kapitalverzehrJahre",
   mb: "monatlichesNetto",
+  ae: "arbeitszeitkontoEnabled",
+  sp: "stundenProJahr",
+  ws: "wochenStunden",
 };
 
 function parseURLInputs(): Partial<FireInputs> | null {
@@ -84,7 +90,7 @@ function parseURLInputs(): Partial<FireInputs> | null {
 
     if (full === "steuerModell") {
       result[full] = val === "couple" ? "couple" : "single";
-    } else if (full === "kirchensteuer") {
+    } else if (full === "kirchensteuer" || full === "arbeitszeitkontoEnabled") {
       result[full] = val === "1";
     } else if (full === "entnahmeModell") {
       result[full] = val === "kapitalverzehr" ? "kapitalverzehr" : "ewigeRente";
@@ -198,6 +204,13 @@ function HomeContent() {
       t.tableWithdrawal,
       t.tablePhase,
     ];
+    const getPhaseLabel = (d: (typeof allData)[0]) => {
+      if (d.isDrawdownPhase) return t.phaseWithdrawal;
+      if (d.isFreistellungsPhase) return t.phaseFreistellung;
+      if (d.isCoastPhase) return t.phaseCoast;
+      if (d.isLZKPhase) return t.phaseLzk;
+      return t.phaseSaving;
+    };
     const rows = allData.map((d) => [
       d.year,
       d.calendarYear,
@@ -207,7 +220,7 @@ function HomeContent() {
       Math.round(d.monthlySavings),
       Math.round(d.taxPaid),
       Math.round(d.annualWithdrawal),
-      d.isDrawdownPhase ? t.phaseWithdrawal : d.isLZKPhase ? t.phaseLzk : t.phaseSaving,
+      getPhaseLabel(d),
     ]);
     const csv = [headers, ...rows].map((r) => r.join(";")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }); // BOM prefix for Excel UTF-8

@@ -63,6 +63,9 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     coastFireAge,
     fullFireAge,
     lzkSabbaticalStartAge,
+    freistellungStartAge,
+    freistellungEndAge,
+    freistellungJahre,
   } = result;
 
   const coastLabel = coastFireAge
@@ -172,13 +175,34 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         }
         accent={sparquote >= 30}
       />
-      <KPICard
-        icon="🔒"
-        iconLabel={t.kpiLzkStart}
-        title={t.kpiLzkStart}
-        value={t.kpiAgeLabel(lzkSabbaticalStartAge)}
-        sub={`${lzkStartCalendarYear} · ${t.kpiLzkStartSub}`}
-      />
+      {inputs.arbeitszeitkontoEnabled && freistellungStartAge !== null ? (
+        <>
+          <KPICard
+            icon="🏖️"
+            iconLabel={t.kpiFreistellungStart}
+            title={t.kpiFreistellungStart}
+            value={t.kpiAgeLabel(freistellungStartAge)}
+            sub={t.kpiFreistellungDuration(freistellungJahre.toFixed(1))}
+          />
+          {freistellungEndAge !== null && (
+            <KPICard
+              icon="🔄"
+              iconLabel={t.kpiFreistellungEnd}
+              title={t.kpiFreistellungEnd}
+              value={t.kpiAgeLabel(freistellungEndAge)}
+              sub={t.kpiFreistellungEndSub}
+            />
+          )}
+        </>
+      ) : (
+        <KPICard
+          icon="🔒"
+          iconLabel={t.kpiLzkStart}
+          title={t.kpiLzkStart}
+          value={t.kpiAgeLabel(lzkSabbaticalStartAge)}
+          sub={`${lzkStartCalendarYear} · ${t.kpiLzkStartSub}`}
+        />
+      )}
     </div>
   );
 }

@@ -64,9 +64,13 @@ export default function DetailTable({ result }: DetailTableProps) {
                   className={`border-t border-slate-50 dark:border-slate-700 ${
                     d.isDrawdownPhase
                       ? "bg-amber-50/50 dark:bg-amber-900/10"
-                      : d.isLZKPhase
-                        ? "bg-blue-50/30 dark:bg-blue-900/10"
-                        : ""
+                      : d.isFreistellungsPhase
+                        ? "bg-orange-50/30 dark:bg-orange-900/10"
+                        : d.isCoastPhase
+                          ? "bg-purple-50/30 dark:bg-purple-900/10"
+                          : d.isLZKPhase
+                            ? "bg-blue-50/30 dark:bg-blue-900/10"
+                            : ""
                   } hover:bg-slate-50 dark:hover:bg-slate-700`}
                 >
                   <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-300">
@@ -97,6 +101,14 @@ export default function DetailTable({ result }: DetailTableProps) {
                     {d.isDrawdownPhase ? (
                       <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400">
                         {t.phaseWithdrawal}
+                      </span>
+                    ) : d.isFreistellungsPhase ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400">
+                        {t.phaseFreistellung}
+                      </span>
+                    ) : d.isCoastPhase ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400">
+                        {t.phaseCoast}
                       </span>
                     ) : d.isLZKPhase ? (
                       <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400">

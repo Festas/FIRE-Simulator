@@ -33,6 +33,9 @@ const defaultInputs: FireInputs = {
   monatlichesNetto: 6_500,
   taxCountry: "DE",
   lifeEvents: [],
+  arbeitszeitkontoEnabled: false,
+  stundenProJahr: 0,
+  wochenStunden: 40,
 };
 
 function makeInputs(overrides: Partial<FireInputs> = {}): FireInputs {
@@ -411,6 +414,107 @@ describe("LZK phase", () => {
     for (const d of lzkPhase) {
       expect(d.year).toBeGreaterThanOrEqual(result.lzkStartYear);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Arbeitszeitkonto (working time account) tests
+// ---------------------------------------------------------------------------
+
+describe("Arbeitszeitkonto", () => {
+  const azkInputs = {
+    arbeitszeitkontoEnabled: true,
+    stundenProJahr: 200,
+    wochenStunden: 40,
+  };
+
+  it("accumulates hours before Coast FIRE", () => {
+    const result = calculateFIRE(makeInputs(azkInputs));
+    // Coast FIRE should be reached for default inputs
+    expect(result.coastFireYear).not.toBeNull();
+    if (result.coastFireYear !== null) {
+      // Check that hours accumulate up to Coast FIRE year
+      const atCoast = result.yearlyData[result.coastFireYear];
+      expect(atCoast.stundenGuthaben).toBe(result.coastFireYear * 200);
+    }
+  });
+
+  it("no ETF contributions during Freistellung phase", () => {
+    const result = calculateFIRE(makeInputs(azkInputs));
+    const freiPhase = result.yearlyData.filter((d) => d.isFreistellungsPhase);
+    if (freiPhase.length > 0) {
+      for (const d of freiPhase) {
+        expect(d.annualETFContrib).toBe(0);
+        expect(d.monthlySavings).toBe(0);
+      }
+    }
+  });
+
+  it("no ETF contributions during Coasting phase", () => {
+    const result = calculateFIRE(makeInputs(azkInputs));
+    const coastPhase = result.yearlyData.filter((d) => d.isCoastPhase);
+    for (const d of coastPhase) {
+      expect(d.annualETFContrib).toBe(0);
+      expect(d.monthlySavings).toBe(0);
+    }
+  });
+
+  it("computes correct Freistellung duration from accumulated hours", () => {
+    const result = calculateFIRE(makeInputs(azkInputs));
+    // 200 hours/year, 40h/week * 52 weeks = 2080 hours/year of work
+    // So freistellungJahre ≈ coastFireYear * 200 / 2080
+    expect(result.freistellungJahre).toBeGreaterThan(0);
+    if (result.coastFireYear !== null) {
+      const expected = (result.coastFireYear * 200) / (40 * 52);
+      expect(result.freistellungJahre).toBeCloseTo(expected, 1);
+    }
+  });
+
+  it("Freistellung start age is set when AZK is enabled", () => {
+    const result = calculateFIRE(makeInputs(azkInputs));
+    if (result.coastFireYear !== null) {
+      expect(result.freistellungStartAge).not.toBeNull();
+      expect(result.freistellungEndAge).not.toBeNull();
+    }
+  });
+
+  it("portfolio still grows during Freistellung (via returns only)", () => {
+    const result = calculateFIRE(makeInputs(azkInputs));
+    const freiPhase = result.yearlyData.filter((d) => d.isFreistellungsPhase);
+    if (freiPhase.length > 0) {
+      for (const d of freiPhase) {
+        // Returns should be positive (portfolio grows)
+        expect(d.annualGains).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("does not accumulate hours when AZK is disabled", () => {
+    const result = calculateFIRE(makeInputs({ arbeitszeitkontoEnabled: false }));
+    for (const d of result.yearlyData) {
+      expect(d.stundenGuthaben).toBe(0);
+      expect(d.isFreistellungsPhase).toBe(false);
+      expect(d.isCoastPhase).toBe(false);
+    }
+    expect(result.freistellungJahre).toBe(0);
+  });
+
+  it("Coast FIRE not reached means no Freistellung", () => {
+    // Very low savings, very high target — won't reach Coast FIRE
+    const result = calculateFIRE(makeInputs({
+      ...azkInputs,
+      monatlicheSparrate: 50,
+      startKapital: 0,
+      zielvermoegen: 100_000_000,
+    }));
+    expect(result.freistellungStartAge).toBeNull();
+    expect(result.freistellungEndAge).toBeNull();
+  });
+
+  it("high hours per year yield longer Freistellung", () => {
+    const low = calculateFIRE(makeInputs({ ...azkInputs, stundenProJahr: 100 }));
+    const high = calculateFIRE(makeInputs({ ...azkInputs, stundenProJahr: 400 }));
+    expect(high.freistellungJahre).toBeGreaterThan(low.freistellungJahre);
   });
 });
 
