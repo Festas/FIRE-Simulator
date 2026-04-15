@@ -71,6 +71,11 @@ export interface FireInputs {
 
   // Life events timeline
   lifeEvents: LifeEvent[];
+
+  // Arbeitszeitkonto (working time account) — accumulate hours for paid leave
+  arbeitszeitkontoEnabled: boolean; // enable the working-time-account model
+  stundenProJahr: number; // hours accumulated per year on the time account
+  wochenStunden: number; // regular weekly working hours (for conversion to years)
 }
 
 export interface MonteCarloResult {
@@ -103,6 +108,11 @@ export interface YearDataPoint {
   annualGains: number;
   isDrawdownPhase: boolean;
   annualWithdrawal: number;
+
+  // Arbeitszeitkonto fields
+  stundenGuthaben: number; // accumulated hours on working-time account
+  isFreistellungsPhase: boolean; // paid leave from accumulated hours
+  isCoastPhase: boolean; // coasting: savings rate = 0, portfolio grows by return only
 }
 
 export interface LifecycleMonteCarloResult {
@@ -144,6 +154,11 @@ export interface FireResult {
   coastFireAge: number | null;
   fullFireAge: number | null;
   lzkSabbaticalStartAge: number;
+
+  // Freistellung (paid leave) milestones
+  freistellungStartAge: number | null;
+  freistellungEndAge: number | null;
+  freistellungJahre: number; // total paid leave years available
 
   // Drawdown
   drawdownData: YearDataPoint[];
@@ -255,18 +270,27 @@ function simulateAccumulation(
     etfRendite,
     inflation,
     bavJaehrlich,
-    lzkJahre,
     zielvermoegen,
     startYear,
     currentAge,
     lifeEvents,
+    arbeitszeitkontoEnabled,
+    stundenProJahr,
+    wochenStunden,
   } = inputs;
 
   const roi = (etfRendite + returnOffset) / 100;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
+  const realReturn = (1 + roi) / (1 + inf) - 1;
 
-  // Pass 1: estimate FIRE year (with offset return) to determine LZK sabbatical start
+  // Calculate Freistellung duration in years from hour balance
+  const annualWorkHours = wochenStunden * 52;
+  const freistellungJahre = arbeitszeitkontoEnabled && annualWorkHours > 0
+    ? stundenProJahr / annualWorkHours
+    : 0;
+
+  // Pass 1: estimate FIRE year (without AZK effects) to anchor Coast FIRE
   let tempBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
@@ -276,7 +300,6 @@ function simulateAccumulation(
     tempBal = (tempBal + contrib) * (1 + roi);
     const gains = tempBal - prev - contrib;
     tempBal -= calculateTax(gains, inputs);
-    // Life events impact
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
     tempBal += eventCF;
     tempBal = Math.max(0, tempBal);
@@ -287,36 +310,89 @@ function simulateAccumulation(
     }
   }
 
-  // LZK sabbatical: the last lzkJahre years before FIRE exit are the sabbatical
-  // During sabbatical, salary continues so ETF contributions continue normally
-  const lzkStartYear = Math.max(1, estimatedFireYear - lzkJahre);
-
-  // Pass 2: full simulation — ETF contributions continue during LZK sabbatical
+  // Pass 2: full simulation with Arbeitszeitkonto logic
   let etfBal = startKapital;
   const data: YearDataPoint[] = [];
+  let accumulatedHours = 0;
+  let coastFireReached = false;
+  let coastFireYear: number | null = null;
+  let freistellungStartYear: number | null = null;
+  let freistellungEndYear: number | null = null;
+  let remainingFreistellungYears = 0;
 
   data.push(makeYearZero(startKapital, monatlicheSparrate, startYear, currentAge));
 
   for (let y = 1; y <= MAX_YEARS; y++) {
-    const isLZKPhase = y >= lzkStartYear;
     const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
-    // During LZK sabbatical, ETF contributions continue (salary still flows)
+    // Check Coast FIRE threshold
+    if (!coastFireReached) {
+      const yearsRemaining = Math.max(0, estimatedFireYear - y);
+      const coastThreshold = yearsRemaining > 0
+        ? zielvermoegen / Math.pow(1 + realReturn, yearsRemaining)
+        : zielvermoegen;
+      const currentReal = etfBal / Math.pow(1 + inf, y - 1);
+      if (currentReal >= coastThreshold) {
+        coastFireReached = true;
+        coastFireYear = y;
+        if (arbeitszeitkontoEnabled && accumulatedHours > 0 && annualWorkHours > 0) {
+          remainingFreistellungYears = accumulatedHours / annualWorkHours;
+          freistellungStartYear = y;
+          freistellungEndYear = y + Math.floor(remainingFreistellungYears);
+        }
+      }
+    }
+
+    // Determine current phase
+    let isFreistellung = false;
+    let isCoast = false;
+    let isLZK = false;
+
+    if (arbeitszeitkontoEnabled && coastFireReached) {
+      if (remainingFreistellungYears > 0) {
+        // Freistellung phase: paid leave, no new ETF contributions
+        isFreistellung = true;
+        isLZK = true;
+        remainingFreistellungYears = Math.max(0, remainingFreistellungYears - 1);
+      } else {
+        // Coasting phase: back to work but savings rate = 0, portfolio grows by return only
+        isCoast = true;
+        isLZK = true;
+      }
+    }
+
+    // Accumulate hours before Coast FIRE
+    if (arbeitszeitkontoEnabled && !coastFireReached) {
+      accumulatedHours += stundenProJahr;
+    }
+
+    // ETF growth & contributions
     const prevEtf = etfBal;
-    etfBal = (etfBal + contrib) * (1 + roi);
-    const etfGains = etfBal - prevEtf - contrib;
+    if (isFreistellung) {
+      // Freistellung: no new contributions, only portfolio growth
+      etfBal = etfBal * (1 + roi);
+    } else if (isCoast) {
+      // Coasting: no new contributions, only portfolio growth
+      etfBal = etfBal * (1 + roi);
+    } else {
+      // Normal accumulation: contributions + growth
+      etfBal = (etfBal + contrib) * (1 + roi);
+    }
+    const etfGains = etfBal - prevEtf - (isFreistellung || isCoast ? 0 : contrib);
     const etfTax = calculateTax(etfGains, inputs);
     etfBal -= etfTax;
 
-    // Apply life events cash-flow to ETF balance
+    // Life events cash-flow
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
     etfBal += eventCF;
     etfBal = Math.max(0, etfBal);
 
     const etfReal = etfBal / realFactor;
     const totalReal = etfReal;
+    const effectiveContrib = (isFreistellung || isCoast) ? 0 : contrib;
+    const effectiveMonthlySavings = (isFreistellung || isCoast) ? 0 : savings;
 
     data.push({
       year: y,
@@ -327,14 +403,17 @@ function simulateAccumulation(
       lzkBalanceNominal: 0,
       lzkBalanceReal: 0,
       totalReal,
-      annualETFContrib: contrib,
+      annualETFContrib: effectiveContrib,
       annualLZKContrib: 0,
-      monthlySavings: savings,
-      isLZKPhase,
+      monthlySavings: effectiveMonthlySavings,
+      isLZKPhase: isLZK,
       taxPaid: etfTax,
       annualGains: etfGains,
       isDrawdownPhase: false,
       annualWithdrawal: 0,
+      stundenGuthaben: accumulatedHours,
+      isFreistellungsPhase: isFreistellung,
+      isCoastPhase: isCoast,
     });
   }
 
@@ -392,6 +471,9 @@ function simulateNoInvestment(inputs: FireInputs): YearDataPoint[] {
       annualGains: 0,
       isDrawdownPhase: false,
       annualWithdrawal: 0,
+      stundenGuthaben: 0,
+      isFreistellungsPhase: false,
+      isCoastPhase: false,
     });
   }
 
@@ -504,6 +586,9 @@ function simulateDrawdown(
       annualGains: gains,
       isDrawdownPhase: true,
       annualWithdrawal: withdrawal,
+      stundenGuthaben: 0,
+      isFreistellungsPhase: false,
+      isCoastPhase: false,
     });
   }
 
@@ -594,6 +679,9 @@ function makeYearZero(
     annualGains: 0,
     isDrawdownPhase: false,
     annualWithdrawal: 0,
+    stundenGuthaben: 0,
+    isFreistellungsPhase: false,
+    isCoastPhase: false,
   };
 }
 
@@ -619,6 +707,9 @@ function makeEmptyDrawdownPoint(
     annualGains: 0,
     isDrawdownPhase: true,
     annualWithdrawal: 0,
+    stundenGuthaben: 0,
+    isFreistellungsPhase: false,
+    isCoastPhase: false,
   };
 }
 
@@ -895,7 +986,6 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     inflation,
     bavJaehrlich,
     zielvermoegen,
-    lzkJahre,
     startYear,
     currentAge,
     monatlichesWunschEinkommen,
@@ -903,6 +993,9 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     swr,
     monatlichesNetto,
     lifeEvents,
+    arbeitszeitkontoEnabled,
+    stundenProJahr,
+    wochenStunden,
   } = inputs;
 
   const roi = etfRendite / 100;
@@ -910,6 +1003,9 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const dyn = dynamikSparrate / 100;
   const swrDecimal = swr / 100;
   const realReturn = (1 + roi) / (1 + inf) - 1;
+
+  // Arbeitszeitkonto: hours → years conversion
+  const annualWorkHours = wochenStunden * 52;
 
   // Derived FIRE number: (monthlyGap × 12) / SWR
   const monthlyGap = Math.max(
@@ -920,7 +1016,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
 
   // -----------------------------------------------------------------------
-  // Pass 1: estimate FIRE year (with tax + life events)
+  // Pass 1: estimate FIRE year (without AZK effects, for Coast FIRE anchor)
   // -----------------------------------------------------------------------
   let etfBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
@@ -931,7 +1027,6 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     etfBal = (etfBal + contrib) * (1 + roi);
     const gains = etfBal - prev - contrib;
     etfBal -= calculateTax(gains, inputs);
-    // Life events impact
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
     etfBal += eventCF;
     etfBal = Math.max(0, etfBal);
@@ -942,17 +1037,22 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     }
   }
 
-  // LZK sabbatical starts lzkJahre before FIRE exit
-  // During sabbatical: user is free but salary continues → ETF contributions continue
-  const lzkStartYear = Math.max(1, estimatedFireYear - lzkJahre);
+  // Legacy LZK start year (used for backward compatibility with non-AZK mode)
+  const lzkStartYear = arbeitszeitkontoEnabled
+    ? estimatedFireYear // when AZK is on, lzkStartYear is set to wherever Coast FIRE triggers it
+    : Math.max(1, estimatedFireYear - inputs.lzkJahre);
 
   // -----------------------------------------------------------------------
-  // Pass 2: full simulation — ETF contributions continue during LZK sabbatical
+  // Pass 2: full simulation with Arbeitszeitkonto model
   // -----------------------------------------------------------------------
   etfBal = startKapital;
   const yearlyData: YearDataPoint[] = [];
   let totalTaxPaid = 0;
   let totalGains = 0;
+  let accumulatedHours = 0;
+  let remainingFreistellungYears = 0;
+  let freistellungStartYear: number | null = null;
+  let freistellungEndYear: number | null = null;
 
   yearlyData.push(makeYearZero(startKapital, monatlicheSparrate, startYear, currentAge));
 
@@ -967,16 +1067,52 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   if (startKapital >= coastThreshold0) coastFireYear = 0;
   if (startKapital >= zielvermoegen) fullFireYear = 0;
 
+  // Track actual lzk start year for the result
+  let effectiveLzkStartYear = lzkStartYear;
+
   for (let y = 1; y <= MAX_YEARS; y++) {
-    const isLZKPhase = y >= lzkStartYear;
     const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
-    // During LZK sabbatical, ETF contributions continue (salary still flows)
+    // Determine phase for this year
+    let isFreistellung = false;
+    let isCoast = false;
+    let isLZK = false;
+
+    if (arbeitszeitkontoEnabled) {
+      // AZK model: phases based on Coast FIRE + accumulated hours
+      if (coastFireYear !== null && fullFireYear === null) {
+        // We've reached Coast FIRE but not Full FIRE yet
+        if (remainingFreistellungYears > 0) {
+          isFreistellung = true;
+          isLZK = true;
+          remainingFreistellungYears = Math.max(0, remainingFreistellungYears - 1);
+        } else if (freistellungStartYear !== null) {
+          // Freistellung hours exhausted, now coasting
+          isCoast = true;
+          isLZK = true;
+        }
+      }
+      // Accumulate hours during normal working phase (before Coast FIRE)
+      if (coastFireYear === null) {
+        accumulatedHours += stundenProJahr;
+      }
+    } else {
+      // Legacy LZK model: mark last lzkJahre years before FIRE as sabbatical
+      isLZK = y >= effectiveLzkStartYear;
+    }
+
+    // ETF growth & contributions
     const prevEtf = etfBal;
-    etfBal = (etfBal + contrib) * (1 + roi);
-    const etfGains = etfBal - prevEtf - contrib;
+    if (isFreistellung || isCoast) {
+      // No new contributions during Freistellung or Coasting
+      etfBal = etfBal * (1 + roi);
+    } else {
+      // Normal accumulation
+      etfBal = (etfBal + contrib) * (1 + roi);
+    }
+    const etfGains = etfBal - prevEtf - ((isFreistellung || isCoast) ? 0 : contrib);
     const etfTax = calculateTax(etfGains, inputs);
     etfBal -= etfTax;
 
@@ -993,6 +1129,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
 
     const etfReal = etfBal / realFactor;
     const totalReal = etfReal;
+    const effectiveContrib = (isFreistellung || isCoast) ? 0 : contrib;
+    const effectiveMonthlySavings = (isFreistellung || isCoast) ? 0 : savings;
 
     yearlyData.push({
       year: y,
@@ -1003,14 +1141,17 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       lzkBalanceNominal: 0,
       lzkBalanceReal: 0,
       totalReal,
-      annualETFContrib: contrib,
+      annualETFContrib: effectiveContrib,
       annualLZKContrib: 0,
-      monthlySavings: savings,
-      isLZKPhase,
+      monthlySavings: effectiveMonthlySavings,
+      isLZKPhase: isLZK,
       taxPaid: yearTax,
       annualGains: yearGains,
       isDrawdownPhase: false,
       annualWithdrawal: 0,
+      stundenGuthaben: accumulatedHours,
+      isFreistellungsPhase: isFreistellung,
+      isCoastPhase: isCoast,
     });
 
     // Dynamic Coast FIRE
@@ -1020,7 +1161,16 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
         yearsRemaining > 0
           ? zielvermoegen / Math.pow(1 + realReturn, yearsRemaining)
           : zielvermoegen;
-      if (totalReal >= coastThreshold) coastFireYear = y;
+      if (totalReal >= coastThreshold) {
+        coastFireYear = y;
+        // Trigger Freistellung when AZK is enabled
+        if (arbeitszeitkontoEnabled && accumulatedHours > 0 && annualWorkHours > 0) {
+          remainingFreistellungYears = accumulatedHours / annualWorkHours;
+          freistellungStartYear = y + 1; // starts next year
+          freistellungEndYear = y + Math.ceil(remainingFreistellungYears);
+          effectiveLzkStartYear = y + 1;
+        }
+      }
     }
 
     if (fullFireYear === null && totalReal >= zielvermoegen) fullFireYear = y;
@@ -1039,6 +1189,13 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       zielvermoegen /
       Math.pow(1 + realReturn, Math.max(1, estimatedFireYear));
   }
+
+  // Freistellung duration in years
+  const totalFreistellungJahre = arbeitszeitkontoEnabled && annualWorkHours > 0
+    ? (coastFireYear !== null
+      ? (coastFireYear * stundenProJahr) / annualWorkHours
+      : (estimatedFireYear * stundenProJahr) / annualWorkHours)
+    : 0;
 
   // -----------------------------------------------------------------------
   // Exit values
@@ -1101,8 +1258,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       coastFireYear !== null ? startYear + coastFireYear : null,
     fullFireCalendarYear:
       fullFireYear !== null ? startYear + fullFireYear : null,
-    lzkStartYear,
-    lzkStartCalendarYear: startYear + lzkStartYear,
+    lzkStartYear: effectiveLzkStartYear,
+    lzkStartCalendarYear: startYear + effectiveLzkStartYear,
     passiveIncomeAtExit,
     swRate: swr,
     targetReached: fullFireYear !== null,
@@ -1112,7 +1269,16 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       coastFireYear !== null ? currentAge + coastFireYear : null,
     fullFireAge:
       fullFireYear !== null ? currentAge + fullFireYear : null,
-    lzkSabbaticalStartAge: currentAge + lzkStartYear,
+    lzkSabbaticalStartAge: currentAge + effectiveLzkStartYear,
+
+    // Freistellung milestones
+    freistellungStartAge: freistellungStartYear !== null
+      ? currentAge + freistellungStartYear
+      : null,
+    freistellungEndAge: freistellungEndYear !== null
+      ? currentAge + freistellungEndYear
+      : null,
+    freistellungJahre: totalFreistellungJahre,
 
     drawdownData: drawdownResult.data,
     drawdownSurvives: drawdownResult.survives,
@@ -1245,6 +1411,9 @@ export function calculateReverse(
     monatlichesNetto,
     taxCountry,
     lifeEvents,
+    arbeitszeitkontoEnabled: false,
+    stundenProJahr: 0,
+    wochenStunden: 40,
   };
 
   const requiredMonthlySavings = calculateRequiredSparrate(inputs, targetYears);
