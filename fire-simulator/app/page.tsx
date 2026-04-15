@@ -20,29 +20,30 @@ import ScenarioManager from "@/app/components/ScenarioManager";
 import ExamplePlansDropdown from "@/app/components/ExamplePlansDropdown";
 
 const DEFAULT_INPUTS: FireInputs = {
-  startKapital: 50_000,
-  monatlicheSparrate: 3_250,
+  startKapital: 30_000,
+  monatlicheSparrate: 1_500,
   dynamikSparrate: 2.0,
   etfRendite: 7.0,
   inflation: 2.5,
-  bavJaehrlich: 8_000,
-  zielvermoegen: 1_650_000,
-  lzkJahre: 3,
-  lzkRendite: 3.5,
+  bavJaehrlich: 0,
+  zielvermoegen: 857_143, // (2_500 * 12) / 0.035 — based on full income (no pension offset before age 67)
+  lzkJahre: 0,
+  lzkRendite: 0,
   startYear: 2026,
-  currentAge: 29,
-  monatlichesWunschEinkommen: 4_000,
-  gesetzlicheRente: 1_500,
+  currentAge: 30,
+  monatlichesWunschEinkommen: 2_500,
+  gesetzlicheRente: 1_200,
+  renteneintrittsalter: 67,
   swr: 3.5,
   steuerModell: "single",
   kirchensteuer: false,
   taxCountry: "DE",
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
-  monatlichesNetto: 6_500,
+  monatlichesNetto: 5_200,
   lifeEvents: [],
-  arbeitszeitkontoEnabled: true,
-  stundenProJahr: 200,
+  arbeitszeitkontoEnabled: false,
+  stundenProJahr: 0,
   wochenStunden: 40,
 };
 
@@ -73,6 +74,7 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   ae: "arbeitszeitkontoEnabled",
   sp: "stundenProJahr",
   ws: "wochenStunden",
+  ra: "renteneintrittsalter",
 };
 
 function parseURLInputs(): Partial<FireInputs> | null {
@@ -170,19 +172,15 @@ function HomeContent() {
   const handleChange = (key: keyof FireInputs, value: number | string | boolean) => {
     setInputs((prev) => {
       const next = { ...prev, [key]: value };
-      // Auto-update zielvermoegen when income/pension/SWR change
+      // Auto-update zielvermoegen when income or SWR change
+      // Use full desired income (not reduced by pension) since pension only starts at Renteneintrittsalter
       if (
         key === "monatlichesWunschEinkommen" ||
-        key === "gesetzlicheRente" ||
         key === "swr"
       ) {
-        const gap = Math.max(
-          0,
-          (key === "monatlichesWunschEinkommen" ? (value as number) : next.monatlichesWunschEinkommen) -
-            (key === "gesetzlicheRente" ? (value as number) : next.gesetzlicheRente)
-        );
+        const income = (key === "monatlichesWunschEinkommen" ? (value as number) : next.monatlichesWunschEinkommen);
         const swr = (key === "swr" ? (value as number) : next.swr) / 100;
-        next.zielvermoegen = swr > 0 ? Math.round((gap * 12) / swr) : next.zielvermoegen;
+        next.zielvermoegen = swr > 0 ? Math.round((income * 12) / swr) : next.zielvermoegen;
       }
       saveInputs(next);
       return next;

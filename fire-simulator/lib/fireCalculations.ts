@@ -18,7 +18,8 @@ export type LifeEventType =
   | "healthcare"
   | "one_time_expense"
   | "one_time_income"
-  | "side_income";
+  | "side_income"
+  | "savings_rate_change";
 
 export interface LifeEvent {
   id: string;
@@ -51,6 +52,7 @@ export interface FireInputs {
   // Retirement income
   monatlichesWunschEinkommen: number; // desired monthly income in retirement
   gesetzlicheRente: number; // expected monthly state pension
+  renteneintrittsalter: number; // age at which state pension begins (e.g. 67)
 
   // Safe withdrawal rate (percent, e.g. 3.5)
   swr: number;
@@ -244,6 +246,7 @@ function lifeEventCashFlow(
 ): number {
   let total = 0;
   for (const evt of events) {
+    if (evt.type === "savings_rate_change") continue; // handled separately
     if (calendarYear < evt.startYear || calendarYear > evt.endYear) continue;
     let amount = evt.annualAmount;
     if (evt.inflationAdjusted) {
@@ -253,6 +256,24 @@ function lifeEventCashFlow(
     total += amount;
   }
   return total;
+}
+
+/**
+ * Returns the overridden monthly savings rate if a savings_rate_change event
+ * is active for the given calendar year, otherwise returns null.
+ * The annualAmount field stores the new monthly savings rate during that period.
+ */
+function getSavingsRateOverride(
+  events: LifeEvent[],
+  calendarYear: number,
+): number | null {
+  for (const evt of events) {
+    if (evt.type !== "savings_rate_change") continue;
+    if (calendarYear >= evt.startYear && calendarYear <= evt.endYear) {
+      return evt.annualAmount; // annualAmount = new monthly savings rate
+    }
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -294,8 +315,9 @@ function simulateAccumulation(
   let tempBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
-    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
-    const contrib = savings * 12 + bavJaehrlich;
+    const override = getSavingsRateOverride(lifeEvents, startYear + y);
+    const baseSavings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const contrib = baseSavings * 12 + bavJaehrlich;
     const prev = tempBal;
     tempBal = (tempBal + contrib) * (1 + roi);
     const gains = tempBal - prev - contrib;
@@ -323,7 +345,8 @@ function simulateAccumulation(
   data.push(makeYearZero(startKapital, monatlicheSparrate, startYear, currentAge));
 
   for (let y = 1; y <= MAX_YEARS; y++) {
-    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const override = getSavingsRateOverride(lifeEvents, startYear + y);
+    const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
@@ -498,6 +521,7 @@ function simulateDrawdown(
     inflation,
     monatlichesWunschEinkommen,
     gesetzlicheRente,
+    renteneintrittsalter,
     entnahmeModell,
     kapitalverzehrJahre,
     startYear,
@@ -507,7 +531,11 @@ function simulateDrawdown(
   // More conservative allocation in drawdown (−1 % return)
   const roi = Math.max(0, etfRendite - 1) / 100;
   const inf = inflation / 100;
-  const monthlyGap = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+  // Full monthly gap (no pension) and reduced gap (with pension)
+  const monthlyGapFull = monatlichesWunschEinkommen;
+  const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+  // Pension start age — default 67 if not set
+  const pensionAge = renteneintrittsalter ?? 67;
 
   let balance = exitBalanceNominal;
   const data: YearDataPoint[] = [];
@@ -557,7 +585,10 @@ function simulateDrawdown(
       }
     } else {
       // Ewige Rente: desired income gap, inflation-adjusted
-      withdrawal = monthlyGap * 12 * Math.pow(1 + inf, exitYear + y);
+      // Before pension age: withdraw full desired income
+      // After pension age: withdraw only the gap (desired - pension)
+      const gap = age >= pensionAge ? monthlyGapWithPension : monthlyGapFull;
+      withdrawal = gap * 12 * Math.pow(1 + inf, exitYear + y);
     }
 
     withdrawal = Math.min(withdrawal, balance);
@@ -623,7 +654,8 @@ function calculateRequiredSparrate(
   function finalRealValue(monthlySavings: number): number {
     let bal = startKapital;
     for (let y = 1; y <= targetYears; y++) {
-      const savings = monthlySavings * Math.pow(1 + dyn, y - 1);
+      const override = getSavingsRateOverride(lifeEvents, startYear + y);
+      const savings = override !== null ? override : monthlySavings * Math.pow(1 + dyn, y - 1);
       const contrib = savings * 12 + bavJaehrlich;
       const prev = bal;
       bal = (bal + contrib) * (1 + roi);
@@ -752,16 +784,20 @@ function simulateMonteCarlo(
     inflation,
     monatlichesWunschEinkommen,
     gesetzlicheRente,
+    renteneintrittsalter,
     entnahmeModell,
     kapitalverzehrJahre,
     startYear,
+    currentAge,
   } = inputs;
 
   // Expected return and volatility for drawdown phase
   const meanReturn = Math.max(0, etfRendite - 1) / 100; // conservative
   const stdDev = 0.15; // ~15% annual volatility (typical for diversified equity)
   const inf = inflation / 100;
-  const monthlyGap = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+  const monthlyGapFull = monatlichesWunschEinkommen;
+  const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+  const pensionAge = renteneintrittsalter ?? 67;
 
   const rng = mulberry32(42); // deterministic seed
   const balancesByYear: number[][] = Array.from(
@@ -812,7 +848,9 @@ function simulateMonteCarlo(
           }
         }
       } else {
-        withdrawal = monthlyGap * 12 * Math.pow(1 + inf, exitYear + y);
+        const age = currentAge + exitYear + y;
+        const gap = age >= pensionAge ? monthlyGapWithPension : monthlyGapFull;
+        withdrawal = gap * 12 * Math.pow(1 + inf, exitYear + y);
       }
 
       withdrawal = Math.min(withdrawal, balance);
@@ -895,7 +933,8 @@ function simulateLifecycleMonteCarlo(
     let fireYear: number | null = null;
 
     for (let y = 1; y <= MAX_YEARS; y++) {
-      const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+      const override = getSavingsRateOverride(lifeEvents, startYear + y);
+      const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
       const contrib = savings * 12 + bavJaehrlich;
 
       const annualReturn = meanReturn + stdDev * normalRandom(rng);
@@ -1007,13 +1046,15 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   // Arbeitszeitkonto: hours → years conversion
   const annualWorkHours = wochenStunden * 52;
 
-  // Derived FIRE number: (monthlyGap × 12) / SWR
-  const monthlyGap = Math.max(
+  // Derived FIRE number: accounts for full withdrawal before pension age
+  // The binding constraint is the pre-pension period where no state pension is received
+  const monthlyGapWithPension = Math.max(
     0,
     monatlichesWunschEinkommen - gesetzlicheRente,
   );
+  const monthlyGapFull = monatlichesWunschEinkommen;
   const derivedFireNumber =
-    swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+    swrDecimal > 0 ? (monthlyGapFull * 12) / swrDecimal : 0;
 
   // -----------------------------------------------------------------------
   // Pass 1: estimate FIRE year (without AZK effects, for Coast FIRE anchor)
@@ -1021,7 +1062,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   let etfBal = startKapital;
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
-    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const override = getSavingsRateOverride(lifeEvents, startYear + y);
+    const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
     const prev = etfBal;
     etfBal = (etfBal + contrib) * (1 + roi);
@@ -1071,7 +1113,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   let effectiveLzkStartYear = lzkStartYear;
 
   for (let y = 1; y <= MAX_YEARS; y++) {
-    const savings = monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+    const override = getSavingsRateOverride(lifeEvents, startYear + y);
+    const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
@@ -1369,24 +1412,26 @@ export function calculateReverse(
   currentMonthlySavings: number = 0,
   monatlichesNetto: number = 0,
 ): ReverseResult {
+  const monthlyGapFull = targetMonthlyIncome;
   const monthlyGap = Math.max(0, targetMonthlyIncome - statePension);
   const swrDecimal = swr / 100;
   const inf = inflation / 100;
 
   // Better FIRE number for kapitalverzehr mode (present-value-of-annuity)
+  // Use full income (no pension offset) since we need to cover pre-pension years
   let fireNumber: number;
   if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0 && swrDecimal > 0) {
     // Use a conservative return (−1 pp) for drawdown, matching simulateDrawdown/simulateMonteCarlo
     const conservativeReturn = Math.max(0, expectedReturn - DRAWDOWN_RETURN_DEDUCTION) / 100;
     const realReturn = (1 + conservativeReturn) / (1 + inf) - 1;
-    const annualNeed = monthlyGap * 12;
+    const annualNeed = monthlyGapFull * 12;
     if (realReturn <= 0) {
       fireNumber = annualNeed * kapitalverzehrJahre;
     } else {
       fireNumber = annualNeed * (1 - Math.pow(1 + realReturn, -kapitalverzehrJahre)) / realReturn;
     }
   } else {
-    fireNumber = swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+    fireNumber = swrDecimal > 0 ? (monthlyGapFull * 12) / swrDecimal : 0;
   }
 
   const inputs: FireInputs = {
@@ -1403,6 +1448,7 @@ export function calculateReverse(
     currentAge: 30,
     monatlichesWunschEinkommen: targetMonthlyIncome,
     gesetzlicheRente: statePension,
+    renteneintrittsalter: 67,
     swr,
     steuerModell,
     kirchensteuer,
