@@ -7,7 +7,7 @@
 // country-specific logic isolated.
 // ---------------------------------------------------------------------------
 
-export type TaxCountry = "DE" | "US" | "UK" | "CH" | "AT" | "NL";
+export type TaxCountry = "DE" | "US" | "UK" | "CH" | "AT" | "NL" | "CA" | "AU" | "FR";
 
 /**
  * Minimal tax-relevant configuration shared across engines.
@@ -208,6 +208,93 @@ const netherlandsEngine: TaxEngine = {
 };
 
 // ---------------------------------------------------------------------------
+// 🇨🇦 Canada — Federal Long-Term Capital Gains (50 % inclusion rate)
+// ---------------------------------------------------------------------------
+// Only 50 % of gains are included in taxable income. The included portion is
+// taxed at progressive federal rates.  Provincial taxes are not modelled.
+// ---------------------------------------------------------------------------
+
+function caFederalRate(taxableIncome: number): number {
+  if (taxableIncome <= 55_867) return 0.15;
+  if (taxableIncome <= 111_733) return 0.205;
+  if (taxableIncome <= 154_906) return 0.26;
+  if (taxableIncome <= 220_000) return 0.29;
+  return 0.33;
+}
+
+const canadaEngine: TaxEngine = {
+  id: "CA",
+  partialExemptionRate: 0.5, // 50 % inclusion ⇒ 50 % exempt
+
+  annualAllowance() {
+    return 0;
+  },
+
+  calculateTax(gains, config) {
+    if (gains <= 0) return 0;
+    const included = gains * 0.5;
+    const income = config.annualIncome ?? 0;
+    const rate = caFederalRate(income + included);
+    return included * rate;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 🇦🇺 Australia — CGT with 50 % discount (assets held > 12 months)
+// ---------------------------------------------------------------------------
+// Discounted gains are added to income and taxed at marginal rates.
+// We assume long-term holding so the 50 % discount always applies.
+// ---------------------------------------------------------------------------
+
+function auMarginalRate(taxableIncome: number): number {
+  if (taxableIncome <= 18_200) return 0.0;
+  if (taxableIncome <= 45_000) return 0.19;
+  if (taxableIncome <= 120_000) return 0.325;
+  if (taxableIncome <= 180_000) return 0.37;
+  return 0.45;
+}
+
+const australiaEngine: TaxEngine = {
+  id: "AU",
+  partialExemptionRate: 0.5, // 50 % CGT discount
+
+  annualAllowance() {
+    return 0;
+  },
+
+  calculateTax(gains, config) {
+    if (gains <= 0) return 0;
+    const discounted = gains * 0.5;
+    const income = config.annualIncome ?? 0;
+    const rate = auMarginalRate(income + discounted);
+    return discounted * rate;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// 🇫🇷 France — Prélèvement Forfaitaire Unique (PFU / Flat Tax)
+// ---------------------------------------------------------------------------
+// 30 % flat tax on gains (12.8 % income tax + 17.2 % social charges).
+// No allowance, no partial exemption.
+// ---------------------------------------------------------------------------
+
+const FR_PFU_RATE = 0.30;
+
+const franceEngine: TaxEngine = {
+  id: "FR",
+  partialExemptionRate: 0,
+
+  annualAllowance() {
+    return 0;
+  },
+
+  calculateTax(gains) {
+    if (gains <= 0) return 0;
+    return gains * FR_PFU_RATE;
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Engine registry
 // ---------------------------------------------------------------------------
 
@@ -218,13 +305,16 @@ const engines: Record<TaxCountry, TaxEngine> = {
   CH: switzerlandEngine,
   AT: austriaEngine,
   NL: netherlandsEngine,
+  CA: canadaEngine,
+  AU: australiaEngine,
+  FR: franceEngine,
 };
 
 export function getTaxEngine(country: TaxCountry): TaxEngine {
   return engines[country];
 }
 
-export const TAX_COUNTRIES: TaxCountry[] = ["DE", "US", "UK", "CH", "AT", "NL"];
+export const TAX_COUNTRIES: TaxCountry[] = ["DE", "US", "UK", "CH", "AT", "NL", "CA", "AU", "FR"];
 
 export const TAX_COUNTRY_LABELS: Record<TaxCountry, string> = {
   DE: "🇩🇪 Deutschland",
@@ -233,4 +323,7 @@ export const TAX_COUNTRY_LABELS: Record<TaxCountry, string> = {
   CH: "🇨🇭 Schweiz",
   AT: "🇦🇹 Österreich",
   NL: "🇳🇱 Nederland",
+  CA: "🇨🇦 Canada",
+  AU: "🇦🇺 Australia",
+  FR: "🇫🇷 France",
 };

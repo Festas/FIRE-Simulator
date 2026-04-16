@@ -35,6 +35,28 @@ export default function Warnings({ inputs }: WarningsProps) {
     warnings.push({ text: t.warnHighReturn, isWarning: false });
   }
 
+  // Enhanced validations
+  if (inputs.monatlicheSparrate > inputs.monatlichesNetto && inputs.monatlichesNetto > 0) {
+    warnings.push({
+      text: t.warnSavingsExceedIncome,
+      isWarning: true,
+    });
+  }
+
+  if (inputs.renteneintrittsalter <= inputs.currentAge) {
+    warnings.push({
+      text: t.warnPensionAgeTooLow,
+      isWarning: true,
+    });
+  }
+
+  if (inputs.monatlichesWunschEinkommen > inputs.monatlichesNetto && inputs.monatlichesNetto > 0) {
+    warnings.push({
+      text: t.warnDesiredIncomeHigh,
+      isWarning: false,
+    });
+  }
+
   if (warnings.length === 0) return null;
 
   return (

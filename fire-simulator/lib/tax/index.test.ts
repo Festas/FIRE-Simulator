@@ -144,3 +144,92 @@ describe("Netherlands (NL)", () => {
     expect(tax).toBeLessThan(10_000);
   });
 });
+
+describe("Canada (CA)", () => {
+  const engine = getTaxEngine("CA");
+
+  it("has 50% partial exemption (inclusion rate)", () => {
+    expect(engine.partialExemptionRate).toBe(0.5);
+  });
+
+  it("returns 0 for zero gains", () => {
+    expect(engine.calculateTax(0, makeConfig({ country: "CA" }))).toBe(0);
+  });
+
+  it("returns 0 for negative gains", () => {
+    expect(engine.calculateTax(-5_000, makeConfig({ country: "CA" }))).toBe(0);
+  });
+
+  it("taxes gains at 50% inclusion × marginal rate", () => {
+    const tax = engine.calculateTax(10_000, makeConfig({ country: "CA", annualIncome: 60_000 }));
+    expect(tax).toBeGreaterThan(0);
+    expect(tax).toBeLessThan(5_000); // at most 50% of gains
+  });
+
+  it("applies lower rate for low income", () => {
+    const lowTax = engine.calculateTax(10_000, makeConfig({ country: "CA", annualIncome: 20_000 }));
+    const highTax = engine.calculateTax(10_000, makeConfig({ country: "CA", annualIncome: 200_000 }));
+    expect(lowTax).toBeLessThan(highTax);
+  });
+
+  it("has zero allowance", () => {
+    expect(engine.annualAllowance(makeConfig({ country: "CA" }))).toBe(0);
+  });
+});
+
+describe("Australia (AU)", () => {
+  const engine = getTaxEngine("AU");
+
+  it("has 50% partial exemption (CGT discount)", () => {
+    expect(engine.partialExemptionRate).toBe(0.5);
+  });
+
+  it("returns 0 for zero gains", () => {
+    expect(engine.calculateTax(0, makeConfig({ country: "AU" }))).toBe(0);
+  });
+
+  it("returns 0 for negative gains", () => {
+    expect(engine.calculateTax(-5_000, makeConfig({ country: "AU" }))).toBe(0);
+  });
+
+  it("taxes gains at 50% discount × marginal rate", () => {
+    const tax = engine.calculateTax(10_000, makeConfig({ country: "AU", annualIncome: 60_000 }));
+    expect(tax).toBeGreaterThan(0);
+    expect(tax).toBeLessThan(5_000);
+  });
+
+  it("applies lower rate for low income", () => {
+    const lowTax = engine.calculateTax(10_000, makeConfig({ country: "AU", annualIncome: 15_000 }));
+    const highTax = engine.calculateTax(10_000, makeConfig({ country: "AU", annualIncome: 200_000 }));
+    expect(lowTax).toBeLessThan(highTax);
+  });
+
+  it("has zero allowance", () => {
+    expect(engine.annualAllowance(makeConfig({ country: "AU" }))).toBe(0);
+  });
+});
+
+describe("France (FR)", () => {
+  const engine = getTaxEngine("FR");
+
+  it("has no partial exemption", () => {
+    expect(engine.partialExemptionRate).toBe(0);
+  });
+
+  it("returns 0 for zero gains", () => {
+    expect(engine.calculateTax(0, makeConfig({ country: "FR" }))).toBe(0);
+  });
+
+  it("returns 0 for negative gains", () => {
+    expect(engine.calculateTax(-5_000, makeConfig({ country: "FR" }))).toBe(0);
+  });
+
+  it("applies flat 30% PFU rate", () => {
+    const tax = engine.calculateTax(10_000, makeConfig({ country: "FR" }));
+    expect(tax).toBe(3_000);
+  });
+
+  it("has zero allowance", () => {
+    expect(engine.annualAllowance(makeConfig({ country: "FR" }))).toBe(0);
+  });
+});

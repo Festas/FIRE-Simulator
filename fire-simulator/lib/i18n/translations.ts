@@ -209,6 +209,9 @@ export interface Translations {
   warnIncomeAbovePension: string;
   warnHighSwr: string;
   warnHighReturn: string;
+  warnSavingsExceedIncome: string;
+  warnPensionAgeTooLow: string;
+  warnDesiredIncomeHigh: string;
 
   // Disclaimer
   disclaimer: string;
@@ -346,6 +349,9 @@ export interface Translations {
   taxCountryCH: string;
   taxCountryAT: string;
   taxCountryNL: string;
+  taxCountryCA: string;
+  taxCountryAU: string;
+  taxCountryFR: string;
 
   // Life Events
   lifeEventsSection: string;
@@ -409,6 +415,47 @@ export interface Translations {
   noInvestmentLabel: string;
   noInvestmentTooltip: string;
   chartLabelNoInvestment: string;
+
+  // Simple / Advanced mode
+  simpleMode: string;
+  advancedMode: string;
+  simpleModeHint: string;
+
+  // Onboarding wizard
+  onboardingTitle: string;
+  onboardingSubtitle: string;
+  onboardingStep1Title: string;
+  onboardingStep1Desc: string;
+  onboardingStep2Title: string;
+  onboardingStep2Desc: string;
+  onboardingStep3Title: string;
+  onboardingStep3Desc: string;
+  onboardingStep4Title: string;
+  onboardingStep4Desc: string;
+  onboardingNext: string;
+  onboardingBack: string;
+  onboardingFinish: string;
+  onboardingSkip: string;
+  onboardingAgeLabel: string;
+  onboardingIncomeLabel: string;
+  onboardingSavingsLabel: string;
+  onboardingDesiredIncomeLabel: string;
+  onboardingCountryLabel: string;
+  onboardingStartCapitalLabel: string;
+
+  // Dashboard sections
+  sectionFireJourney: string;
+  sectionFireJourneyDesc: string;
+  sectionStressTesting: string;
+  sectionStressTestingDesc: string;
+  sectionDrawdownAnalysis: string;
+  sectionDrawdownAnalysisDesc: string;
+  sectionPlanning: string;
+  sectionPlanningDesc: string;
+
+  // Undo / Redo
+  undo: string;
+  redo: string;
 }
 
 export const de: Translations = {
@@ -602,6 +649,9 @@ export const de: Translations = {
   warnIncomeAbovePension: "ℹ️ Ihr Wunsch-Einkommen ist geringer als die erwartete Rente. Kein zusätzliches Vermögen nötig!",
   warnHighSwr: "⚠️ Eine SWR von 5% oder mehr gilt als riskant. Historisch hatte die 4%-Regel bereits eine Ausfallwahrscheinlichkeit.",
   warnHighReturn: "ℹ️ Eine Rendite von 10%+ p.a. ist sehr optimistisch. Der MSCI World liegt historisch bei ca. 7% brutto.",
+  warnSavingsExceedIncome: "⚠️ Ihre Sparrate übersteigt Ihr Nettoeinkommen. Bitte überprüfen Sie Ihre Eingaben.",
+  warnPensionAgeTooLow: "⚠️ Das Renteneintrittsalter liegt unter oder beim aktuellen Alter.",
+  warnDesiredIncomeHigh: "ℹ️ Ihr gewünschtes Ruhestandseinkommen liegt über Ihrem aktuellen Nettoeinkommen.",
 
   disclaimer: "Diese Simulation dient ausschließlich Informationszwecken und stellt keine Anlageberatung dar. Alle Werte basieren auf vereinfachten Annahmen und historischen Durchschnittswerten. Steuerberechnung nach deutschem Recht (Abgeltungssteuer + Teilfreistellung).",
 
@@ -719,6 +769,9 @@ export const de: Translations = {
   taxCountryCH: "🇨🇭 Schweiz",
   taxCountryAT: "🇦🇹 Österreich",
   taxCountryNL: "🇳🇱 Niederlande",
+  taxCountryCA: "🇨🇦 Kanada",
+  taxCountryAU: "🇦🇺 Australien",
+  taxCountryFR: "🇫🇷 Frankreich",
 
   // Life Events
   lifeEventsSection: "Lebensereignisse",
@@ -782,6 +835,47 @@ export const de: Translations = {
   noInvestmentLabel: "Ohne Investment vergleichen",
   noInvestmentTooltip: "Zeigt was passiert wäre, wenn das gleiche Geld nur gespart, aber nie investiert worden wäre (nur Inflation-Erosion)",
   chartLabelNoInvestment: "Ohne Investment (nur Sparen)",
+
+  // Simple / Advanced mode
+  simpleMode: "Einfach",
+  advancedMode: "Erweitert",
+  simpleModeHint: "Zeigt nur die wichtigsten Einstellungen",
+
+  // Onboarding wizard
+  onboardingTitle: "Willkommen beim FIRE Simulator!",
+  onboardingSubtitle: "Richten Sie Ihren persönlichen Finanzplan in wenigen Schritten ein.",
+  onboardingStep1Title: "Über Sie",
+  onboardingStep1Desc: "Alter und monatliches Nettoeinkommen",
+  onboardingStep2Title: "Sparphase",
+  onboardingStep2Desc: "Startkapital und monatliche Sparrate",
+  onboardingStep3Title: "Ruhestandsziel",
+  onboardingStep3Desc: "Gewünschtes Einkommen im Ruhestand",
+  onboardingStep4Title: "Steuerland",
+  onboardingStep4Desc: "Wählen Sie Ihr Land für die Steuerberechnung",
+  onboardingNext: "Weiter",
+  onboardingBack: "Zurück",
+  onboardingFinish: "Simulation starten",
+  onboardingSkip: "Überspringen",
+  onboardingAgeLabel: "Ihr Alter",
+  onboardingIncomeLabel: "Monatl. Nettoeinkommen",
+  onboardingSavingsLabel: "Monatl. Sparrate",
+  onboardingDesiredIncomeLabel: "Wunsch-Einkommen (Ruhestand)",
+  onboardingCountryLabel: "Steuerland",
+  onboardingStartCapitalLabel: "Aktuelles Vermögen",
+
+  // Dashboard sections
+  sectionFireJourney: "🚀 Ihre FIRE-Reise",
+  sectionFireJourneyDesc: "Überblick und Vermögensentwicklung",
+  sectionStressTesting: "🎲 Stresstest",
+  sectionStressTestingDesc: "Monte-Carlo-Simulationen und Szenarien",
+  sectionDrawdownAnalysis: "📉 Entnahmephase",
+  sectionDrawdownAnalysisDesc: "Portfolio-Entwicklung nach FIRE",
+  sectionPlanning: "📋 Planung",
+  sectionPlanningDesc: "Lebensereignisse, Details und Phasen",
+
+  // Undo / Redo
+  undo: "Rückgängig",
+  redo: "Wiederherstellen",
 };
 
 export const en: Translations = {
@@ -975,6 +1069,9 @@ export const en: Translations = {
   warnIncomeAbovePension: "ℹ️ Your desired income is less than the expected pension. No additional wealth needed!",
   warnHighSwr: "⚠️ An SWR of 5% or more is considered risky. Historically, the 4% rule already had a failure probability.",
   warnHighReturn: "ℹ️ A return of 10%+ p.a. is very optimistic. The MSCI World historically averages approx. 7% gross.",
+  warnSavingsExceedIncome: "⚠️ Your savings rate exceeds your net income. Please check your inputs.",
+  warnPensionAgeTooLow: "⚠️ The pension age is at or below your current age.",
+  warnDesiredIncomeHigh: "ℹ️ Your desired retirement income is higher than your current net income.",
 
   disclaimer: "This simulation is for informational purposes only and does not constitute investment advice. All values are based on simplified assumptions and historical averages. Tax calculation according to German law (Abgeltungssteuer + Teilfreistellung).",
 
@@ -1092,6 +1189,9 @@ export const en: Translations = {
   taxCountryCH: "🇨🇭 Switzerland",
   taxCountryAT: "🇦🇹 Austria",
   taxCountryNL: "🇳🇱 Netherlands",
+  taxCountryCA: "🇨🇦 Canada",
+  taxCountryAU: "🇦🇺 Australia",
+  taxCountryFR: "🇫🇷 France",
 
   // Life Events
   lifeEventsSection: "Life Events",
@@ -1155,6 +1255,47 @@ export const en: Translations = {
   noInvestmentLabel: "Compare without investing",
   noInvestmentTooltip: "Shows what would have happened if the same money was saved but never invested (inflation erosion only)",
   chartLabelNoInvestment: "No Investment (savings only)",
+
+  // Simple / Advanced mode
+  simpleMode: "Simple",
+  advancedMode: "Advanced",
+  simpleModeHint: "Shows only the most important settings",
+
+  // Onboarding wizard
+  onboardingTitle: "Welcome to the FIRE Simulator!",
+  onboardingSubtitle: "Set up your personal financial plan in just a few steps.",
+  onboardingStep1Title: "About You",
+  onboardingStep1Desc: "Your age and monthly net income",
+  onboardingStep2Title: "Savings",
+  onboardingStep2Desc: "Starting capital and monthly savings rate",
+  onboardingStep3Title: "Retirement Goal",
+  onboardingStep3Desc: "Desired income in retirement",
+  onboardingStep4Title: "Tax Country",
+  onboardingStep4Desc: "Select your country for tax calculations",
+  onboardingNext: "Next",
+  onboardingBack: "Back",
+  onboardingFinish: "Start Simulation",
+  onboardingSkip: "Skip",
+  onboardingAgeLabel: "Your Age",
+  onboardingIncomeLabel: "Monthly Net Income",
+  onboardingSavingsLabel: "Monthly Savings",
+  onboardingDesiredIncomeLabel: "Desired Retirement Income",
+  onboardingCountryLabel: "Tax Country",
+  onboardingStartCapitalLabel: "Current Savings",
+
+  // Dashboard sections
+  sectionFireJourney: "🚀 Your FIRE Journey",
+  sectionFireJourneyDesc: "Overview and wealth projection",
+  sectionStressTesting: "🎲 Stress Testing",
+  sectionStressTestingDesc: "Monte Carlo simulations and scenarios",
+  sectionDrawdownAnalysis: "📉 Drawdown Analysis",
+  sectionDrawdownAnalysisDesc: "Portfolio trajectory after FIRE",
+  sectionPlanning: "📋 Planning",
+  sectionPlanningDesc: "Life events, details and phases",
+
+  // Undo / Redo
+  undo: "Undo",
+  redo: "Redo",
 };
 
 const translations: Record<Locale, Translations> = { de, en };

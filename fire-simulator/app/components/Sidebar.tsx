@@ -145,9 +145,11 @@ interface SidebarProps {
   inputs: FireInputs;
   onChange: (key: keyof FireInputs, value: number | string | boolean) => void;
   onReset: () => void;
+  mode: "simple" | "advanced";
+  onModeChange: (mode: "simple" | "advanced") => void;
 }
 
-export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
+export default function Sidebar({ inputs, onChange, onReset, mode, onModeChange }: SidebarProps) {
   const { t, formatCurrency, formatPercent } = useI18n();
   const fmtEuro = formatCurrency;
   const fmtPct = formatPercent;
@@ -166,6 +168,18 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             <p className="text-slate-400 text-xs">{t.sidebarSubtitle}</p>
           </div>
         </div>
+      </div>
+
+      {/* Mode Toggle */}
+      <div className="px-6 pt-4 pb-2">
+        <SegmentToggle
+          options={[
+            { value: "simple" as const, label: t.simpleMode },
+            { value: "advanced" as const, label: t.advancedMode },
+          ]}
+          value={mode}
+          onChange={onModeChange}
+        />
       </div>
 
       {/* Inputs */}
@@ -265,17 +279,19 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             format={fmtEuro}
           />
 
-          <SliderField
-            label={t.dynamicSavings}
-            subLabel={t.dynamicSavingsSub}
-            tooltip={t.dynamicSavingsTooltip}
-            value={inputs.dynamikSparrate}
-            min={0}
-            max={5}
-            step={0.1}
-            onChange={(v) => onChange("dynamikSparrate", v)}
-            format={fmtPct}
-          />
+          {mode === "advanced" && (
+            <SliderField
+              label={t.dynamicSavings}
+              subLabel={t.dynamicSavingsSub}
+              tooltip={t.dynamicSavingsTooltip}
+              value={inputs.dynamikSparrate}
+              min={0}
+              max={5}
+              step={0.1}
+              onChange={(v) => onChange("dynamikSparrate", v)}
+              format={fmtPct}
+            />
+          )}
 
           <SliderField
             label={t.netIncome}
@@ -289,17 +305,19 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             format={fmtEuro}
           />
 
-          <SliderField
-            label={t.bavContribution}
-            subLabel={t.bavContributionSub}
-            tooltip={t.bavContributionTooltip}
-            value={inputs.bavJaehrlich}
-            min={0}
-            max={20_000}
-            step={500}
-            onChange={(v) => onChange("bavJaehrlich", v)}
-            format={(v) => `${fmtEuro(v)}${t.perYear}`}
-          />
+          {mode === "advanced" && (
+            <SliderField
+              label={t.bavContribution}
+              subLabel={t.bavContributionSub}
+              tooltip={t.bavContributionTooltip}
+              value={inputs.bavJaehrlich}
+              min={0}
+              max={20_000}
+              step={500}
+              onChange={(v) => onChange("bavJaehrlich", v)}
+              format={(v) => `${fmtEuro(v)}${t.perYear}`}
+            />
+          )}
         </div>
 
         {/* ===== RENDITE & MARKT ===== */}
@@ -357,21 +375,26 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
               <option value="CH">{t.taxCountryCH}</option>
               <option value="AT">{t.taxCountryAT}</option>
               <option value="NL">{t.taxCountryNL}</option>
+              <option value="CA">{t.taxCountryCA}</option>
+              <option value="AU">{t.taxCountryAU}</option>
+              <option value="FR">{t.taxCountryFR}</option>
             </select>
           </div>
 
-          <SelectToggle
-            label={t.taxFiling}
-            tooltip={t.taxFilingTooltip}
-            options={[
-              { value: "single" as const, label: t.taxFilingSingle },
-              { value: "couple" as const, label: t.taxFilingCouple },
-            ]}
-            value={inputs.steuerModell}
-            onChange={(v) => onChange("steuerModell", v)}
-          />
+          {mode === "advanced" && (
+            <SelectToggle
+              label={t.taxFiling}
+              tooltip={t.taxFilingTooltip}
+              options={[
+                { value: "single" as const, label: t.taxFilingSingle },
+                { value: "couple" as const, label: t.taxFilingCouple },
+              ]}
+              value={inputs.steuerModell}
+              onChange={(v) => onChange("steuerModell", v)}
+            />
+          )}
 
-          {inputs.taxCountry === "DE" && (
+          {mode === "advanced" && inputs.taxCountry === "DE" && (
             <ToggleSwitch
               label={t.churchTax}
               tooltip={t.churchTaxTooltip}
@@ -382,6 +405,7 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
         </div>
 
         {/* ===== ENTNAHME ===== */}
+        {mode === "advanced" && (
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
             {t.withdrawalStrategy}
@@ -412,8 +436,10 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             />
           )}
         </div>
+        )}
 
         {/* ===== Arbeitszeitkonto ===== */}
+        {mode === "advanced" && (
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
             {t.lzkSection}
@@ -488,8 +514,10 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             />
           )}
         </div>
+        )}
 
         {/* ===== Override Target ===== */}
+        {mode === "advanced" && (
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-slate-500 mb-4 font-semibold">
             {t.manualTarget}
@@ -540,8 +568,10 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             </div>
           )}
         </div>
+        )}
 
         {/* ===== Quick Presets ===== */}
+        {mode === "advanced" && (
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-slate-500 mb-3 font-semibold">
             {t.presetLabel}
@@ -585,6 +615,7 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* Footer */}
