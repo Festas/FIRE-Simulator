@@ -75,3 +75,14 @@ input[type="range"]::-moz-range-thumb {
 .dark .recharts-text {
   fill: #94a3b8;
 }
+
+/* KPI delta indicator fade-in then fade-out */
+@keyframes kpi-delta-fade {
+  0% { opacity: 0; transform: translateY(4px); }
+  15% { opacity: 1; transform: translateY(0); }
+  75% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+.kpi-delta {
+  animation: kpi-delta-fade 2s ease-out forwards;
+}
