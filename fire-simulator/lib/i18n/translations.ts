@@ -11,7 +11,8 @@ export interface Translations {
   sidebarTitle: string;
   sidebarSubtitle: string;
   menuOpen: string;
-  csvExport: string;
+  xlsxExport: string;
+  pdfExport: string;
   live: string;
 
   // Sidebar sections
@@ -391,7 +392,8 @@ export const de: Translations = {
   sidebarTitle: "FIRE Masterplan",
   sidebarSubtitle: "Family Office Simulator",
   menuOpen: "Menü öffnen",
-  csvExport: "CSV Export",
+  xlsxExport: "Excel Export",
+  pdfExport: "PDF Export",
   live: "Live",
 
   retirementGoals: "🎯 Ruhestandsziel",
@@ -739,7 +741,8 @@ export const en: Translations = {
   sidebarTitle: "FIRE Masterplan",
   sidebarSubtitle: "Family Office Simulator",
   menuOpen: "Open menu",
-  csvExport: "CSV Export",
+  xlsxExport: "Excel Export",
+  pdfExport: "PDF Export",
   live: "Live",
 
   retirementGoals: "🎯 Retirement Goals",
