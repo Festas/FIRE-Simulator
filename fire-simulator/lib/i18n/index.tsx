@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { Locale, Translations, getTranslations } from "./translations";
 import type { TaxCountry } from "@/lib/tax";
+import { TAX_COUNTRIES } from "@/lib/tax";
 import { COUNTRY_CURRENCY, countryLocale, type CurrencyCode } from "@/lib/currency";
 
 interface I18nContextType {
@@ -39,7 +40,7 @@ function getInitialCountry(): TaxCountry {
     const raw = localStorage.getItem("fire-simulator-inputs");
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.taxCountry) return parsed.taxCountry as TaxCountry;
+      if (parsed.taxCountry && TAX_COUNTRIES.includes(parsed.taxCountry)) return parsed.taxCountry as TaxCountry;
     }
   } catch {
     // ignore

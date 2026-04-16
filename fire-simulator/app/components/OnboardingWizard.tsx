@@ -82,7 +82,11 @@ function NumberInput({
           step={step}
           onChange={(e) => {
             const v = parseFloat(e.target.value);
-            if (!isNaN(v)) onChange(Math.min(max, Math.max(min, v)));
+            if (!isNaN(v)) {
+              onChange(Math.min(max, Math.max(min, v)));
+            } else if (e.target.value === "" || e.target.value === "-") {
+              onChange(min);
+            }
           }}
           className="flex-1 bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm focus:border-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-400/30"
         />

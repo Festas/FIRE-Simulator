@@ -116,8 +116,10 @@ function HomeContent() {
   const [canRedo, setCanRedo] = useState(false);
 
   const pushUndo = useCallback((prev: FireInputs) => {
-    undoStack.current = [...undoStack.current.slice(-UNDO_LIMIT + 1), prev];
-    redoStack.current = [];
+    const stack = undoStack.current;
+    if (stack.length >= UNDO_LIMIT) stack.shift();
+    stack.push(prev);
+    redoStack.current.length = 0;
     setCanUndo(true);
     setCanRedo(false);
   }, []);
@@ -315,6 +317,9 @@ function HomeContent() {
   // Keyboard shortcuts for undo/redo
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Don't override undo/redo in input fields
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if ((e.metaKey || e.ctrlKey) && e.key === "z") {
         e.preventDefault();
         if (e.shiftKey) {
