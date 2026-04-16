@@ -364,6 +364,18 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
           format={(v) => `${v}`}
         />
 
+        <SliderField
+          label={t.retirementAge}
+          subLabel={t.retirementAgeSub}
+          tooltip={t.retirementAgeTooltip}
+          value={inputs.renteneintrittsalter}
+          min={60}
+          max={70}
+          step={1}
+          onChange={(v) => onChange("renteneintrittsalter", v)}
+          format={(v) => `${v}`}
+        />
+
         {/* ===== SPARPHASE ===== */}
         <div className="border-t border-slate-700 pt-5 mt-2">
           <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">

@@ -24,6 +24,7 @@ const EVENT_TYPE_EMOJI: Record<LifeEventType, string> = {
   one_time_expense: "💸",
   one_time_income: "📈",
   side_income: "🔧",
+  savings_rate_change: "📊",
 };
 
 const ALL_EVENT_TYPES: LifeEventType[] = [
@@ -36,6 +37,7 @@ const ALL_EVENT_TYPES: LifeEventType[] = [
   "one_time_expense",
   "one_time_income",
   "side_income",
+  "savings_rate_change",
 ];
 
 function getEventTypeLabel(
@@ -52,6 +54,7 @@ function getEventTypeLabel(
     one_time_expense: t.lifeEventOneTimeExpense,
     one_time_income: t.lifeEventOneTimeIncome,
     side_income: t.lifeEventSideIncome,
+    savings_rate_change: t.lifeEventSavingsRateChange,
   };
   return map[type];
 }

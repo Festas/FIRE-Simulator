@@ -68,6 +68,11 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     freistellungJahre,
   } = result;
 
+  // Calculate inflation-adjusted spending at FIRE
+  const yearsToFire = fullFireYear ?? 0;
+  const inflationFactor = Math.pow(1 + inputs.inflation / 100, yearsToFire);
+  const spendingAtFire = Math.round(inputs.monatlichesWunschEinkommen * inflationFactor);
+
   const coastLabel = coastFireAge
     ? `${t.kpiAgeLabel(coastFireAge)}`
     : t.kpiOver30Years;
@@ -128,8 +133,21 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         iconLabel={t.kpiFireNumber}
         title={t.kpiFireNumber}
         value={formatCurrencyShort(derivedFireNumber)}
-        sub={t.kpiGapPerMonth(formatCurrency(Math.max(0, inputs.monatlichesWunschEinkommen - inputs.gesetzlicheRente)))}
+        sub={t.kpiGapPerMonth(formatCurrency(inputs.monatlichesWunschEinkommen))}
       />
+      {targetReached && yearsToFire > 0 && (
+        <KPICard
+          icon="📅"
+          iconLabel={t.kpiInflationAdjustedSpending}
+          title={t.kpiInflationAdjustedSpending}
+          value={`${formatCurrency(spendingAtFire)} ${t.perMonth}`}
+          sub={t.kpiInflationAdjustedSpendingSub(
+            formatCurrency(inputs.monatlichesWunschEinkommen),
+            formatCurrency(spendingAtFire),
+            yearsToFire,
+          )}
+        />
+      )}
 
       {/* Row 2 */}
       <KPICard
