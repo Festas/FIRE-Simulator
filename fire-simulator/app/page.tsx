@@ -4,6 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect, useDeferredValue } fr
 import { calculateFIRE, FireInputs, LifeEvent } from "@/lib/fireCalculations";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
+import { parseURLInputs, inputsToURL } from "@/app/hooks/useUrlState";
 import Sidebar from "@/app/components/Sidebar";
 import KPICards from "@/app/components/KPICards";
 import FireChart from "@/app/components/FireChart";
@@ -49,85 +50,6 @@ const DEFAULT_INPUTS: FireInputs = {
 };
 
 const LS_KEY = "fire-simulator-inputs";
-
-// URL state serialization keys (short to keep URLs compact)
-const URL_KEYS: Record<string, keyof FireInputs> = {
-  sk: "startKapital",
-  ms: "monatlicheSparrate",
-  ds: "dynamikSparrate",
-  er: "etfRendite",
-  in: "inflation",
-  bv: "bavJaehrlich",
-  zv: "zielvermoegen",
-  lj: "lzkJahre",
-  lr: "lzkRendite",
-  sy: "startYear",
-  ca: "currentAge",
-  wi: "monatlichesWunschEinkommen",
-  gr: "gesetzlicheRente",
-  sw: "swr",
-  sm: "steuerModell",
-  ks: "kirchensteuer",
-  tc: "taxCountry",
-  em: "entnahmeModell",
-  kj: "kapitalverzehrJahre",
-  mb: "monatlichesNetto",
-  zo: "zielvermoegenOverride",
-  ae: "arbeitszeitkontoEnabled",
-  sp: "stundenProJahr",
-  ws: "wochenStunden",
-  ra: "renteneintrittsalter",
-};
-
-function parseURLInputs(): Partial<FireInputs> | null {
-  if (typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.search);
-  if (params.size === 0) return null;
-
-  const result: Record<string, unknown> = {};
-  let hasAny = false;
-
-  for (const [short, full] of Object.entries(URL_KEYS)) {
-    const val = params.get(short);
-    if (val === null) continue;
-    hasAny = true;
-
-    if (full === "steuerModell") {
-      result[full] = val === "couple" ? "couple" : "single";
-    } else if (full === "kirchensteuer" || full === "arbeitszeitkontoEnabled") {
-      result[full] = val === "1";
-    } else if (full === "entnahmeModell") {
-      result[full] = val === "kapitalverzehr" ? "kapitalverzehr" : "ewigeRente";
-    } else if (full === "taxCountry") {
-      const valid = ["DE", "US", "UK", "CH", "AT", "NL"];
-      result[full] = valid.includes(val) ? val : "DE";
-    } else {
-      const num = parseFloat(val);
-      if (!isNaN(num)) result[full] = num;
-    }
-  }
-
-  return hasAny ? (result as Partial<FireInputs>) : null;
-}
-
-function inputsToURL(inputs: FireInputs): string {
-  const params = new URLSearchParams();
-  const reverseKeys = Object.fromEntries(
-    Object.entries(URL_KEYS).map(([short, full]) => [full, short]),
-  );
-
-  for (const [full, short] of Object.entries(reverseKeys)) {
-    const key = full as keyof FireInputs;
-    const val = inputs[key];
-    if (typeof val === "boolean") {
-      params.set(short, val ? "1" : "0");
-    } else {
-      params.set(short, String(val));
-    }
-  }
-
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-}
 
 function getInitialInputs(): FireInputs {
   if (typeof window === "undefined") return DEFAULT_INPUTS;
