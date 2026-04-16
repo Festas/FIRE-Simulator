@@ -87,12 +87,17 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const { theme, toggleTheme } = useTheme();
-  const { t, locale, setLocale, formatCurrency } = useI18n();
+  const { t, locale, setLocale, formatCurrency, setCurrency } = useI18n();
 
   // Update html lang when locale changes
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+
+  // Sync currency formatting when tax country changes
+  useEffect(() => {
+    setCurrency(inputs.taxCountry);
+  }, [inputs.taxCountry, setCurrency]);
 
   // Auto-dismiss export toast
   useEffect(() => {
