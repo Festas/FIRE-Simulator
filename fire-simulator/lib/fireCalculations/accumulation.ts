@@ -37,11 +37,8 @@ export function simulateAccumulation(
   const dyn = dynamikSparrate / 100;
   const realReturn = (1 + roi) / (1 + inf) - 1;
 
-  // Calculate Freistellung duration in years from hour balance
+  // Arbeitszeitkonto: hours → years conversion
   const annualWorkHours = wochenStunden * 52;
-  const freistellungJahre = arbeitszeitkontoEnabled && annualWorkHours > 0
-    ? stundenProJahr / annualWorkHours
-    : 0;
 
   // Pass 1: estimate FIRE year (without AZK effects) to anchor Coast FIRE
   let tempBal = startKapital;
@@ -63,9 +60,6 @@ export function simulateAccumulation(
       break;
     }
   }
-
-  // Suppress unused variable warning — used for documentation clarity
-  void freistellungJahre;
 
   // Pass 2: full simulation with Arbeitszeitkonto logic
   let etfBal = startKapital;

@@ -301,10 +301,10 @@ export function exportCSV(ctx: ExportContext): void {
   const allData = getAllData(result);
   const headers = getHeaders(t);
 
-  // Escape CSV fields that may contain commas or quotes
+  // Escape CSV fields per RFC 4180
   const escapeField = (field: string | number): string => {
     const str = String(field);
-    if (str.includes(",") || str.includes('"') || str.includes("\n")) {
+    if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
       return `"${str.replace(/"/g, '""')}"`;
     }
     return str;
@@ -345,12 +345,23 @@ export function exportScenarioJSON(inputs: FireInputs): void {
  * or throws if the file is invalid.
  */
 export function importScenarioJSON(file: File): Promise<FireInputs> {
+  // Known valid FireInputs keys for whitelist filtering
+  const validKeys = new Set([
+    "startKapital", "monatlicheSparrate", "dynamikSparrate", "etfRendite",
+    "inflation", "bavJaehrlich", "zielvermoegen", "zielvermoegenOverride",
+    "lzkJahre", "lzkRendite", "startYear", "currentAge",
+    "monatlichesWunschEinkommen", "gesetzlicheRente", "renteneintrittsalter",
+    "swr", "steuerModell", "kirchensteuer", "taxCountry", "entnahmeModell",
+    "kapitalverzehrJahre", "monatlichesNetto", "lifeEvents",
+    "arbeitszeitkontoEnabled", "stundenProJahr", "wochenStunden",
+  ]);
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result as string);
-        // Validate required fields
+        // Validate it's an object with required numeric fields
         if (
           typeof parsed !== "object" ||
           parsed === null ||
@@ -360,7 +371,14 @@ export function importScenarioJSON(file: File): Promise<FireInputs> {
         ) {
           throw new Error("Invalid scenario file: missing required fields");
         }
-        resolve(parsed as FireInputs);
+        // Filter to only known keys to prevent injection of unknown properties
+        const filtered: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (validKeys.has(key)) {
+            filtered[key] = value;
+          }
+        }
+        resolve(filtered as FireInputs);
       } catch (err) {
         reject(err);
       }
