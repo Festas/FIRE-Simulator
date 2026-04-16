@@ -27,6 +27,7 @@ const DEFAULT_INPUTS: FireInputs = {
   inflation: 2.5,
   bavJaehrlich: 0,
   zielvermoegen: Math.round((2_500 * 12) / 0.035), // auto-calculated: (desiredIncome * 12) / SWR
+  zielvermoegenOverride: false,
   lzkJahre: 0,
   lzkRendite: 0,
   startYear: 2026,
@@ -71,6 +72,7 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   em: "entnahmeModell",
   kj: "kapitalverzehrJahre",
   mb: "monatlichesNetto",
+  zo: "zielvermoegenOverride",
   ae: "arbeitszeitkontoEnabled",
   sp: "stundenProJahr",
   ws: "wochenStunden",
@@ -172,15 +174,21 @@ function HomeContent() {
   const handleChange = (key: keyof FireInputs, value: number | string | boolean) => {
     setInputs((prev) => {
       const next = { ...prev, [key]: value };
-      // Auto-update zielvermoegen when income or SWR change
+      // Auto-update zielvermoegen when income or SWR change (only if override is not active)
       // Use full desired income (not reduced by pension) since pension only starts at Renteneintrittsalter
       if (
-        key === "monatlichesWunschEinkommen" ||
-        key === "swr"
+        !next.zielvermoegenOverride &&
+        (key === "monatlichesWunschEinkommen" ||
+        key === "swr")
       ) {
         const income = (key === "monatlichesWunschEinkommen" ? (value as number) : next.monatlichesWunschEinkommen);
         const swr = (key === "swr" ? (value as number) : next.swr) / 100;
         next.zielvermoegen = swr > 0 ? Math.round((income * 12) / swr) : next.zielvermoegen;
+      }
+      // When override is turned off, recalculate from current income/SWR
+      if (key === "zielvermoegenOverride" && value === false) {
+        const swr = next.swr / 100;
+        next.zielvermoegen = swr > 0 ? Math.round((next.monatlichesWunschEinkommen * 12) / swr) : next.zielvermoegen;
       }
       saveInputs(next);
       return next;

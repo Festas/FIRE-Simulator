@@ -635,17 +635,51 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
           <p className="text-xs uppercase tracking-widest text-slate-500 mb-4 font-semibold">
             {t.manualTarget}
           </p>
-          <SliderField
-            label={t.targetWealth}
-            subLabel={t.targetWealthSub}
-            tooltip={t.targetWealthTooltip}
-            value={inputs.zielvermoegen}
-            min={100_000}
-            max={10_000_000}
-            step={50_000}
-            onChange={(v) => onChange("zielvermoegen", v)}
-            format={fmtEuro}
-          />
+
+          {/* Toggle for manual override */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-slate-300">{t.targetWealthOverride}</span>
+              <InfoTooltip text={t.targetWealthOverrideTooltip} />
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={inputs.zielvermoegenOverride}
+              onClick={() => onChange("zielvermoegenOverride", !inputs.zielvermoegenOverride)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#0f294d] ${
+                inputs.zielvermoegenOverride ? "bg-emerald-500" : "bg-slate-600"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  inputs.zielvermoegenOverride ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {inputs.zielvermoegenOverride ? (
+            <SliderField
+              label={t.targetWealth}
+              subLabel={t.targetWealthSub}
+              tooltip={t.targetWealthTooltip}
+              value={inputs.zielvermoegen}
+              min={100_000}
+              max={10_000_000}
+              step={50_000}
+              onChange={(v) => onChange("zielvermoegen", v)}
+              format={fmtEuro}
+            />
+          ) : (
+            <div className="rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-3">
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-slate-400">{t.targetWealth}</span>
+                <span className="text-sm font-semibold text-slate-300">{fmtEuro(inputs.zielvermoegen)}</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">{t.targetWealthAuto}</p>
+            </div>
+          )}
         </div>
 
         {/* ===== Quick Presets ===== */}
@@ -653,7 +687,7 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
           <p className="text-xs uppercase tracking-widest text-slate-500 mb-3 font-semibold">
             {t.presetLabel}
           </p>
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
             <button
               type="button"
               onClick={() => {
@@ -661,9 +695,10 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                 onChange("swr", 3.0);
                 onChange("inflation", 3.0);
               }}
-              className="flex-1 text-xs font-medium py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+              className="w-full text-left px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
             >
-              {t.presetConservative}
+              <span className="text-xs font-medium text-slate-300">{t.presetConservative}</span>
+              <span className="block text-[10px] text-slate-500 mt-0.5">{t.presetConservativeDesc}</span>
             </button>
             <button
               type="button"
@@ -672,9 +707,10 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                 onChange("swr", 3.5);
                 onChange("inflation", 2.5);
               }}
-              className="flex-1 text-xs font-medium py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+              className="w-full text-left px-3 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 transition-colors"
             >
-              {t.presetBalanced}
+              <span className="text-xs font-medium text-emerald-400">{t.presetBalanced}</span>
+              <span className="block text-[10px] text-emerald-500/70 mt-0.5">{t.presetBalancedDesc}</span>
             </button>
             <button
               type="button"
@@ -683,9 +719,10 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                 onChange("swr", 4.0);
                 onChange("inflation", 2.0);
               }}
-              className="flex-1 text-xs font-medium py-2 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+              className="w-full text-left px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
             >
-              {t.presetAggressive}
+              <span className="text-xs font-medium text-slate-300">{t.presetAggressive}</span>
+              <span className="block text-[10px] text-slate-500 mt-0.5">{t.presetAggressiveDesc}</span>
             </button>
           </div>
         </div>
