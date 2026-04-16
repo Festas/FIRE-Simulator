@@ -254,6 +254,8 @@ export interface Translations {
   reverseTargetIncomeSub: string;
   reverseTargetYears: string;
   reverseTargetYearsSub: string;
+  reverseExitAge: string;
+  reverseExitAgeSub: string;
   reverseResultSavings: string;
   reverseResultFireNumber: string;
   reverseResultMonteCarlo: string;
@@ -290,6 +292,17 @@ export interface Translations {
   reverseRequiredLine: string;
   reverseTableTitle: string;
   reverseTableSubtitle: string;
+
+  // MC-backed savings
+  reverseMcRecommendedSavings: string;
+  reverseMcRecommendedSavingsSub: string;
+  reverseMcSuccessRate: string;
+  reverseMcSuccessRateSub: string;
+  reverseDeterministicSavings: string;
+  reverseDeterministicSavingsSub: string;
+  reverseAccMcTitle: string;
+  reverseAccMcSubtitle: string;
+  reverseMcConfidenceBadge: (pct: number) => string;
 
   // Presets
   presetConservative: string;
@@ -611,6 +624,8 @@ export const de: Translations = {
   reverseTargetIncomeSub: "Netto monatlich im Ruhestand",
   reverseTargetYears: "Zieljahre",
   reverseTargetYearsSub: "FIRE in X Jahren erreichen",
+  reverseExitAge: "Ausstiegsalter",
+  reverseExitAgeSub: "In welchem Alter möchten Sie FIRE erreichen?",
   reverseResultSavings: "Benötigte Sparrate",
   reverseResultFireNumber: "FIRE-Zahl",
   reverseResultMonteCarlo: "Erfolgswahrscheinlichkeit",
@@ -647,6 +662,16 @@ export const de: Translations = {
   reverseRequiredLine: "Benötigte Sparrate",
   reverseTableTitle: "Jahresübersicht",
   reverseTableSubtitle: "Detaillierte Projektion Jahr für Jahr",
+
+  reverseMcRecommendedSavings: "MC-Empfehlung",
+  reverseMcRecommendedSavingsSub: "75 % Erfolgswahrscheinlichkeit",
+  reverseMcSuccessRate: "MC-Erfolgsrate",
+  reverseMcSuccessRateSub: "Anteil erfolgreicher Simulationen",
+  reverseDeterministicSavings: "Deterministisch",
+  reverseDeterministicSavingsSub: "Bei konstanter Rendite",
+  reverseAccMcTitle: "Monte Carlo – Ansparphase",
+  reverseAccMcSubtitle: "500 Simulationen: Vermögenswachstum mit empfohlener Sparrate",
+  reverseMcConfidenceBadge: (pct: number) => `${pct.toFixed(0)} % Konfidenz`,
 
   presetConservative: "Konservativ",
   presetBalanced: "Ausgewogen",
@@ -960,6 +985,8 @@ export const en: Translations = {
   reverseTargetIncomeSub: "Net monthly in retirement",
   reverseTargetYears: "Target Years",
   reverseTargetYearsSub: "Reach FIRE in X years",
+  reverseExitAge: "Exit Age",
+  reverseExitAgeSub: "At what age do you want to reach FIRE?",
   reverseResultSavings: "Required Savings",
   reverseResultFireNumber: "FIRE Number",
   reverseResultMonteCarlo: "Success Probability",
@@ -996,6 +1023,16 @@ export const en: Translations = {
   reverseRequiredLine: "Required Savings",
   reverseTableTitle: "Year-by-Year Details",
   reverseTableSubtitle: "Detailed projection year by year",
+
+  reverseMcRecommendedSavings: "MC Recommendation",
+  reverseMcRecommendedSavingsSub: "75% success probability",
+  reverseMcSuccessRate: "MC Success Rate",
+  reverseMcSuccessRateSub: "Share of successful simulations",
+  reverseDeterministicSavings: "Deterministic",
+  reverseDeterministicSavingsSub: "At constant return",
+  reverseAccMcTitle: "Monte Carlo – Accumulation Phase",
+  reverseAccMcSubtitle: "500 simulations: portfolio growth at recommended savings rate",
+  reverseMcConfidenceBadge: (pct: number) => `${pct.toFixed(0)}% confidence`,
 
   presetConservative: "Conservative",
   presetBalanced: "Balanced",

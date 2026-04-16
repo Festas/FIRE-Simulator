@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateFIRE,
   calculateReverse,
+  calculateMCRequiredSparrate,
   FireInputs,
   formatEuro,
   formatEuroShort,
@@ -1137,5 +1138,98 @@ describe("Savings rate change life event", () => {
 
     // Should produce valid results without errors
     expect(withEvent.yearlyData.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Monte Carlo–backed savings rate (calculateMCRequiredSparrate)
+// ---------------------------------------------------------------------------
+
+describe("Monte Carlo–backed savings rate (calculateMCRequiredSparrate)", () => {
+  const mcInputs: FireInputs = {
+    startKapital: 50_000,
+    monatlicheSparrate: 0,
+    dynamikSparrate: 2.0,
+    etfRendite: 7.0,
+    inflation: 2.5,
+    bavJaehrlich: 0,
+    zielvermoegen: 1_000_000,
+    lzkJahre: 3,
+    lzkRendite: 3.5,
+    startYear: 2026,
+    currentAge: 30,
+    monatlichesWunschEinkommen: 3_000,
+    gesetzlicheRente: 1_500,
+    renteneintrittsalter: 67,
+    swr: 3.5,
+    steuerModell: "single",
+    kirchensteuer: false,
+    taxCountry: "DE",
+    entnahmeModell: "ewigeRente",
+    kapitalverzehrJahre: 30,
+    monatlichesNetto: 4_000,
+    lifeEvents: [],
+    arbeitszeitkontoEnabled: false,
+    stundenProJahr: 0,
+    wochenStunden: 40,
+  };
+
+  it("returns a positive monthly savings amount", () => {
+    const result = calculateMCRequiredSparrate(mcInputs, 20);
+    expect(result.monthlySavings).toBeGreaterThan(0);
+  });
+
+  it("achieves at least 75% success rate", () => {
+    const result = calculateMCRequiredSparrate(mcInputs, 20);
+    expect(result.successRate).toBeGreaterThanOrEqual(0.70); // allow some tolerance
+  });
+
+  it("requires more savings for shorter time horizons", () => {
+    const short = calculateMCRequiredSparrate(mcInputs, 10);
+    const long = calculateMCRequiredSparrate(mcInputs, 25);
+    expect(short.monthlySavings).toBeGreaterThan(long.monthlySavings);
+  });
+
+  it("MC savings are >= deterministic savings (accounts for volatility)", () => {
+    const result = calculateReverse(
+      3_000, 20, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE", [], 0, 4_000, 30, 67,
+    );
+    expect(result.mcRecommendedSavings).toBeGreaterThanOrEqual(result.requiredMonthlySavings);
+  });
+
+  it("returns 0 for targetYears <= 0", () => {
+    const result = calculateMCRequiredSparrate(mcInputs, 0);
+    expect(result.monthlySavings).toBe(0);
+    expect(result.successRate).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateReverse with exit age (currentAge + renteneintrittsalter params)
+// ---------------------------------------------------------------------------
+
+describe("calculateReverse with currentAge and renteneintrittsalter", () => {
+  it("passes currentAge through to the result projection", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE", [], 0, 4_000, 35, 67,
+    );
+    // First data point should have age = 35
+    expect(result.yearlyProjection[0].age).toBe(35);
+    // MC-recommended savings should exist
+    expect(result.mcRecommendedSavings).toBeGreaterThan(0);
+    expect(result.mcSuccessRate).toBeGreaterThan(0);
+  });
+
+  it("includes accumulation Monte Carlo data", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
+      "single", false, "ewigeRente", 30, "DE", [], 0, 4_000, 30, 67,
+    );
+    expect(result.accumulationMonteCarlo).toBeDefined();
+    expect(result.accumulationMonteCarlo.accumulationPercentiles.p50.length).toBeGreaterThan(0);
+    expect(result.accumulationMonteCarlo.fireSuccessRate).toBeGreaterThanOrEqual(0);
+    expect(result.accumulationMonteCarlo.fireSuccessRate).toBeLessThanOrEqual(1);
   });
 });

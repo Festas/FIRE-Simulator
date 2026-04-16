@@ -82,7 +82,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   const { t, formatCurrency, formatCurrencyShort } = useI18n();
 
   const [targetIncome, setTargetIncome] = useState(inputs.monatlichesWunschEinkommen);
-  const [targetYears, setTargetYears] = useState(15);
+  const [exitAge, setExitAge] = useState(inputs.currentAge + 15);
   const [statePension, setStatePension] = useState(inputs.gesetzlicheRente);
   const [startCapital, setStartCapital] = useState(inputs.startKapital);
   const [returnRate, setReturnRate] = useState(inputs.etfRendite);
@@ -91,6 +91,8 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   const [showScenarios, setShowScenarios] = useState(false);
   const [showCurrentComparison, setShowCurrentComparison] = useState(false);
   const [tableOpen, setTableOpen] = useState(false);
+
+  const targetYears = Math.max(1, exitAge - inputs.currentAge);
 
   const reverseResult: ReverseResult = useMemo(
     () =>
@@ -112,6 +114,8 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
         inputs.lifeEvents,
         inputs.monatlicheSparrate,
         inputs.monatlichesNetto,
+        inputs.currentAge,
+        inputs.renteneintrittsalter,
       ),
     [
       targetIncome,
@@ -131,11 +135,14 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
       inputs.lifeEvents,
       inputs.monatlicheSparrate,
       inputs.monatlichesNetto,
+      inputs.currentAge,
+      inputs.renteneintrittsalter,
     ],
   );
 
   const mcPct = reverseResult.monteCarlo.successRate * 100;
   const mcLabel = mcPct.toFixed(0) + "%";
+  const mcRecPct = reverseResult.mcSuccessRate * 100;
 
   // Accumulation chart data with scenario bands
   const chartData = reverseResult.yearlyProjection.map((d, i) => {
@@ -158,7 +165,6 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   });
 
   // Monte Carlo drawdown chart data
-  const exitAge = inputs.currentAge + targetYears;
   const mcChartData = reverseResult.monteCarlo.years.map((year, i) => ({
     age: exitAge + i + 1,
     year,
@@ -177,9 +183,23 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
     withdrawal: Math.round(d.annualWithdrawal),
   }));
 
-  // Savings rate
+  // Accumulation Monte Carlo fan chart data
+  const accMc = reverseResult.accumulationMonteCarlo;
+  const accMcChartData = accMc.accumulationYears
+    .slice(0, targetYears)
+    .map((year, i) => ({
+      age: inputs.currentAge + i + 1,
+      year,
+      p90: accMc.accumulationPercentiles.p90[i],
+      p75: accMc.accumulationPercentiles.p75[i],
+      p50: accMc.accumulationPercentiles.p50[i],
+      p25: accMc.accumulationPercentiles.p25[i],
+      p10: accMc.accumulationPercentiles.p10[i],
+    }));
+
+  // Savings rate (based on MC-recommended savings)
   const savingsRate = inputs.monatlichesNetto > 0
-    ? ((reverseResult.requiredMonthlySavings / inputs.monatlichesNetto) * 100).toFixed(1)
+    ? ((reverseResult.mcRecommendedSavings / inputs.monatlichesNetto) * 100).toFixed(1)
     : null;
 
   // Detail table data (accumulation + drawdown)
@@ -235,13 +255,13 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => formatCurrencyShort(v)}
           />
           <SliderField
-            label={t.reverseTargetYears}
-            subLabel={t.reverseTargetYearsSub}
-            value={targetYears}
-            min={5}
-            max={40}
+            label={t.reverseExitAge}
+            subLabel={t.reverseExitAgeSub}
+            value={exitAge}
+            min={inputs.currentAge + 1}
+            max={inputs.currentAge + 40}
             step={1}
-            onChange={setTargetYears}
+            onChange={setExitAge}
             format={(v) => `${v} ${t.years}`}
           />
           <SliderField
@@ -278,16 +298,16 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
 
         {/* KPI Results — 2 rows */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          {/* Required Monthly Savings */}
+          {/* MC-Recommended Monthly Savings (primary) */}
           <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              {t.reverseResultSavings}
+              {t.reverseMcRecommendedSavings}
             </span>
             <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(reverseResult.requiredMonthlySavings)}
+              {formatCurrency(reverseResult.mcRecommendedSavings)}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              {t.perMonth}
+              {t.reverseMcRecommendedSavingsSub}
             </span>
           </div>
 
@@ -301,7 +321,57 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             </span>
           </div>
 
-          {/* Monte Carlo Success */}
+          {/* MC Success Rate Badge */}
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t.reverseMcSuccessRate}
+            </span>
+            <span
+              className={`text-xl font-bold tracking-tight ${
+                mcRecPct >= 75
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : mcRecPct >= 50
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {t.reverseMcConfidenceBadge(mcRecPct)}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {t.reverseMcSuccessRateSub}
+            </span>
+          </div>
+        </div>
+
+        {/* Second KPI row — additional metrics */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+          {/* Deterministic Savings (secondary) */}
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t.reverseDeterministicSavings}
+            </span>
+            <span className="text-xl font-bold tracking-tight text-[#0f294d] dark:text-white">
+              {formatCurrency(reverseResult.requiredMonthlySavings)}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {t.reverseDeterministicSavingsSub}
+            </span>
+          </div>
+
+          {/* Passive Income at FIRE */}
+          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {t.reversePassiveIncome}
+            </span>
+            <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+              {formatCurrency(reverseResult.passiveIncomeAtFire)}
+            </span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">
+              {t.reversePassiveIncomeSub}
+            </span>
+          </div>
+
+          {/* Monte Carlo Drawdown Success */}
           <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               {t.reverseResultMonteCarlo}
@@ -323,21 +393,8 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
           </div>
         </div>
 
-        {/* Second KPI row — additional metrics */}
+        {/* Third KPI row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {/* Passive Income at FIRE */}
-          <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              {t.reversePassiveIncome}
-            </span>
-            <span className="text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
-              {formatCurrency(reverseResult.passiveIncomeAtFire)}
-            </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              {t.reversePassiveIncomeSub}
-            </span>
-          </div>
-
           {/* Total Tax Paid */}
           <div className="bg-slate-50 dark:bg-slate-700/50 rounded-xl p-4 flex flex-col gap-1.5">
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -371,7 +428,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
               </span>
               <span className="text-xs text-slate-500 dark:text-slate-400">
                 {t.reverseSavingsRateSub(
-                  formatCurrency(reverseResult.requiredMonthlySavings),
+                  formatCurrency(reverseResult.mcRecommendedSavings),
                   formatCurrency(inputs.monatlichesNetto),
                 )}
               </span>
@@ -386,6 +443,9 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
               </span>
             </div>
           )}
+
+          {/* Empty cell for alignment */}
+          <div />
         </div>
 
         {/* Projection Chart with toggle buttons */}
@@ -518,6 +578,75 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Accumulation Monte Carlo Fan Chart */}
+      {accMcChartData.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-[#0f294d] dark:text-white">
+                {t.reverseAccMcTitle}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                {t.reverseAccMcSubtitle}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+                  mcRecPct >= 75
+                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700"
+                    : mcRecPct >= 50
+                      ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
+                      : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700"
+                }`}
+              >
+                {t.reverseMcConfidenceBadge(mcRecPct)}
+              </div>
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={accMcChartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="accMc90" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.08} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.01} />
+                </linearGradient>
+                <linearGradient id="accMc75" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.03} />
+                </linearGradient>
+                <linearGradient id="accMc50" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
+              <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+              <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
+              <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
+              <ReferenceLine
+                y={reverseResult.fireNumber}
+                stroke="#0f294d"
+                strokeDasharray="6 3"
+                strokeWidth={1.5}
+                label={{
+                  value: formatCurrencyShort(reverseResult.fireNumber),
+                  position: "right",
+                  fontSize: 11,
+                  fill: "#64748b",
+                }}
+              />
+              <Area type="monotone" dataKey="p90" stroke="#10b981" strokeWidth={1} strokeDasharray="4 2" fill="url(#accMc90)" name={t.monteCarloP90} dot={false} />
+              <Area type="monotone" dataKey="p75" stroke="#10b981" strokeWidth={1} fill="url(#accMc75)" name={t.monteCarloP75} dot={false} />
+              <Area type="monotone" dataKey="p50" stroke="#0f294d" strokeWidth={2.5} fill="url(#accMc50)" name={t.monteCarloMedian} dot={false} />
+              <Area type="monotone" dataKey="p25" stroke="#f59e0b" strokeWidth={1} fill="none" name={t.monteCarloP25} dot={false} />
+              <Area type="monotone" dataKey="p10" stroke="#ef4444" strokeWidth={1} strokeDasharray="4 2" fill="none" name={t.monteCarloP10} dot={false} />
+              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="line" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       {/* Drawdown Phase Chart */}
       {drawdownData.length > 0 && (
