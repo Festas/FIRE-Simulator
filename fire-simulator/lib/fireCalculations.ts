@@ -44,6 +44,7 @@ export interface FireInputs {
   inflation: number;
   bavJaehrlich: number;
   zielvermoegen: number;
+  zielvermoegenOverride: boolean; // when true, manual target overrides auto-calculated FIRE number
   lzkJahre: number;
   lzkRendite: number;
   startYear: number;
@@ -1546,6 +1547,7 @@ export function calculateReverse(
     inflation,
     bavJaehrlich: bavAnnual,
     zielvermoegen: fireNumber,
+    zielvermoegenOverride: false,
     lzkJahre: 3,
     lzkRendite: 3.5,
     startYear: new Date().getFullYear(),

@@ -95,6 +95,9 @@ export interface Translations {
   targetWealth: string;
   targetWealthSub: string;
   targetWealthTooltip: string;
+  targetWealthOverride: string;
+  targetWealthOverrideTooltip: string;
+  targetWealthAuto: string;
   simulationStart: string;
 
   // Formatters
@@ -309,6 +312,9 @@ export interface Translations {
   presetBalanced: string;
   presetAggressive: string;
   presetLabel: string;
+  presetConservativeDesc: string;
+  presetBalancedDesc: string;
+  presetAggressiveDesc: string;
 
   // Error Boundary
   errorTitle: string;
@@ -481,9 +487,12 @@ export const de: Translations = {
   lzkReturn: "LZK-Rendite",
   lzkReturnSub: "Wird nicht mehr verwendet",
   lzkReturnTooltip: "Im Sabbatical-Modell gibt es kein separates Finanzkonto mehr.",
-  targetWealth: "Zielvermögen (Override)",
-  targetWealthSub: "Überschreibt die automatische FIRE-Zahl",
-  targetWealthTooltip: "Standardmäßig wird Ihr Zielvermögen aus dem Wunsch-Einkommen, der Rente und der SWR berechnet. Hier können Sie es manuell überschreiben.",
+  targetWealth: "Zielvermögen",
+  targetWealthSub: "Ihr manuelles FIRE-Ziel",
+  targetWealthTooltip: "Standardmäßig wird Ihr Zielvermögen automatisch aus Wunsch-Einkommen und SWR berechnet. Aktivieren Sie den manuellen Modus, um einen eigenen Wert festzulegen.",
+  targetWealthOverride: "Manuell festlegen",
+  targetWealthOverrideTooltip: "Wenn aktiv, können Sie Ihr Zielvermögen manuell mit dem Schieberegler einstellen. Wenn deaktiviert, wird es automatisch berechnet: (Wunsch-Einkommen × 12) ÷ SWR.",
+  targetWealthAuto: "Automatisch berechnet",
   simulationStart: "Simulationsbeginn",
 
   years: "Jahre",
@@ -677,6 +686,9 @@ export const de: Translations = {
   presetBalanced: "Ausgewogen",
   presetAggressive: "Aggressiv",
   presetLabel: "Schnellvorlagen",
+  presetConservativeDesc: "5 % Rendite · 3 % SWR · 3 % Inflation",
+  presetBalancedDesc: "7 % Rendite · 3,5 % SWR · 2,5 % Inflation",
+  presetAggressiveDesc: "9 % Rendite · 4 % SWR · 2 % Inflation",
 
   errorTitle: "Etwas ist schiefgelaufen",
   errorMessage: "Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu.",
@@ -842,9 +854,12 @@ export const en: Translations = {
   lzkReturn: "LZK Return",
   lzkReturnSub: "No longer used",
   lzkReturnTooltip: "In the sabbatical model, there is no separate financial account.",
-  targetWealth: "Target Wealth (Override)",
-  targetWealthSub: "Overrides the automatic FIRE number",
-  targetWealthTooltip: "By default, your target wealth is calculated from desired income, pension, and SWR. Here you can override it manually.",
+  targetWealth: "Target Wealth",
+  targetWealthSub: "Your manual FIRE target",
+  targetWealthTooltip: "By default, your target wealth is automatically calculated from desired income and SWR. Enable manual mode to set your own value.",
+  targetWealthOverride: "Set manually",
+  targetWealthOverrideTooltip: "When active, you can manually set your target wealth using the slider. When off, it is automatically calculated: (Desired Income × 12) ÷ SWR.",
+  targetWealthAuto: "Auto-calculated",
   simulationStart: "Simulation start",
 
   years: "years",
@@ -1038,6 +1053,9 @@ export const en: Translations = {
   presetBalanced: "Balanced",
   presetAggressive: "Aggressive",
   presetLabel: "Quick Presets",
+  presetConservativeDesc: "5% return · 3% SWR · 3% inflation",
+  presetBalancedDesc: "7% return · 3.5% SWR · 2.5% inflation",
+  presetAggressiveDesc: "9% return · 4% SWR · 2% inflation",
 
   errorTitle: "Something went wrong",
   errorMessage: "An unexpected error occurred. Please try refreshing the page.",
