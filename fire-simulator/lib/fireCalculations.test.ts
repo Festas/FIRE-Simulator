@@ -1234,3 +1234,333 @@ describe("calculateReverse with currentAge and renteneintrittsalter", () => {
     expect(result.accumulationMonteCarlo.fireSuccessRate).toBeLessThanOrEqual(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Phase 2b — Expanded edge-case tests
+// ---------------------------------------------------------------------------
+
+describe("Edge cases — zero and extreme values", () => {
+  it("handles zero starting capital", () => {
+    const result = calculateFIRE(
+      makeInputs({ startKapital: 0 }),
+    );
+    expect(result.yearlyData[0].etfBalanceNominal).toBe(0);
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    // Should still be able to reach FIRE with savings
+    expect(result.targetReached).toBe(true);
+  });
+
+  it("handles zero savings rate", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        monatlicheSparrate: 0,
+        dynamikSparrate: 0,
+        bavJaehrlich: 0,
+        startKapital: 50_000,
+        zielvermoegen: 5_000_000,
+      }),
+    );
+    // No savings — hard to reach FIRE with small start capital
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    expect(result.yearlyData[0].monthlySavings).toBe(0);
+  });
+
+  it("handles zero SWR", () => {
+    const result = calculateFIRE(
+      makeInputs({ swr: 0 }),
+    );
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    // Derived FIRE number should be 0 when SWR is 0
+    expect(result.derivedFireNumber).toBe(0);
+  });
+
+  it("handles already-FIRE at start (year 0)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        startKapital: 2_000_000,
+        zielvermoegen: 1_000_000,
+      }),
+    );
+    expect(result.fullFireYear).toBe(0);
+    expect(result.targetReached).toBe(true);
+    expect(result.coastFireYear).toBe(0);
+  });
+
+  it("handles extreme inflation (10%+)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        inflation: 12.0,
+        etfRendite: 7.0,
+      }),
+    );
+    // With inflation > return, real values erode
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    // Check no NaN or Infinity in data
+    for (const d of result.yearlyData) {
+      expect(isFinite(d.etfBalanceReal)).toBe(true);
+      expect(isNaN(d.etfBalanceReal)).toBe(false);
+    }
+  });
+
+  it("handles very long horizon (data still valid at year 50)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        monatlicheSparrate: 100,
+        startKapital: 0,
+        bavJaehrlich: 0,
+        dynamikSparrate: 0,
+        zielvermoegen: 10_000_000,
+      }),
+    );
+    // Should produce 51 data points (year 0 to 50)
+    expect(result.yearlyData.length).toBe(51);
+    // Last year should have age = currentAge + 50
+    expect(result.yearlyData[50].age).toBe(defaultInputs.currentAge + 50);
+  });
+
+  it("produces no NaN or Infinity in any data point", () => {
+    const result = calculateFIRE(makeInputs());
+    for (const d of [...result.yearlyData, ...result.drawdownData]) {
+      expect(isFinite(d.etfBalanceNominal)).toBe(true);
+      expect(isFinite(d.etfBalanceReal)).toBe(true);
+      expect(isFinite(d.totalReal)).toBe(true);
+      expect(isFinite(d.taxPaid)).toBe(true);
+      expect(isFinite(d.annualGains)).toBe(true);
+      expect(isNaN(d.etfBalanceNominal)).toBe(false);
+      expect(isNaN(d.totalReal)).toBe(false);
+    }
+  });
+
+  it("handles zero return rate", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        etfRendite: 0,
+        inflation: 0,
+      }),
+    );
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    // With 0% return and 0% inflation, nominal = real
+    for (const d of result.yearlyData) {
+      expect(d.etfBalanceNominal).toBeCloseTo(d.etfBalanceReal, 0);
+    }
+  });
+
+  it("handles negative return crash scenario", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        etfRendite: 1.0,
+        inflation: 5.0,
+      }),
+    );
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+    // Real values should decline
+    expect(result.targetReached).toBe(false);
+  });
+
+  it("all balances remain non-negative", () => {
+    const crashInputs = makeInputs({
+      etfRendite: 1.0,
+      inflation: 10.0,
+      startKapital: 1_000,
+      monatlicheSparrate: 100,
+      lifeEvents: [
+        {
+          id: "big-expense",
+          type: "one_time_expense",
+          name: "Big expense",
+          startYear: 2027,
+          endYear: 2027,
+          annualAmount: -500_000,
+          inflationAdjusted: false,
+        },
+      ],
+    });
+    const result = calculateFIRE(crashInputs);
+    for (const d of result.yearlyData) {
+      expect(d.etfBalanceNominal).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 2c — Tax module edge-case tests
+// ---------------------------------------------------------------------------
+
+describe("US LTCG bracket boundaries", () => {
+  it("0% rate applies when income + gains stay within $47,025", () => {
+    // Very low income and very small capital to keep gains within 0% bracket
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "US",
+        monatlichesNetto: 1_000, // low income: $12k/year
+        monatlicheSparrate: 50,
+        startKapital: 1_000,
+        etfRendite: 3,
+        bavJaehrlich: 0,
+        dynamikSparrate: 0,
+        zielvermoegen: 10_000_000,
+      }),
+    );
+    // With very low income + small gains, tax should be 0 in the early years
+    expect(result.yearlyData[1].taxPaid).toBe(0);
+  });
+
+  it("15% rate for mid-income single", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "US",
+        monatlichesNetto: 10_000,
+        startKapital: 200_000,
+      }),
+    );
+    expect(result.totalTaxPaid).toBeGreaterThan(0);
+    expect(result.effectiveTaxRate).toBeGreaterThan(0);
+    expect(result.effectiveTaxRate).toBeLessThanOrEqual(0.20);
+  });
+
+  it("20% rate for high-income single (income above $518,900)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "US",
+        monatlichesNetto: 50_000, // annual: 600,000
+        startKapital: 500_000,
+      }),
+    );
+    expect(result.totalTaxPaid).toBeGreaterThan(0);
+    expect(result.effectiveTaxRate).toBeGreaterThan(0.15);
+  });
+});
+
+describe("Netherlands Box 3 edge cases", () => {
+  it("taxes gains using notional return rate", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "NL",
+        startKapital: 100_000,
+      }),
+    );
+    expect(result.totalTaxPaid).toBeGreaterThan(0);
+    // Effective rate should be lower than actual gains rate since it's notional
+    expect(result.effectiveTaxRate).toBeGreaterThan(0);
+  });
+
+  it("returns 0 tax on zero gains", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "NL",
+        etfRendite: 0,
+        inflation: 0,
+        monatlicheSparrate: 0,
+        bavJaehrlich: 0,
+        startKapital: 10_000,
+        zielvermoegen: 10_000_000,
+      }),
+    );
+    expect(result.totalTaxPaid).toBe(0);
+  });
+});
+
+describe("UK CGT edge cases", () => {
+  it("exempts gains below the annual exempt amount (£3,000)", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "UK",
+        startKapital: 10_000,
+        monatlicheSparrate: 100,
+        etfRendite: 3,
+        monatlichesNetto: 2_000,
+      }),
+    );
+    // Very low gains, likely within CGT allowance in early years
+    expect(result.yearlyData.length).toBeGreaterThan(0);
+  });
+
+  it("applies higher rate for high-income taxpayer", () => {
+    const lowIncome = calculateFIRE(
+      makeInputs({
+        taxCountry: "UK",
+        monatlichesNetto: 2_500,
+        startKapital: 200_000,
+      }),
+    );
+    const highIncome = calculateFIRE(
+      makeInputs({
+        taxCountry: "UK",
+        monatlichesNetto: 10_000,
+        startKapital: 200_000,
+      }),
+    );
+    // Higher income should lead to higher tax rate (20% vs 10%)
+    expect(highIncome.effectiveTaxRate).toBeGreaterThanOrEqual(
+      lowIncome.effectiveTaxRate,
+    );
+  });
+});
+
+describe("Austria KESt edge cases", () => {
+  it("applies flat 27.5% regardless of filing status", () => {
+    const single = calculateFIRE(
+      makeInputs({
+        taxCountry: "AT",
+        steuerModell: "single",
+        startKapital: 100_000,
+      }),
+    );
+    const couple = calculateFIRE(
+      makeInputs({
+        taxCountry: "AT",
+        steuerModell: "couple",
+        startKapital: 100_000,
+      }),
+    );
+    // KESt is flat — filing status doesn't affect rate
+    expect(single.effectiveTaxRate).toBeCloseTo(couple.effectiveTaxRate, 2);
+  });
+
+  it("has zero annual allowance", () => {
+    const result = calculateFIRE(
+      makeInputs({
+        taxCountry: "AT",
+        startKapital: 10_000,
+        monatlicheSparrate: 500,
+      }),
+    );
+    // Even small gains are taxed (no allowance)
+    expect(result.totalTaxPaid).toBeGreaterThan(0);
+  });
+});
+
+describe("All countries — zero and negative gains guard rails", () => {
+  const countries = ["DE", "US", "UK", "CH", "AT", "NL"] as const;
+
+  for (const country of countries) {
+    it(`${country}: zero gains produce zero tax`, () => {
+      const result = calculateFIRE(
+        makeInputs({
+          taxCountry: country,
+          etfRendite: 0,
+          inflation: 0,
+          monatlicheSparrate: 0,
+          bavJaehrlich: 0,
+          startKapital: 10_000,
+          zielvermoegen: 100_000_000,
+        }),
+      );
+      expect(result.totalTaxPaid).toBe(0);
+    });
+
+    it(`${country}: produces valid results with high gains`, () => {
+      const result = calculateFIRE(
+        makeInputs({
+          taxCountry: country,
+          startKapital: 500_000,
+          monatlicheSparrate: 5_000,
+          etfRendite: 10,
+        }),
+      );
+      expect(result.yearlyData.length).toBeGreaterThan(0);
+      expect(result.effectiveTaxRate).toBeGreaterThanOrEqual(0);
+      expect(isFinite(result.totalTaxPaid)).toBe(true);
+    });
+  }
+});

@@ -291,3 +291,99 @@ export async function exportPDF(ctx: ExportContext): Promise<void> {
   // Save
   doc.save(`fire-simulation-${dateStamp()}.pdf`);
 }
+
+// ---------------------------------------------------------------------------
+// CSV Export
+// ---------------------------------------------------------------------------
+
+export function exportCSV(ctx: ExportContext): void {
+  const { result, t } = ctx;
+  const allData = getAllData(result);
+  const headers = getHeaders(t);
+
+  // Escape CSV fields per RFC 4180
+  const escapeField = (field: string | number): string => {
+    const str = String(field);
+    if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const lines: string[] = [headers.map(escapeField).join(",")];
+  for (const d of allData) {
+    lines.push(getRow(d, t).map(escapeField).join(","));
+  }
+
+  const csvContent = lines.join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `fire-simulation-${dateStamp()}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+// ---------------------------------------------------------------------------
+// JSON Scenario Export / Import
+// ---------------------------------------------------------------------------
+
+export function exportScenarioJSON(inputs: FireInputs): void {
+  const json = JSON.stringify(inputs, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `fire-scenario-${dateStamp()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Import a scenario from a JSON file. Returns the parsed FireInputs
+ * or throws if the file is invalid.
+ */
+export function importScenarioJSON(file: File): Promise<FireInputs> {
+  // Known valid FireInputs keys for whitelist filtering
+  const validKeys = new Set([
+    "startKapital", "monatlicheSparrate", "dynamikSparrate", "etfRendite",
+    "inflation", "bavJaehrlich", "zielvermoegen", "zielvermoegenOverride",
+    "lzkJahre", "lzkRendite", "startYear", "currentAge",
+    "monatlichesWunschEinkommen", "gesetzlicheRente", "renteneintrittsalter",
+    "swr", "steuerModell", "kirchensteuer", "taxCountry", "entnahmeModell",
+    "kapitalverzehrJahre", "monatlichesNetto", "lifeEvents",
+    "arbeitszeitkontoEnabled", "stundenProJahr", "wochenStunden",
+  ]);
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result as string);
+        // Validate it's an object with required numeric fields
+        if (
+          typeof parsed !== "object" ||
+          parsed === null ||
+          typeof parsed.startKapital !== "number" ||
+          typeof parsed.monatlicheSparrate !== "number" ||
+          typeof parsed.etfRendite !== "number"
+        ) {
+          throw new Error("Invalid scenario file: missing required fields");
+        }
+        // Filter to only known keys to prevent injection of unknown properties
+        const filtered: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(parsed)) {
+          if (validKeys.has(key)) {
+            filtered[key] = value;
+          }
+        }
+        resolve(filtered as FireInputs);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsText(file);
+  });
+}

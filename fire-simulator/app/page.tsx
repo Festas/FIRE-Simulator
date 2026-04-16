@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useDeferredValue } from "react";
 import { calculateFIRE, FireInputs, LifeEvent } from "@/lib/fireCalculations";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
+import { parseURLInputs, inputsToURL } from "@/app/hooks/useUrlState";
 import Sidebar from "@/app/components/Sidebar";
 import KPICards from "@/app/components/KPICards";
 import FireChart from "@/app/components/FireChart";
@@ -50,85 +51,6 @@ const DEFAULT_INPUTS: FireInputs = {
 
 const LS_KEY = "fire-simulator-inputs";
 
-// URL state serialization keys (short to keep URLs compact)
-const URL_KEYS: Record<string, keyof FireInputs> = {
-  sk: "startKapital",
-  ms: "monatlicheSparrate",
-  ds: "dynamikSparrate",
-  er: "etfRendite",
-  in: "inflation",
-  bv: "bavJaehrlich",
-  zv: "zielvermoegen",
-  lj: "lzkJahre",
-  lr: "lzkRendite",
-  sy: "startYear",
-  ca: "currentAge",
-  wi: "monatlichesWunschEinkommen",
-  gr: "gesetzlicheRente",
-  sw: "swr",
-  sm: "steuerModell",
-  ks: "kirchensteuer",
-  tc: "taxCountry",
-  em: "entnahmeModell",
-  kj: "kapitalverzehrJahre",
-  mb: "monatlichesNetto",
-  zo: "zielvermoegenOverride",
-  ae: "arbeitszeitkontoEnabled",
-  sp: "stundenProJahr",
-  ws: "wochenStunden",
-  ra: "renteneintrittsalter",
-};
-
-function parseURLInputs(): Partial<FireInputs> | null {
-  if (typeof window === "undefined") return null;
-  const params = new URLSearchParams(window.location.search);
-  if (params.size === 0) return null;
-
-  const result: Record<string, unknown> = {};
-  let hasAny = false;
-
-  for (const [short, full] of Object.entries(URL_KEYS)) {
-    const val = params.get(short);
-    if (val === null) continue;
-    hasAny = true;
-
-    if (full === "steuerModell") {
-      result[full] = val === "couple" ? "couple" : "single";
-    } else if (full === "kirchensteuer" || full === "arbeitszeitkontoEnabled") {
-      result[full] = val === "1";
-    } else if (full === "entnahmeModell") {
-      result[full] = val === "kapitalverzehr" ? "kapitalverzehr" : "ewigeRente";
-    } else if (full === "taxCountry") {
-      const valid = ["DE", "US", "UK", "CH", "AT", "NL"];
-      result[full] = valid.includes(val) ? val : "DE";
-    } else {
-      const num = parseFloat(val);
-      if (!isNaN(num)) result[full] = num;
-    }
-  }
-
-  return hasAny ? (result as Partial<FireInputs>) : null;
-}
-
-function inputsToURL(inputs: FireInputs): string {
-  const params = new URLSearchParams();
-  const reverseKeys = Object.fromEntries(
-    Object.entries(URL_KEYS).map(([short, full]) => [full, short]),
-  );
-
-  for (const [full, short] of Object.entries(reverseKeys)) {
-    const key = full as keyof FireInputs;
-    const val = inputs[key];
-    if (typeof val === "boolean") {
-      params.set(short, val ? "1" : "0");
-    } else {
-      params.set(short, String(val));
-    }
-  }
-
-  return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-}
-
 function getInitialInputs(): FireInputs {
   if (typeof window === "undefined") return DEFAULT_INPUTS;
 
@@ -163,6 +85,7 @@ function HomeContent() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [shareTooltip, setShareTooltip] = useState(false);
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
+  const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale, formatCurrency } = useI18n();
 
@@ -170,6 +93,14 @@ function HomeContent() {
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+
+  // Auto-dismiss export toast
+  useEffect(() => {
+    if (exportToast) {
+      const timer = setTimeout(() => setExportToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [exportToast]);
 
   const handleChange = (key: keyof FireInputs, value: number | string | boolean) => {
     setInputs((prev) => {
@@ -195,17 +126,59 @@ function HomeContent() {
     });
   };
 
-  const result = useMemo(() => calculateFIRE(inputs), [inputs]);
+  // Defer expensive calculation to keep UI responsive during slider drags
+  const deferredInputs = useDeferredValue(inputs);
+  const result = useMemo(() => calculateFIRE(deferredInputs), [deferredInputs]);
 
   const handleExportXLSX = useCallback(async () => {
-    const { exportXLSX } = await import("@/lib/export");
-    await exportXLSX({ result, inputs, t, formatCurrency });
+    try {
+      const { exportXLSX } = await import("@/lib/export");
+      await exportXLSX({ result, inputs, t, formatCurrency });
+    } catch {
+      setExportToast({ message: t.exportError, type: "error" });
+    }
   }, [result, inputs, t, formatCurrency]);
 
   const handleExportPDF = useCallback(async () => {
-    const { exportPDF } = await import("@/lib/export");
-    await exportPDF({ result, inputs, t, formatCurrency });
+    try {
+      const { exportPDF } = await import("@/lib/export");
+      await exportPDF({ result, inputs, t, formatCurrency });
+    } catch {
+      setExportToast({ message: t.exportError, type: "error" });
+    }
   }, [result, inputs, t, formatCurrency]);
+
+  const handleExportCSV = useCallback(async () => {
+    try {
+      const { exportCSV } = await import("@/lib/export");
+      exportCSV({ result, inputs, t, formatCurrency });
+    } catch {
+      setExportToast({ message: t.exportError, type: "error" });
+    }
+  }, [result, inputs, t, formatCurrency]);
+
+  const handleExportJSON = useCallback(async () => {
+    try {
+      const { exportScenarioJSON } = await import("@/lib/export");
+      exportScenarioJSON(inputs);
+    } catch {
+      setExportToast({ message: t.exportError, type: "error" });
+    }
+  }, [inputs, t]);
+
+  const handleImportJSON = useCallback(async (file: File) => {
+    try {
+      const { importScenarioJSON } = await import("@/lib/export");
+      const imported = await importScenarioJSON(file);
+      // Merge with defaults to ensure any missing fields are filled
+      const merged = { ...DEFAULT_INPUTS, ...imported };
+      setInputs(merged);
+      saveInputs(merged);
+      setExportToast({ message: t.importSuccess, type: "success" });
+    } catch {
+      setExportToast({ message: t.importError, type: "error" });
+    }
+  }, [t]);
 
   const handleShareLink = useCallback(() => {
     const url = inputsToURL(inputs);
@@ -329,6 +302,43 @@ function HomeContent() {
             <span className="hidden sm:inline">{t.pdfExport}</span>
           </button>
 
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            <span className="hidden sm:inline">{t.csvExport}</span>
+          </button>
+
+          <button
+            onClick={handleExportJSON}
+            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+            <span className="hidden sm:inline">{t.jsonExport}</span>
+          </button>
+
+          <label className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors cursor-pointer">
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            </svg>
+            <span className="hidden sm:inline">{t.jsonImport}</span>
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleImportJSON(file);
+                e.target.value = "";
+              }}
+            />
+          </label>
+
           {/* Language toggle */}
           <button
             onClick={() => setLocale(locale === "de" ? "en" : "de")}
@@ -428,6 +438,15 @@ function HomeContent() {
           </p>
         </div>
       </main>
+
+      {/* Export/Import toast notification */}
+      {exportToast && (
+        <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm text-white transition-all ${
+          exportToast.type === "error" ? "bg-red-600" : "bg-emerald-600"
+        }`}>
+          {exportToast.message}
+        </div>
+      )}
     </div>
   );
 }
