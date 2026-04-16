@@ -1198,10 +1198,11 @@ describe("Monte Carlo–backed savings rate (calculateMCRequiredSparrate)", () =
     expect(result.mcRecommendedSavings).toBeGreaterThanOrEqual(result.requiredMonthlySavings);
   });
 
-  it("returns 0 for targetYears <= 0", () => {
+  it("returns 0 savings and successRate based on start capital for targetYears <= 0", () => {
     const result = calculateMCRequiredSparrate(mcInputs, 0);
     expect(result.monthlySavings).toBe(0);
-    expect(result.successRate).toBe(1);
+    // startKapital (50k) < zielvermoegen (1M), so no success
+    expect(result.successRate).toBe(0);
   });
 });
 

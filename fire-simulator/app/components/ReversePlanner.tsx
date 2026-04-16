@@ -92,7 +92,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   const [showCurrentComparison, setShowCurrentComparison] = useState(false);
   const [tableOpen, setTableOpen] = useState(false);
 
-  const targetYears = Math.max(1, exitAge - inputs.currentAge);
+  const targetYears = Math.max(5, exitAge - inputs.currentAge);
 
   const reverseResult: ReverseResult = useMemo(
     () =>
@@ -258,7 +258,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             label={t.reverseExitAge}
             subLabel={t.reverseExitAgeSub}
             value={exitAge}
-            min={inputs.currentAge + 1}
+            min={inputs.currentAge + 5}
             max={inputs.currentAge + 40}
             step={1}
             onChange={setExitAge}

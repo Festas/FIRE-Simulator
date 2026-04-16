@@ -1029,7 +1029,11 @@ export function calculateMCRequiredSparrate(
   inputs: FireInputs,
   targetYears: number,
 ): { monthlySavings: number; successRate: number } {
-  if (targetYears <= 0) return { monthlySavings: 0, successRate: 1 };
+  if (targetYears <= 0) {
+    // No time to save — success depends on whether we already have enough
+    const alreadyFire = inputs.startKapital >= inputs.zielvermoegen;
+    return { monthlySavings: 0, successRate: alreadyFire ? 1 : 0 };
+  }
 
   const {
     startKapital,
@@ -1087,10 +1091,11 @@ export function calculateMCRequiredSparrate(
     return successes / MC_LIFECYCLE_SIMULATIONS;
   }
 
-  // Binary search for savings rate
+  // Binary search: dynamic upper bound based on FIRE number and time horizon
   let lo = 0;
-  let hi = 50_000;
+  let hi = Math.max(50_000, ((zielvermoegen - startKapital) / (targetYears * 12)) * 1.5);
 
+  // 30 iterations → precision of ~hi/2^30 ≈ sub-euro for typical ranges
   for (let i = 0; i < 30; i++) {
     const mid = (lo + hi) / 2;
     if (mcSuccessRate(mid) < MC_TARGET_SUCCESS_RATE) {
