@@ -87,7 +87,6 @@ function saveInputs(inputs: FireInputs) {
 function HomeContent() {
   const [inputs, setInputs] = useState<FireInputs>(getInitialInputs);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarMode, setSidebarMode] = useState<"simple" | "advanced">("simple");
   const [shareTooltip, setShareTooltip] = useState(false);
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -361,7 +360,7 @@ function HomeContent() {
           "overflow-y-auto sidebar-scroll",
         ].join(" ")}
       >
-        <Sidebar inputs={inputs} onChange={handleChange} onReset={handleReset} mode={sidebarMode} onModeChange={setSidebarMode} />
+        <Sidebar inputs={inputs} onChange={handleChange} onReset={handleReset} />
       </aside>
 
       {/* Main area */}

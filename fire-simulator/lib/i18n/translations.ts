@@ -416,10 +416,14 @@ export interface Translations {
   noInvestmentTooltip: string;
   chartLabelNoInvestment: string;
 
-  // Simple / Advanced mode
+  // Simple / Advanced mode (legacy)
   simpleMode: string;
   advancedMode: string;
   simpleModeHint: string;
+
+  // Sidebar section headers
+  mainParameters: string;
+  adjustments: string;
 
   // Onboarding wizard
   onboardingTitle: string;
@@ -836,10 +840,14 @@ export const de: Translations = {
   noInvestmentTooltip: "Zeigt was passiert wäre, wenn das gleiche Geld nur gespart, aber nie investiert worden wäre (nur Inflation-Erosion)",
   chartLabelNoInvestment: "Ohne Investment (nur Sparen)",
 
-  // Simple / Advanced mode
+  // Simple / Advanced mode (legacy)
   simpleMode: "Einfach",
   advancedMode: "Erweitert",
   simpleModeHint: "Zeigt nur die wichtigsten Einstellungen",
+
+  // Sidebar section headers
+  mainParameters: "📌 Hauptgrößen",
+  adjustments: "⚙️ Stellschrauben",
 
   // Onboarding wizard
   onboardingTitle: "Willkommen beim FIRE Simulator!",
@@ -1256,10 +1264,14 @@ export const en: Translations = {
   noInvestmentTooltip: "Shows what would have happened if the same money was saved but never invested (inflation erosion only)",
   chartLabelNoInvestment: "No Investment (savings only)",
 
-  // Simple / Advanced mode
+  // Simple / Advanced mode (legacy)
   simpleMode: "Simple",
   advancedMode: "Advanced",
   simpleModeHint: "Shows only the most important settings",
+
+  // Sidebar section headers
+  mainParameters: "📌 Key Inputs",
+  adjustments: "⚙️ Adjustments",
 
   // Onboarding wizard
   onboardingTitle: "Welcome to the FIRE Simulator!",
