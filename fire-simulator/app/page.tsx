@@ -162,7 +162,7 @@ function HomeContent() {
   const [shareTooltip, setShareTooltip] = useState(false);
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const { theme, toggleTheme } = useTheme();
-  const { t, locale, setLocale } = useI18n();
+  const { t, locale, setLocale, formatCurrency } = useI18n();
 
   // Update html lang when locale changes
   useEffect(() => {
@@ -189,46 +189,15 @@ function HomeContent() {
 
   const result = useMemo(() => calculateFIRE(inputs), [inputs]);
 
-  const handleExportCSV = useCallback(() => {
-    const allData = [...result.yearlyData, ...result.drawdownData];
-    const headers = [
-      t.tableYear,
-      t.calendarYear,
-      t.tableEtf,
-      t.tableLzk,
-      t.tableTotal,
-      t.tableSavingsMonth,
-      t.tableTaxes,
-      t.tableWithdrawal,
-      t.tablePhase,
-    ];
-    const getPhaseLabel = (d: (typeof allData)[0]) => {
-      if (d.isDrawdownPhase) return t.phaseWithdrawal;
-      if (d.isFreistellungsPhase) return t.phaseFreistellung;
-      if (d.isCoastPhase) return t.phaseCoast;
-      if (d.isLZKPhase) return t.phaseLzk;
-      return t.phaseSaving;
-    };
-    const rows = allData.map((d) => [
-      d.year,
-      d.calendarYear,
-      Math.round(d.etfBalanceReal),
-      Math.round(d.lzkBalanceReal),
-      Math.round(d.totalReal),
-      Math.round(d.monthlySavings),
-      Math.round(d.taxPaid),
-      Math.round(d.annualWithdrawal),
-      getPhaseLabel(d),
-    ]);
-    const csv = [headers, ...rows].map((r) => r.join(";")).join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }); // BOM prefix for Excel UTF-8
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `fire-simulation-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [result, t]);
+  const handleExportXLSX = useCallback(async () => {
+    const { exportXLSX } = await import("@/lib/export");
+    await exportXLSX({ result, inputs, t, formatCurrency });
+  }, [result, inputs, t, formatCurrency]);
+
+  const handleExportPDF = useCallback(async () => {
+    const { exportPDF } = await import("@/lib/export");
+    await exportPDF({ result, inputs, t, formatCurrency });
+  }, [result, inputs, t, formatCurrency]);
 
   const handleShareLink = useCallback(() => {
     const url = inputsToURL(inputs);
@@ -333,13 +302,23 @@ function HomeContent() {
           </div>
 
           <button
-            onClick={handleExportCSV}
+            onClick={handleExportXLSX}
             className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
-            <span className="hidden sm:inline">{t.csvExport}</span>
+            <span className="hidden sm:inline">{t.xlsxExport}</span>
+          </button>
+
+          <button
+            onClick={handleExportPDF}
+            className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+            </svg>
+            <span className="hidden sm:inline">{t.pdfExport}</span>
           </button>
 
           {/* Language toggle */}
