@@ -357,6 +357,9 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
               <option value="CH">{t.taxCountryCH}</option>
               <option value="AT">{t.taxCountryAT}</option>
               <option value="NL">{t.taxCountryNL}</option>
+              <option value="CA">{t.taxCountryCA}</option>
+              <option value="AU">{t.taxCountryAU}</option>
+              <option value="FR">{t.taxCountryFR}</option>
             </select>
           </div>
 

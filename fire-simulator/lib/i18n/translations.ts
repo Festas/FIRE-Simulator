@@ -346,6 +346,9 @@ export interface Translations {
   taxCountryCH: string;
   taxCountryAT: string;
   taxCountryNL: string;
+  taxCountryCA: string;
+  taxCountryAU: string;
+  taxCountryFR: string;
 
   // Life Events
   lifeEventsSection: string;
@@ -719,6 +722,9 @@ export const de: Translations = {
   taxCountryCH: "🇨🇭 Schweiz",
   taxCountryAT: "🇦🇹 Österreich",
   taxCountryNL: "🇳🇱 Niederlande",
+  taxCountryCA: "🇨🇦 Kanada",
+  taxCountryAU: "🇦🇺 Australien",
+  taxCountryFR: "🇫🇷 Frankreich",
 
   // Life Events
   lifeEventsSection: "Lebensereignisse",
@@ -1092,6 +1098,9 @@ export const en: Translations = {
   taxCountryCH: "🇨🇭 Switzerland",
   taxCountryAT: "🇦🇹 Austria",
   taxCountryNL: "🇳🇱 Netherlands",
+  taxCountryCA: "🇨🇦 Canada",
+  taxCountryAU: "🇦🇺 Australia",
+  taxCountryFR: "🇫🇷 France",
 
   // Life Events
   lifeEventsSection: "Life Events",

@@ -68,7 +68,7 @@ export function parseURLInputs(): Partial<FireInputs> | null {
     } else if (full === "entnahmeModell") {
       result[full] = val === "kapitalverzehr" ? "kapitalverzehr" : "ewigeRente";
     } else if (full === "taxCountry") {
-      const valid = ["DE", "US", "UK", "CH", "AT", "NL"];
+      const valid = ["DE", "US", "UK", "CH", "AT", "NL", "CA", "AU", "FR"];
       result[full] = valid.includes(val) ? val : "DE";
     } else {
       const num = parseFloat(val);
