@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback, useEffect, useDeferredValue } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useDeferredValue, useRef } from "react";
 import { calculateFIRE, FireInputs, LifeEvent } from "@/lib/fireCalculations";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { ThemeProvider, useTheme } from "@/lib/theme";
@@ -19,6 +19,8 @@ import ReversePlanner from "@/app/components/ReversePlanner";
 import LifeEventsEditor from "@/app/components/LifeEventsEditor";
 import ScenarioManager from "@/app/components/ScenarioManager";
 import ExamplePlansDropdown from "@/app/components/ExamplePlansDropdown";
+import OnboardingWizard from "@/app/components/OnboardingWizard";
+import DashboardSection from "@/app/components/DashboardSection";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 30_000,
@@ -50,6 +52,8 @@ const DEFAULT_INPUTS: FireInputs = {
 };
 
 const LS_KEY = "fire-simulator-inputs";
+const LS_ONBOARDING_KEY = "fire-simulator-onboarded";
+const UNDO_LIMIT = 30;
 
 function getInitialInputs(): FireInputs {
   if (typeof window === "undefined") return DEFAULT_INPUTS;
@@ -83,12 +87,60 @@ function saveInputs(inputs: FireInputs) {
 function HomeContent() {
   const [inputs, setInputs] = useState<FireInputs>(getInitialInputs);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarMode, setSidebarMode] = useState<"simple" | "advanced">("advanced");
+  const [sidebarMode, setSidebarMode] = useState<"simple" | "advanced">("simple");
   const [shareTooltip, setShareTooltip] = useState(false);
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale, formatCurrency, setCurrency } = useI18n();
+
+  // Onboarding state
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  useEffect(() => {
+    try {
+      const onboarded = localStorage.getItem(LS_ONBOARDING_KEY);
+      const hasUrlParams = new URLSearchParams(window.location.search).size > 0;
+      const hasSavedInputs = localStorage.getItem(LS_KEY) !== null;
+      if (!onboarded && !hasUrlParams && !hasSavedInputs) {
+        setShowOnboarding(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Undo/redo stacks
+  const undoStack = useRef<FireInputs[]>([]);
+  const redoStack = useRef<FireInputs[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const pushUndo = useCallback((prev: FireInputs) => {
+    undoStack.current = [...undoStack.current.slice(-UNDO_LIMIT + 1), prev];
+    redoStack.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.current.length === 0) return;
+    const prev = undoStack.current.pop()!;
+    redoStack.current.push(inputs);
+    setInputs(prev);
+    saveInputs(prev);
+    setCanUndo(undoStack.current.length > 0);
+    setCanRedo(true);
+  }, [inputs]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.current.length === 0) return;
+    const next = redoStack.current.pop()!;
+    undoStack.current.push(inputs);
+    setInputs(next);
+    saveInputs(next);
+    setCanRedo(redoStack.current.length > 0);
+    setCanUndo(true);
+  }, [inputs]);
 
   // Update html lang when locale changes
   useEffect(() => {
@@ -110,6 +162,7 @@ function HomeContent() {
 
   const handleChange = (key: keyof FireInputs, value: number | string | boolean) => {
     setInputs((prev) => {
+      pushUndo(prev);
       const next = { ...prev, [key]: value };
       // Auto-update zielvermoegen when income or SWR change (only if override is not active)
       // Use full desired income (not reduced by pension) since pension only starts at Renteneintrittsalter
@@ -218,13 +271,73 @@ function HomeContent() {
   }, []);
 
   const handleScenarioLoad = useCallback((loaded: FireInputs) => {
+    pushUndo(inputs);
     const merged = { ...DEFAULT_INPUTS, ...loaded };
     setInputs(merged);
     saveInputs(merged);
+  }, [inputs, pushUndo]);
+
+  const handleOnboardingComplete = useCallback((data: {
+    currentAge: number;
+    monatlichesNetto: number;
+    startKapital: number;
+    monatlicheSparrate: number;
+    monatlichesWunschEinkommen: number;
+    taxCountry: string;
+  }) => {
+    const swr = 3.5;
+    const zielvermoegen = Math.round((data.monatlichesWunschEinkommen * 12) / (swr / 100));
+    const merged: FireInputs = {
+      ...DEFAULT_INPUTS,
+      currentAge: data.currentAge,
+      monatlichesNetto: data.monatlichesNetto,
+      startKapital: data.startKapital,
+      monatlicheSparrate: data.monatlicheSparrate,
+      monatlichesWunschEinkommen: data.monatlichesWunschEinkommen,
+      taxCountry: data.taxCountry as FireInputs["taxCountry"],
+      zielvermoegen,
+    };
+    setInputs(merged);
+    saveInputs(merged);
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(LS_ONBOARDING_KEY, "1");
+    } catch { /* ignore */ }
   }, []);
+
+  const handleOnboardingSkip = useCallback(() => {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(LS_ONBOARDING_KEY, "1");
+    } catch { /* ignore */ }
+  }, []);
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [handleUndo, handleRedo]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
+      {/* Onboarding Wizard */}
+      {showOnboarding && (
+        <OnboardingWizard
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -267,6 +380,32 @@ function HomeContent() {
             <p className="text-xs text-slate-400 dark:text-slate-500 hidden sm:block">
               {t.appSubtitle}
             </p>
+          </div>
+
+          {/* Undo / Redo */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleUndo}
+              disabled={!canUndo}
+              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title={`${t.undo} (Ctrl+Z)`}
+              aria-label={t.undo}
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <button
+              onClick={handleRedo}
+              disabled={!canRedo}
+              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title={`${t.redo} (Ctrl+Shift+Z)`}
+              aria-label={t.redo}
+            >
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.293 3.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 9H9a5 5 0 00-5 5v2a1 1 0 11-2 0v-2a7 7 0 017-7h5.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
           </div>
 
           {/* Share Link button */}
@@ -421,18 +560,45 @@ function HomeContent() {
             {activeTab === "forward" ? (
               <>
                 <Warnings inputs={inputs} />
-                <KPICards result={result} inputs={inputs} />
-                <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
-                <LifecycleMonteCarloChart result={result} />
-                <MonteCarloChart result={result} />
-                <DrawdownChart result={result} inputs={inputs} />
-                <LifeEventsEditor
-                  events={inputs.lifeEvents}
-                  onChange={handleLifeEventsChange}
-                  startYear={inputs.startYear}
-                />
-                <DetailTable result={result} />
-                <PhasesTimeline result={result} startYear={inputs.startYear} />
+                <DashboardSection
+                  title={t.sectionFireJourney}
+                  description={t.sectionFireJourneyDesc}
+                  defaultOpen={true}
+                >
+                  <KPICards result={result} inputs={inputs} />
+                  <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
+                </DashboardSection>
+
+                <DashboardSection
+                  title={t.sectionStressTesting}
+                  description={t.sectionStressTestingDesc}
+                  defaultOpen={true}
+                >
+                  <LifecycleMonteCarloChart result={result} />
+                  <MonteCarloChart result={result} />
+                </DashboardSection>
+
+                <DashboardSection
+                  title={t.sectionDrawdownAnalysis}
+                  description={t.sectionDrawdownAnalysisDesc}
+                  defaultOpen={true}
+                >
+                  <DrawdownChart result={result} inputs={inputs} />
+                </DashboardSection>
+
+                <DashboardSection
+                  title={t.sectionPlanning}
+                  description={t.sectionPlanningDesc}
+                  defaultOpen={false}
+                >
+                  <LifeEventsEditor
+                    events={inputs.lifeEvents}
+                    onChange={handleLifeEventsChange}
+                    startYear={inputs.startYear}
+                  />
+                  <DetailTable result={result} />
+                  <PhasesTimeline result={result} startYear={inputs.startYear} />
+                </DashboardSection>
               </>
             ) : (
               <ReversePlanner inputs={inputs} />

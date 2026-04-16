@@ -378,7 +378,7 @@ export function importScenarioJSON(file: File): Promise<FireInputs> {
             filtered[key] = value;
           }
         }
-        resolve(filtered as FireInputs);
+        resolve(filtered as unknown as FireInputs);
       } catch (err) {
         reject(err);
       }
