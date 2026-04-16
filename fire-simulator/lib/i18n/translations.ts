@@ -209,6 +209,9 @@ export interface Translations {
   warnIncomeAbovePension: string;
   warnHighSwr: string;
   warnHighReturn: string;
+  warnSavingsExceedIncome: string;
+  warnPensionAgeTooLow: string;
+  warnDesiredIncomeHigh: string;
 
   // Disclaimer
   disclaimer: string;
@@ -646,6 +649,9 @@ export const de: Translations = {
   warnIncomeAbovePension: "ℹ️ Ihr Wunsch-Einkommen ist geringer als die erwartete Rente. Kein zusätzliches Vermögen nötig!",
   warnHighSwr: "⚠️ Eine SWR von 5% oder mehr gilt als riskant. Historisch hatte die 4%-Regel bereits eine Ausfallwahrscheinlichkeit.",
   warnHighReturn: "ℹ️ Eine Rendite von 10%+ p.a. ist sehr optimistisch. Der MSCI World liegt historisch bei ca. 7% brutto.",
+  warnSavingsExceedIncome: "⚠️ Ihre Sparrate übersteigt Ihr Nettoeinkommen. Bitte überprüfen Sie Ihre Eingaben.",
+  warnPensionAgeTooLow: "⚠️ Das Renteneintrittsalter liegt unter oder beim aktuellen Alter.",
+  warnDesiredIncomeHigh: "ℹ️ Ihr gewünschtes Ruhestandseinkommen liegt über Ihrem aktuellen Nettoeinkommen.",
 
   disclaimer: "Diese Simulation dient ausschließlich Informationszwecken und stellt keine Anlageberatung dar. Alle Werte basieren auf vereinfachten Annahmen und historischen Durchschnittswerten. Steuerberechnung nach deutschem Recht (Abgeltungssteuer + Teilfreistellung).",
 
@@ -1063,6 +1069,9 @@ export const en: Translations = {
   warnIncomeAbovePension: "ℹ️ Your desired income is less than the expected pension. No additional wealth needed!",
   warnHighSwr: "⚠️ An SWR of 5% or more is considered risky. Historically, the 4% rule already had a failure probability.",
   warnHighReturn: "ℹ️ A return of 10%+ p.a. is very optimistic. The MSCI World historically averages approx. 7% gross.",
+  warnSavingsExceedIncome: "⚠️ Your savings rate exceeds your net income. Please check your inputs.",
+  warnPensionAgeTooLow: "⚠️ The pension age is at or below your current age.",
+  warnDesiredIncomeHigh: "ℹ️ Your desired retirement income is higher than your current net income.",
 
   disclaimer: "This simulation is for informational purposes only and does not constitute investment advice. All values are based on simplified assumptions and historical averages. Tax calculation according to German law (Abgeltungssteuer + Teilfreistellung).",
 
