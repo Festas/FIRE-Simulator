@@ -145,15 +145,14 @@ interface SidebarProps {
   inputs: FireInputs;
   onChange: (key: keyof FireInputs, value: number | string | boolean) => void;
   onReset: () => void;
-  mode: "simple" | "advanced";
-  onModeChange: (mode: "simple" | "advanced") => void;
 }
 
-export default function Sidebar({ inputs, onChange, onReset, mode, onModeChange }: SidebarProps) {
+export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
   const { t, formatCurrency, formatPercent } = useI18n();
   const fmtEuro = formatCurrency;
   const fmtPct = formatPercent;
   const fmtYrs = (v: number) => `${v} ${t.years}`;
+  const [adjustmentsOpen, setAdjustmentsOpen] = React.useState(false);
 
   return (
     <div className="flex flex-col h-full">
@@ -170,24 +169,62 @@ export default function Sidebar({ inputs, onChange, onReset, mode, onModeChange 
         </div>
       </div>
 
-      {/* Mode Toggle */}
-      <div className="px-6 pt-4 pb-2">
-        <SegmentToggle
-          options={[
-            { value: "simple" as const, label: t.simpleMode },
-            { value: "advanced" as const, label: t.advancedMode },
-          ]}
-          value={mode}
-          onChange={onModeChange}
-        />
-      </div>
-
       {/* Inputs */}
       <div className="flex-1 overflow-y-auto px-6 py-5 sidebar-scroll">
-        {/* ===== RETIREMENT GOALS ===== */}
+        {/* ========================================================== */}
+        {/* HAUPTGRÖSSEN (Key Inputs)                                   */}
+        {/* ========================================================== */}
         <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-          {t.retirementGoals}
+          {t.mainParameters}
         </p>
+
+        <SliderField
+          label={t.currentAge}
+          subLabel={t.currentAgeSub}
+          tooltip={t.currentAgeTooltip}
+          value={inputs.currentAge}
+          min={18}
+          max={65}
+          step={1}
+          onChange={(v) => onChange("currentAge", v)}
+          format={(v) => `${v}`}
+        />
+
+        <SliderField
+          label={t.netIncome}
+          subLabel={t.netIncomeSub}
+          tooltip={t.netIncomeTooltip}
+          value={inputs.monatlichesNetto}
+          min={0}
+          max={20_000}
+          step={100}
+          onChange={(v) => onChange("monatlichesNetto", v)}
+          format={fmtEuro}
+        />
+
+        <SliderField
+          label={t.startCapital}
+          subLabel={t.startCapitalSub}
+          tooltip={t.startCapitalTooltip}
+          value={inputs.startKapital}
+          min={0}
+          max={2_000_000}
+          step={5_000}
+          onChange={(v) => onChange("startKapital", v)}
+          format={fmtEuro}
+        />
+
+        <SliderField
+          label={t.monthlySavings}
+          subLabel={t.monthlySavingsSub}
+          tooltip={t.monthlySavingsTooltip}
+          value={inputs.monatlicheSparrate}
+          min={100}
+          max={20_000}
+          step={50}
+          onChange={(v) => onChange("monatlicheSparrate", v)}
+          format={fmtEuro}
+        />
 
         <SliderField
           label={t.desiredIncome}
@@ -213,409 +250,374 @@ export default function Sidebar({ inputs, onChange, onReset, mode, onModeChange 
           format={fmtEuro}
         />
 
-        <SliderField
-          label={t.swr}
-          subLabel={t.swrSub}
-          tooltip={t.swrTooltip}
-          value={inputs.swr}
-          min={2.5}
-          max={5.0}
-          step={0.1}
-          onChange={(v) => onChange("swr", v)}
-          format={fmtPct}
-        />
-
-        <SliderField
-          label={t.currentAge}
-          subLabel={t.currentAgeSub}
-          tooltip={t.currentAgeTooltip}
-          value={inputs.currentAge}
-          min={18}
-          max={65}
-          step={1}
-          onChange={(v) => onChange("currentAge", v)}
-          format={(v) => `${v}`}
-        />
-
-        <SliderField
-          label={t.retirementAge}
-          subLabel={t.retirementAgeSub}
-          tooltip={t.retirementAgeTooltip}
-          value={inputs.renteneintrittsalter}
-          min={60}
-          max={70}
-          step={1}
-          onChange={(v) => onChange("renteneintrittsalter", v)}
-          format={(v) => `${v}`}
-        />
-
-        {/* ===== SPARPHASE ===== */}
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            {t.savingsPhase}
-          </p>
-
-          <SliderField
-            label={t.startCapital}
-            subLabel={t.startCapitalSub}
-            tooltip={t.startCapitalTooltip}
-            value={inputs.startKapital}
-            min={0}
-            max={2_000_000}
-            step={5_000}
-            onChange={(v) => onChange("startKapital", v)}
-            format={fmtEuro}
-          />
-
-          <SliderField
-            label={t.monthlySavings}
-            subLabel={t.monthlySavingsSub}
-            tooltip={t.monthlySavingsTooltip}
-            value={inputs.monatlicheSparrate}
-            min={100}
-            max={20_000}
-            step={50}
-            onChange={(v) => onChange("monatlicheSparrate", v)}
-            format={fmtEuro}
-          />
-
-          {mode === "advanced" && (
-            <SliderField
-              label={t.dynamicSavings}
-              subLabel={t.dynamicSavingsSub}
-              tooltip={t.dynamicSavingsTooltip}
-              value={inputs.dynamikSparrate}
-              min={0}
-              max={5}
-              step={0.1}
-              onChange={(v) => onChange("dynamikSparrate", v)}
-              format={fmtPct}
-            />
-          )}
-
-          <SliderField
-            label={t.netIncome}
-            subLabel={t.netIncomeSub}
-            tooltip={t.netIncomeTooltip}
-            value={inputs.monatlichesNetto}
-            min={0}
-            max={20_000}
-            step={100}
-            onChange={(v) => onChange("monatlichesNetto", v)}
-            format={fmtEuro}
-          />
-
-          {mode === "advanced" && (
-            <SliderField
-              label={t.bavContribution}
-              subLabel={t.bavContributionSub}
-              tooltip={t.bavContributionTooltip}
-              value={inputs.bavJaehrlich}
-              min={0}
-              max={20_000}
-              step={500}
-              onChange={(v) => onChange("bavJaehrlich", v)}
-              format={(v) => `${fmtEuro(v)}${t.perYear}`}
-            />
-          )}
-        </div>
-
-        {/* ===== RENDITE & MARKT ===== */}
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            {t.returnMarket}
-          </p>
-
-          <SliderField
-            label={t.expectedReturn}
-            subLabel={t.expectedReturnSub}
-            tooltip={t.expectedReturnTooltip}
-            value={inputs.etfRendite}
-            min={2}
-            max={12}
-            step={0.1}
-            onChange={(v) => onChange("etfRendite", v)}
-            format={fmtPct}
-          />
-
-          <SliderField
-            label={t.inflationRate}
-            subLabel={t.inflationRateSub}
-            tooltip={t.inflationRateTooltip}
-            value={inputs.inflation}
-            min={0}
-            max={6}
-            step={0.1}
-            onChange={(v) => onChange("inflation", v)}
-            format={fmtPct}
-          />
-        </div>
-
-        {/* ===== STEUER ===== */}
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            {t.taxes}
-          </p>
-
-          {/* Tax Country Selector */}
-          <div className="mb-4">
-            <div className="flex items-center mb-2">
-              <span className="text-sm text-slate-300">{t.taxCountry}</span>
-              <InfoTooltip text={t.taxCountryTooltip} />
-            </div>
-            <select
-              value={inputs.taxCountry}
-              onChange={(e) => onChange("taxCountry", e.target.value)}
-              className="w-full text-sm font-medium py-2 px-3 rounded-lg bg-slate-700 text-white border border-slate-600 focus:border-emerald-400 focus:outline-none appearance-none cursor-pointer"
-              aria-label={t.taxCountry}
-            >
-              <option value="DE">{t.taxCountryDE}</option>
-              <option value="US">{t.taxCountryUS}</option>
-              <option value="UK">{t.taxCountryUK}</option>
-              <option value="CH">{t.taxCountryCH}</option>
-              <option value="AT">{t.taxCountryAT}</option>
-              <option value="NL">{t.taxCountryNL}</option>
-              <option value="CA">{t.taxCountryCA}</option>
-              <option value="AU">{t.taxCountryAU}</option>
-              <option value="FR">{t.taxCountryFR}</option>
-            </select>
+        {/* Tax Country (in Hauptgrößen since it affects everything) */}
+        <div className="mb-4">
+          <div className="flex items-center mb-2">
+            <span className="text-sm text-slate-300">{t.taxCountry}</span>
+            <InfoTooltip text={t.taxCountryTooltip} />
           </div>
-
-          {mode === "advanced" && (
-            <SelectToggle
-              label={t.taxFiling}
-              tooltip={t.taxFilingTooltip}
-              options={[
-                { value: "single" as const, label: t.taxFilingSingle },
-                { value: "couple" as const, label: t.taxFilingCouple },
-              ]}
-              value={inputs.steuerModell}
-              onChange={(v) => onChange("steuerModell", v)}
-            />
-          )}
-
-          {mode === "advanced" && inputs.taxCountry === "DE" && (
-            <ToggleSwitch
-              label={t.churchTax}
-              tooltip={t.churchTaxTooltip}
-              checked={inputs.kirchensteuer}
-              onChange={(v) => onChange("kirchensteuer", v)}
-            />
-          )}
+          <select
+            value={inputs.taxCountry}
+            onChange={(e) => onChange("taxCountry", e.target.value)}
+            className="w-full text-sm font-medium py-2 px-3 rounded-lg bg-slate-700 text-white border border-slate-600 focus:border-emerald-400 focus:outline-none appearance-none cursor-pointer"
+            aria-label={t.taxCountry}
+          >
+            <option value="DE">{t.taxCountryDE}</option>
+            <option value="US">{t.taxCountryUS}</option>
+            <option value="UK">{t.taxCountryUK}</option>
+            <option value="CH">{t.taxCountryCH}</option>
+            <option value="AT">{t.taxCountryAT}</option>
+            <option value="NL">{t.taxCountryNL}</option>
+            <option value="CA">{t.taxCountryCA}</option>
+            <option value="AU">{t.taxCountryAU}</option>
+            <option value="FR">{t.taxCountryFR}</option>
+          </select>
         </div>
 
-        {/* ===== ENTNAHME ===== */}
-        {mode === "advanced" && (
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            {t.withdrawalStrategy}
-          </p>
-
-          <SegmentToggle
-            label={t.withdrawalMode}
-            tooltip={t.withdrawalModeTooltip}
-            options={[
-              { value: "ewigeRente" as const, label: t.withdrawalPreserve },
-              { value: "kapitalverzehr" as const, label: t.withdrawalSpend },
-            ]}
-            value={inputs.entnahmeModell}
-            onChange={(v) => onChange("entnahmeModell", v)}
-          />
-
-          {inputs.entnahmeModell === "kapitalverzehr" && (
-            <SliderField
-              label={t.withdrawalDuration}
-              subLabel={t.withdrawalDurationSub}
-              tooltip={t.withdrawalDurationTooltip}
-              value={inputs.kapitalverzehrJahre}
-              min={10}
-              max={50}
-              step={1}
-              onChange={(v) => onChange("kapitalverzehrJahre", v)}
-              format={fmtYrs}
-            />
-          )}
-        </div>
-        )}
-
-        {/* ===== Arbeitszeitkonto ===== */}
-        {mode === "advanced" && (
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-emerald-400 mb-4 font-semibold">
-            {t.lzkSection}
-          </p>
-
-          {/* Toggle for Arbeitszeitkonto */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-slate-300">{t.azkEnabled}</span>
-              <InfoTooltip text={t.azkEnabledTooltip} />
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={inputs.arbeitszeitkontoEnabled}
-              onClick={() => onChange("arbeitszeitkontoEnabled", !inputs.arbeitszeitkontoEnabled)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#0f294d] ${
-                inputs.arbeitszeitkontoEnabled ? "bg-emerald-500" : "bg-slate-600"
-              }`}
+        {/* ========================================================== */}
+        {/* STELLSCHRAUBEN (Adjustments) — collapsible                  */}
+        {/* ========================================================== */}
+        <div className="border-t border-slate-700 pt-4 mt-2">
+          <button
+            type="button"
+            onClick={() => setAdjustmentsOpen((v) => !v)}
+            className="flex items-center justify-between w-full group mb-4"
+            aria-expanded={adjustmentsOpen}
+          >
+            <p className="text-xs uppercase tracking-widest text-slate-400 font-semibold group-hover:text-slate-200 transition-colors">
+              {t.adjustments}
+            </p>
+            <svg
+              className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${adjustmentsOpen ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
             >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  inputs.arbeitszeitkontoEnabled ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-          {inputs.arbeitszeitkontoEnabled ? (
+          {adjustmentsOpen && (
             <>
+              {/* --- Rendite & Markt --- */}
+              <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                {t.returnMarket}
+              </p>
+
               <SliderField
-                label={t.azkHoursPerYear}
-                subLabel={t.azkHoursPerYearSub}
-                tooltip={t.azkHoursPerYearTooltip}
-                value={inputs.stundenProJahr}
+                label={t.expectedReturn}
+                subLabel={t.expectedReturnSub}
+                tooltip={t.expectedReturnTooltip}
+                value={inputs.etfRendite}
+                min={2}
+                max={12}
+                step={0.1}
+                onChange={(v) => onChange("etfRendite", v)}
+                format={fmtPct}
+              />
+
+              <SliderField
+                label={t.inflationRate}
+                subLabel={t.inflationRateSub}
+                tooltip={t.inflationRateTooltip}
+                value={inputs.inflation}
                 min={0}
-                max={500}
-                step={10}
-                onChange={(v) => onChange("stundenProJahr", v)}
-                format={(v) => `${v} h`}
+                max={6}
+                step={0.1}
+                onChange={(v) => onChange("inflation", v)}
+                format={fmtPct}
               />
+
               <SliderField
-                label={t.azkWeeklyHours}
-                subLabel={t.azkWeeklyHoursSub}
-                tooltip={t.azkWeeklyHoursTooltip}
-                value={inputs.wochenStunden}
-                min={20}
-                max={50}
-                step={1}
-                onChange={(v) => onChange("wochenStunden", v)}
-                format={(v) => `${v} h`}
+                label={t.swr}
+                subLabel={t.swrSub}
+                tooltip={t.swrTooltip}
+                value={inputs.swr}
+                min={2.5}
+                max={5.0}
+                step={0.1}
+                onChange={(v) => onChange("swr", v)}
+                format={fmtPct}
               />
-              {/* Computed Freistellung duration display */}
-              <div className="mt-2 px-1 py-2 bg-slate-700/50 rounded-lg text-center">
-                <p className="text-xs text-slate-400">{t.azkFreistellungDuration}</p>
-                <p className="text-lg font-bold text-emerald-400">
-                  {(inputs.stundenProJahr / (inputs.wochenStunden * 52)).toFixed(2)} {t.years} / {t.perYear}
+
+              {/* --- Sparphase Details --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.savingsPhase}
                 </p>
+
+                <SliderField
+                  label={t.dynamicSavings}
+                  subLabel={t.dynamicSavingsSub}
+                  tooltip={t.dynamicSavingsTooltip}
+                  value={inputs.dynamikSparrate}
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  onChange={(v) => onChange("dynamikSparrate", v)}
+                  format={fmtPct}
+                />
+
+                <SliderField
+                  label={t.bavContribution}
+                  subLabel={t.bavContributionSub}
+                  tooltip={t.bavContributionTooltip}
+                  value={inputs.bavJaehrlich}
+                  min={0}
+                  max={20_000}
+                  step={500}
+                  onChange={(v) => onChange("bavJaehrlich", v)}
+                  format={(v) => `${fmtEuro(v)}${t.perYear}`}
+                />
+
+                <SliderField
+                  label={t.retirementAge}
+                  subLabel={t.retirementAgeSub}
+                  tooltip={t.retirementAgeTooltip}
+                  value={inputs.renteneintrittsalter}
+                  min={60}
+                  max={70}
+                  step={1}
+                  onChange={(v) => onChange("renteneintrittsalter", v)}
+                  format={(v) => `${v}`}
+                />
+              </div>
+
+              {/* --- Steuern --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.taxes}
+                </p>
+
+                <SelectToggle
+                  label={t.taxFiling}
+                  tooltip={t.taxFilingTooltip}
+                  options={[
+                    { value: "single" as const, label: t.taxFilingSingle },
+                    { value: "couple" as const, label: t.taxFilingCouple },
+                  ]}
+                  value={inputs.steuerModell}
+                  onChange={(v) => onChange("steuerModell", v)}
+                />
+
+                {inputs.taxCountry === "DE" && (
+                  <ToggleSwitch
+                    label={t.churchTax}
+                    tooltip={t.churchTaxTooltip}
+                    checked={inputs.kirchensteuer}
+                    onChange={(v) => onChange("kirchensteuer", v)}
+                  />
+                )}
+              </div>
+
+              {/* --- Entnahme-Strategie --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.withdrawalStrategy}
+                </p>
+
+                <SegmentToggle
+                  label={t.withdrawalMode}
+                  tooltip={t.withdrawalModeTooltip}
+                  options={[
+                    { value: "ewigeRente" as const, label: t.withdrawalPreserve },
+                    { value: "kapitalverzehr" as const, label: t.withdrawalSpend },
+                  ]}
+                  value={inputs.entnahmeModell}
+                  onChange={(v) => onChange("entnahmeModell", v)}
+                />
+
+                {inputs.entnahmeModell === "kapitalverzehr" && (
+                  <SliderField
+                    label={t.withdrawalDuration}
+                    subLabel={t.withdrawalDurationSub}
+                    tooltip={t.withdrawalDurationTooltip}
+                    value={inputs.kapitalverzehrJahre}
+                    min={10}
+                    max={50}
+                    step={1}
+                    onChange={(v) => onChange("kapitalverzehrJahre", v)}
+                    format={fmtYrs}
+                  />
+                )}
+              </div>
+
+              {/* --- Arbeitszeitkonto --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.lzkSection}
+                </p>
+
+                {/* Toggle for Arbeitszeitkonto */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm text-slate-300">{t.azkEnabled}</span>
+                    <InfoTooltip text={t.azkEnabledTooltip} />
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={inputs.arbeitszeitkontoEnabled}
+                    onClick={() => onChange("arbeitszeitkontoEnabled", !inputs.arbeitszeitkontoEnabled)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#0f294d] ${
+                      inputs.arbeitszeitkontoEnabled ? "bg-emerald-500" : "bg-slate-600"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        inputs.arbeitszeitkontoEnabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {inputs.arbeitszeitkontoEnabled ? (
+                  <>
+                    <SliderField
+                      label={t.azkHoursPerYear}
+                      subLabel={t.azkHoursPerYearSub}
+                      tooltip={t.azkHoursPerYearTooltip}
+                      value={inputs.stundenProJahr}
+                      min={0}
+                      max={500}
+                      step={10}
+                      onChange={(v) => onChange("stundenProJahr", v)}
+                      format={(v) => `${v} h`}
+                    />
+                    <SliderField
+                      label={t.azkWeeklyHours}
+                      subLabel={t.azkWeeklyHoursSub}
+                      tooltip={t.azkWeeklyHoursTooltip}
+                      value={inputs.wochenStunden}
+                      min={20}
+                      max={50}
+                      step={1}
+                      onChange={(v) => onChange("wochenStunden", v)}
+                      format={(v) => `${v} h`}
+                    />
+                    {/* Computed Freistellung duration display */}
+                    <div className="mt-2 px-1 py-2 bg-slate-700/50 rounded-lg text-center">
+                      <p className="text-xs text-slate-400">{t.azkFreistellungDuration}</p>
+                      <p className="text-lg font-bold text-emerald-400">
+                        {(inputs.stundenProJahr / (inputs.wochenStunden * 52)).toFixed(2)} {t.years} / {t.perYear}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <SliderField
+                    label={t.lzkPhase}
+                    subLabel={t.lzkPhaseSub}
+                    tooltip={t.lzkPhaseTooltip}
+                    value={inputs.lzkJahre}
+                    min={0}
+                    max={7}
+                    step={1}
+                    onChange={(v) => onChange("lzkJahre", v)}
+                    format={fmtYrs}
+                  />
+                )}
+              </div>
+
+              {/* --- Manuelles Zielvermögen --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.manualTarget}
+                </p>
+
+                {/* Toggle for manual override */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm text-slate-300">{t.targetWealthOverride}</span>
+                    <InfoTooltip text={t.targetWealthOverrideTooltip} />
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={inputs.zielvermoegenOverride}
+                    onClick={() => onChange("zielvermoegenOverride", !inputs.zielvermoegenOverride)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#0f294d] ${
+                      inputs.zielvermoegenOverride ? "bg-emerald-500" : "bg-slate-600"
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        inputs.zielvermoegenOverride ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {inputs.zielvermoegenOverride ? (
+                  <SliderField
+                    label={t.targetWealth}
+                    subLabel={t.targetWealthSub}
+                    tooltip={t.targetWealthTooltip}
+                    value={inputs.zielvermoegen}
+                    min={100_000}
+                    max={10_000_000}
+                    step={50_000}
+                    onChange={(v) => onChange("zielvermoegen", v)}
+                    format={fmtEuro}
+                  />
+                ) : (
+                  <div className="rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-3">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-sm text-slate-400">{t.targetWealth}</span>
+                      <span className="text-sm font-semibold text-slate-300">{fmtEuro(inputs.zielvermoegen)}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">{t.targetWealthAuto}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* --- Quick Presets --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.presetLabel}
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("etfRendite", 5.0);
+                      onChange("swr", 3.0);
+                      onChange("inflation", 3.0);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
+                  >
+                    <span className="text-xs font-medium text-slate-300">{t.presetConservative}</span>
+                    <span className="block text-[10px] text-slate-500 mt-0.5">{t.presetConservativeDesc}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("etfRendite", 7.0);
+                      onChange("swr", 3.5);
+                      onChange("inflation", 2.5);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 transition-colors"
+                  >
+                    <span className="text-xs font-medium text-emerald-400">{t.presetBalanced}</span>
+                    <span className="block text-[10px] text-emerald-500/70 mt-0.5">{t.presetBalancedDesc}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("etfRendite", 9.0);
+                      onChange("swr", 4.0);
+                      onChange("inflation", 2.0);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
+                  >
+                    <span className="text-xs font-medium text-slate-300">{t.presetAggressive}</span>
+                    <span className="block text-[10px] text-slate-500 mt-0.5">{t.presetAggressiveDesc}</span>
+                  </button>
+                </div>
               </div>
             </>
-          ) : (
-            <SliderField
-              label={t.lzkPhase}
-              subLabel={t.lzkPhaseSub}
-              tooltip={t.lzkPhaseTooltip}
-              value={inputs.lzkJahre}
-              min={0}
-              max={7}
-              step={1}
-              onChange={(v) => onChange("lzkJahre", v)}
-              format={fmtYrs}
-            />
           )}
         </div>
-        )}
-
-        {/* ===== Override Target ===== */}
-        {mode === "advanced" && (
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-slate-500 mb-4 font-semibold">
-            {t.manualTarget}
-          </p>
-
-          {/* Toggle for manual override */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm text-slate-300">{t.targetWealthOverride}</span>
-              <InfoTooltip text={t.targetWealthOverrideTooltip} />
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={inputs.zielvermoegenOverride}
-              onClick={() => onChange("zielvermoegenOverride", !inputs.zielvermoegenOverride)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[#0f294d] ${
-                inputs.zielvermoegenOverride ? "bg-emerald-500" : "bg-slate-600"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  inputs.zielvermoegenOverride ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-
-          {inputs.zielvermoegenOverride ? (
-            <SliderField
-              label={t.targetWealth}
-              subLabel={t.targetWealthSub}
-              tooltip={t.targetWealthTooltip}
-              value={inputs.zielvermoegen}
-              min={100_000}
-              max={10_000_000}
-              step={50_000}
-              onChange={(v) => onChange("zielvermoegen", v)}
-              format={fmtEuro}
-            />
-          ) : (
-            <div className="rounded-lg bg-slate-800/50 border border-slate-700 px-4 py-3">
-              <div className="flex justify-between items-baseline">
-                <span className="text-sm text-slate-400">{t.targetWealth}</span>
-                <span className="text-sm font-semibold text-slate-300">{fmtEuro(inputs.zielvermoegen)}</span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">{t.targetWealthAuto}</p>
-            </div>
-          )}
-        </div>
-        )}
-
-        {/* ===== Quick Presets ===== */}
-        {mode === "advanced" && (
-        <div className="border-t border-slate-700 pt-5 mt-2">
-          <p className="text-xs uppercase tracking-widest text-slate-500 mb-3 font-semibold">
-            {t.presetLabel}
-          </p>
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onChange("etfRendite", 5.0);
-                onChange("swr", 3.0);
-                onChange("inflation", 3.0);
-              }}
-              className="w-full text-left px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
-            >
-              <span className="text-xs font-medium text-slate-300">{t.presetConservative}</span>
-              <span className="block text-[10px] text-slate-500 mt-0.5">{t.presetConservativeDesc}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onChange("etfRendite", 7.0);
-                onChange("swr", 3.5);
-                onChange("inflation", 2.5);
-              }}
-              className="w-full text-left px-3 py-2 rounded-lg bg-emerald-600/20 border border-emerald-500/30 hover:bg-emerald-600/30 transition-colors"
-            >
-              <span className="text-xs font-medium text-emerald-400">{t.presetBalanced}</span>
-              <span className="block text-[10px] text-emerald-500/70 mt-0.5">{t.presetBalancedDesc}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                onChange("etfRendite", 9.0);
-                onChange("swr", 4.0);
-                onChange("inflation", 2.0);
-              }}
-              className="w-full text-left px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 transition-colors"
-            >
-              <span className="text-xs font-medium text-slate-300">{t.presetAggressive}</span>
-              <span className="block text-[10px] text-slate-500 mt-0.5">{t.presetAggressiveDesc}</span>
-            </button>
-          </div>
-        </div>
-        )}
       </div>
 
       {/* Footer */}
