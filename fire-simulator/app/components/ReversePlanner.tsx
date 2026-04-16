@@ -16,66 +16,10 @@ import { calculateReverse, FireInputs, ReverseResult } from "@/lib/fireCalculati
 import { useI18n } from "@/lib/i18n";
 import { ChartTooltipContent } from "@/app/components/ChartTooltip";
 import { yAxisFormatter } from "@/lib/chartUtils";
+import SliderField from "@/app/components/ui/SliderField";
 
 interface ReversePlannerProps {
   inputs: FireInputs;
-}
-
-function SliderField({
-  label,
-  subLabel,
-  value,
-  min,
-  max,
-  step,
-  onChange,
-  format,
-}: {
-  label: string;
-  subLabel?: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  onChange: (v: number) => void;
-  format: (v: number) => string;
-}) {
-  const pct = ((value - min) / (max - min)) * 100;
-  return (
-    <div className="mb-4">
-      <div className="flex justify-between items-baseline mb-1">
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-400">
-          {label}
-        </label>
-        <span className="text-sm font-semibold text-[#0f294d] dark:text-white">
-          {format(value)}
-        </span>
-      </div>
-      {subLabel && (
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{subLabel}</p>
-      )}
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
-        aria-label={label}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        aria-valuenow={value}
-        style={{
-          background: `linear-gradient(to right, #10b981 0%, #10b981 ${pct}%, #cbd5e1 ${pct}%, #cbd5e1 100%)`,
-        }}
-      />
-      <div className="flex justify-between mt-1">
-        <span className="text-xs text-slate-500">{format(min)}</span>
-        <span className="text-xs text-slate-500">{format(max)}</span>
-      </div>
-    </div>
-  );
 }
 
 export default function ReversePlanner({ inputs }: ReversePlannerProps) {
@@ -225,6 +169,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
         {/* Input Sliders — 2×2 + 3 additional grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mb-8">
           <SliderField
+            variant="panel"
             label={t.reverseTargetIncome}
             subLabel={t.reverseTargetIncomeSub}
             value={targetIncome}
@@ -235,6 +180,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => formatCurrency(v)}
           />
           <SliderField
+            variant="panel"
             label={t.statePension}
             subLabel={t.statePensionSub}
             value={statePension}
@@ -245,6 +191,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => formatCurrency(v)}
           />
           <SliderField
+            variant="panel"
             label={t.startCapital}
             subLabel={t.startCapitalSub}
             value={startCapital}
@@ -255,6 +202,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => formatCurrencyShort(v)}
           />
           <SliderField
+            variant="panel"
             label={t.reverseExitAge}
             subLabel={t.reverseExitAgeSub}
             value={exitAge}
@@ -265,6 +213,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => `${v} ${t.years}`}
           />
           <SliderField
+            variant="panel"
             label={t.reverseReturnRate}
             subLabel={t.reverseReturnRateSub}
             value={returnRate}
@@ -275,6 +224,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => `${v.toFixed(1)}%`}
           />
           <SliderField
+            variant="panel"
             label={t.reverseInflation}
             subLabel={t.reverseInflationSub}
             value={inflationRate}
@@ -285,6 +235,7 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
             format={(v) => `${v.toFixed(1)}%`}
           />
           <SliderField
+            variant="panel"
             label={t.reverseSwr}
             subLabel={t.reverseSwrSub}
             value={swrRate}

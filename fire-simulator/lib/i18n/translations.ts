@@ -13,6 +13,12 @@ export interface Translations {
   menuOpen: string;
   xlsxExport: string;
   pdfExport: string;
+  csvExport: string;
+  jsonExport: string;
+  jsonImport: string;
+  exportError: string;
+  importError: string;
+  importSuccess: string;
   live: string;
 
   // Sidebar sections
@@ -413,6 +419,12 @@ export const de: Translations = {
   menuOpen: "Menü öffnen",
   xlsxExport: "Excel Export",
   pdfExport: "PDF Export",
+  csvExport: "CSV Export",
+  jsonExport: "JSON Export",
+  jsonImport: "JSON Import",
+  exportError: "Export fehlgeschlagen. Bitte versuchen Sie es erneut.",
+  importError: "Import fehlgeschlagen. Die Datei ist ungültig oder beschädigt.",
+  importSuccess: "Szenario erfolgreich importiert.",
   live: "Live",
 
   retirementGoals: "🎯 Ruhestandsziel",
@@ -780,6 +792,12 @@ export const en: Translations = {
   menuOpen: "Open menu",
   xlsxExport: "Excel Export",
   pdfExport: "PDF Export",
+  csvExport: "CSV Export",
+  jsonExport: "JSON Export",
+  jsonImport: "JSON Import",
+  exportError: "Export failed. Please try again.",
+  importError: "Import failed. The file is invalid or corrupted.",
+  importSuccess: "Scenario imported successfully.",
   live: "Live",
 
   retirementGoals: "🎯 Retirement Goals",
