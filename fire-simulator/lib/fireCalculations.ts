@@ -1014,6 +1014,102 @@ function simulateLifecycleMonteCarlo(
 }
 
 // ---------------------------------------------------------------------------
+// Monte Carlo–backed required savings rate (binary search for 75% success)
+// ---------------------------------------------------------------------------
+
+const MC_TARGET_SUCCESS_RATE = 0.75; // 75th percentile — conservative but achievable
+
+/**
+ * Binary-search for a monthly savings rate so that ≥75% of Monte Carlo
+ * accumulation simulations reach the FIRE number within `targetYears`.
+ *
+ * Returns { monthlySavings, successRate }.
+ */
+export function calculateMCRequiredSparrate(
+  inputs: FireInputs,
+  targetYears: number,
+): { monthlySavings: number; successRate: number } {
+  if (targetYears <= 0) {
+    // No time to save — success depends on whether we already have enough
+    const alreadyFire = inputs.startKapital >= inputs.zielvermoegen;
+    return { monthlySavings: 0, successRate: alreadyFire ? 1 : 0 };
+  }
+
+  const {
+    startKapital,
+    dynamikSparrate,
+    etfRendite,
+    inflation,
+    bavJaehrlich,
+    zielvermoegen,
+    startYear,
+    lifeEvents,
+  } = inputs;
+
+  const meanReturn = etfRendite / 100;
+  const stdDev = 0.15;
+  const inf = inflation / 100;
+  const dyn = dynamikSparrate / 100;
+
+  /**
+   * Run MC accumulation with a given monthly savings rate
+   * and return the fraction of simulations that reach FIRE within targetYears.
+   */
+  function mcSuccessRate(monthlySavings: number): number {
+    const rng = mulberry32(77); // fixed seed for determinism
+    let successes = 0;
+
+    for (let sim = 0; sim < MC_LIFECYCLE_SIMULATIONS; sim++) {
+      let balance = startKapital;
+      let reached = false;
+
+      for (let y = 1; y <= targetYears; y++) {
+        const override = getSavingsRateOverride(lifeEvents, startYear + y);
+        const savings = override !== null ? override : monthlySavings * Math.pow(1 + dyn, y - 1);
+        const contrib = savings * 12 + bavJaehrlich;
+
+        const annualReturn = meanReturn + stdDev * normalRandom(rng);
+        const prev = balance;
+        balance = (balance + contrib) * (1 + annualReturn);
+        const gains = balance - prev - contrib;
+        balance -= calculateTax(Math.max(0, gains), inputs);
+
+        const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+        balance += eventCF;
+        balance = Math.max(0, balance);
+
+        const realVal = balance / Math.pow(1 + inf, y);
+        if (realVal >= zielvermoegen) {
+          reached = true;
+          break;
+        }
+      }
+
+      if (reached) successes++;
+    }
+
+    return successes / MC_LIFECYCLE_SIMULATIONS;
+  }
+
+  // Binary search: dynamic upper bound based on FIRE number and time horizon
+  let lo = 0;
+  let hi = Math.max(50_000, ((zielvermoegen - startKapital) / (targetYears * 12)) * 1.5);
+
+  // 30 iterations → precision of ~hi/2^30 ≈ sub-euro for typical ranges
+  for (let i = 0; i < 30; i++) {
+    const mid = (lo + hi) / 2;
+    if (mcSuccessRate(mid) < MC_TARGET_SUCCESS_RATE) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+
+  const result = Math.round((lo + hi) / 2);
+  return { monthlySavings: result, successRate: mcSuccessRate(result) };
+}
+
+// ---------------------------------------------------------------------------
 // Main calculation
 // ---------------------------------------------------------------------------
 
@@ -1392,6 +1488,11 @@ export interface ReverseResult {
 
   // Sensitivity analysis
   sensitivity: SensitivityRow[];
+
+  // Monte Carlo–backed savings recommendation (75th percentile)
+  mcRecommendedSavings: number;
+  mcSuccessRate: number; // fraction of MC sims reaching FIRE at recommended savings
+  accumulationMonteCarlo: LifecycleMonteCarloResult;
 }
 
 export function calculateReverse(
@@ -1412,6 +1513,8 @@ export function calculateReverse(
   lifeEvents: LifeEvent[] = [],
   currentMonthlySavings: number = 0,
   monatlichesNetto: number = 0,
+  currentAge: number = 30,
+  renteneintrittsalter: number = 67,
 ): ReverseResult {
   const monthlyGapFull = targetMonthlyIncome;
   const monthlyGap = Math.max(0, targetMonthlyIncome - statePension);
@@ -1446,10 +1549,10 @@ export function calculateReverse(
     lzkJahre: 3,
     lzkRendite: 3.5,
     startYear: new Date().getFullYear(),
-    currentAge: 30,
+    currentAge,
     monatlichesWunschEinkommen: targetMonthlyIncome,
     gesetzlicheRente: statePension,
-    renteneintrittsalter: 67,
+    renteneintrittsalter,
     swr,
     steuerModell,
     kirchensteuer,
@@ -1537,6 +1640,13 @@ export function calculateReverse(
     sensitivity.push({ returnRate: r, requiredSavings: sensSavings, fireNumber: sensFireNumber });
   }
 
+  // Monte Carlo–backed recommended savings rate (75th percentile)
+  const mcResult = calculateMCRequiredSparrate(inputs, targetYears);
+
+  // Accumulation Monte Carlo with the MC-recommended savings
+  const mcProjectionInputs = { ...inputs, monatlicheSparrate: mcResult.monthlySavings };
+  const accumulationMonteCarlo = simulateLifecycleMonteCarlo(mcProjectionInputs);
+
   return {
     requiredMonthlySavings,
     fireNumber,
@@ -1553,6 +1663,9 @@ export function calculateReverse(
     coastFireYear,
     currentProjection,
     sensitivity,
+    mcRecommendedSavings: mcResult.monthlySavings,
+    mcSuccessRate: mcResult.successRate,
+    accumulationMonteCarlo,
   };
 }
 
