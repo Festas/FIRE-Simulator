@@ -68,6 +68,25 @@ const LS_KEY = "fire-simulator-inputs";
 const LS_ONBOARDING_KEY = "fire-simulator-onboarded";
 const UNDO_LIMIT = 30;
 
+/** Detect likely tax country from browser locale */
+function detectCountryFromLocale(): FireInputs["taxCountry"] | null {
+  try {
+    const lang = navigator.language || (navigator.languages?.[0] ?? "");
+    const region = lang.split("-")[1]?.toUpperCase();
+    const mapping: Record<string, FireInputs["taxCountry"]> = {
+      DE: "DE", AT: "AT", CH: "CH", US: "US", GB: "UK", UK: "UK",
+      NL: "NL", CA: "CA", AU: "AU", FR: "FR",
+    };
+    if (region && mapping[region]) return mapping[region];
+    // Fallback: match language prefix
+    const langPrefix = lang.split("-")[0].toLowerCase();
+    const langMap: Record<string, FireInputs["taxCountry"]> = {
+      de: "DE", en: "US", fr: "FR", nl: "NL",
+    };
+    return langMap[langPrefix] ?? null;
+  } catch { return null; }
+}
+
 function getInitialInputs(): FireInputs {
   if (typeof window === "undefined") return DEFAULT_INPUTS;
 
@@ -86,6 +105,28 @@ function getInitialInputs(): FireInputs {
   } catch {
     // ignore
   }
+
+  // Auto-detect country from browser locale for first-time visitors
+  const detectedCountry = detectCountryFromLocale();
+  if (detectedCountry && detectedCountry !== DEFAULT_INPUTS.taxCountry) {
+    const defaults = COUNTRY_DEFAULTS[detectedCountry];
+    if (defaults) {
+      const swr = defaults.swr / 100;
+      return {
+        ...DEFAULT_INPUTS,
+        taxCountry: detectedCountry,
+        monatlichesNetto: defaults.monatlichesNetto,
+        monatlichesWunschEinkommen: defaults.monatlichesWunschEinkommen,
+        gesetzlicheRente: defaults.gesetzlicheRente,
+        renteneintrittsalter: defaults.renteneintrittsalter,
+        etfRendite: defaults.etfRendite,
+        inflation: defaults.inflation,
+        swr: defaults.swr,
+        zielvermoegen: swr > 0 ? Math.round((defaults.monatlichesWunschEinkommen * 12) / swr) : DEFAULT_INPUTS.zielvermoegen,
+      };
+    }
+  }
+
   return DEFAULT_INPUTS;
 }
 
