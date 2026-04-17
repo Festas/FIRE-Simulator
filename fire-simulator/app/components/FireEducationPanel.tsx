@@ -30,7 +30,10 @@ export default function FireEducationPanel() {
   if (dismissed) {
     return (
       <button
-        onClick={() => setDismissed(false)}
+        onClick={() => {
+          setDismissed(false);
+          try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
+        }}
         className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline mb-4"
       >
         {t.fireEducationShowAgain}
