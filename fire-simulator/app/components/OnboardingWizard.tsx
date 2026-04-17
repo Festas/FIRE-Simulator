@@ -140,25 +140,47 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     return { fireAge: null, fireNumber };
   })();
 
+  const [showQuickResult, setShowQuickResult] = useState(false);
+
+  // Currency symbol for benchmarks
+  const currencySymbol = (() => {
+    try {
+      const parts = new Intl.NumberFormat("en", { style: "currency", currency: data.taxCountry === "US" ? "USD" : data.taxCountry === "UK" ? "GBP" : data.taxCountry === "CH" ? "CHF" : data.taxCountry === "CA" ? "CAD" : data.taxCountry === "AU" ? "AUD" : "EUR", maximumFractionDigits: 0 }).formatToParts(0);
+      return parts.find(p => p.type === "currency")?.value ?? "€";
+    } catch { return "€"; }
+  })();
+
+  // Auto-fill with country average
+  const applyCountryAvg = () => {
+    const def = COUNTRY_DEFAULTS[data.taxCountry];
+    setData(prev => ({
+      ...prev,
+      monatlichesNetto: def.monatlichesNetto,
+      monatlicheSparrate: def.monatlicheSparrate,
+      monatlichesWunschEinkommen: def.monatlichesWunschEinkommen,
+      startKapital: 10_000,
+    }));
+  };
+
   const steps = useMemo(() => [
     {
       title: t.onboardingStep1Title,
-      desc: t.onboardingStep1Desc,
+      desc: t.onboardingStep1DescStory,
       icon: "👤",
     },
     {
       title: t.onboardingStep2Title,
-      desc: t.onboardingStep2Desc,
+      desc: t.onboardingStep2DescStory,
       icon: "💰",
     },
     {
       title: t.onboardingStep3Title,
-      desc: t.onboardingStep3Desc,
+      desc: t.onboardingStep3DescStory,
       icon: "🎯",
     },
     {
       title: t.onboardingStep4Title,
-      desc: t.onboardingStep4Desc,
+      desc: t.onboardingStep4DescStory,
       icon: "🌍",
     },
   ], [t]);
@@ -166,6 +188,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   const handleNext = () => {
     if (step < steps.length - 1) {
       setStep(step + 1);
+    } else if (!showQuickResult && firePreview.fireAge !== null) {
+      setShowQuickResult(true);
     } else {
       onComplete(data);
     }
@@ -192,111 +216,146 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
         {/* Step Content */}
         <div className="px-6 pb-4">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="text-2xl">{steps[step].icon}</span>
-            <div>
-              <h3 className="text-white font-semibold">{steps[step].title}</h3>
-              <p className="text-xs text-slate-400">{steps[step].desc}</p>
+          {showQuickResult ? (
+            /* Quick Result celebration screen */
+            <div className="text-center py-4">
+              <div className="text-5xl mb-4">🎉</div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {t.onboardingQuickResultTitle}
+              </h3>
+              {firePreview.fireAge !== null && (
+                <p className="text-2xl font-bold text-emerald-400 mb-3">
+                  {t.onboardingQuickResultBody(firePreview.fireAge)}
+                </p>
+              )}
+              <p className="text-sm text-slate-400 mb-2">
+                {t.onboardingPreviewFireNumber}: {formatCurrencyShort(firePreview.fireNumber)}
+              </p>
             </div>
-          </div>
-
-          {step === 0 && (
+          ) : (
             <>
-              <NumberInput
-                label={t.onboardingAgeLabel}
-                value={data.currentAge}
-                onChange={(v) => update("currentAge", v)}
-                min={18}
-                max={65}
-                step={1}
-              />
-              <NumberInput
-                label={t.onboardingIncomeLabel}
-                value={data.monatlichesNetto}
-                onChange={(v) => update("monatlichesNetto", v)}
-                min={500}
-                max={30_000}
-                step={100}
-              />
-            </>
-          )}
-
-          {step === 1 && (
-            <>
-              <NumberInput
-                label={t.onboardingStartCapitalLabel}
-                value={data.startKapital}
-                onChange={(v) => update("startKapital", v)}
-                min={0}
-                max={2_000_000}
-                step={1_000}
-              />
-              <NumberInput
-                label={t.onboardingSavingsLabel}
-                value={data.monatlicheSparrate}
-                onChange={(v) => update("monatlicheSparrate", v)}
-                min={50}
-                max={20_000}
-                step={50}
-              />
-            </>
-          )}
-
-          {step === 2 && (
-            <NumberInput
-              label={t.onboardingDesiredIncomeLabel}
-              value={data.monatlichesWunschEinkommen}
-              onChange={(v) => update("monatlichesWunschEinkommen", v)}
-              min={500}
-              max={15_000}
-              step={100}
-            />
-          )}
-
-          {step === 3 && (
-            <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-300 mb-2">{t.onboardingCountryLabel}</label>
-              <div className="grid grid-cols-3 gap-2">
-                {TAX_COUNTRIES.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => update("taxCountry", code)}
-                    className={`px-3 py-2.5 rounded-lg text-xs font-medium transition-colors border ${
-                      data.taxCountry === code
-                        ? "bg-emerald-500 border-emerald-400 text-white"
-                        : "bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
-                    }`}
-                  >
-                    {COUNTRY_LABELS[code]}
-                  </button>
-                ))}
+              <div className="flex items-center gap-3 mb-5">
+                <span className="text-2xl">{steps[step].icon}</span>
+                <div>
+                  <h3 className="text-white font-semibold">{steps[step].title}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{steps[step].desc}</p>
+                </div>
               </div>
 
-              {/* FIRE Preview */}
-              <div className="mt-5 p-4 rounded-xl bg-slate-700/50 border border-slate-600">
-                <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
-                  {t.onboardingPreviewTitle}
-                </h4>
-                {firePreview.fireAge !== null ? (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">🎯</span>
-                      <span className="text-white font-bold text-lg">
-                        {t.onboardingPreviewFireAge(firePreview.fireAge)}
-                      </span>
-                    </div>
-                    <div className="text-xs text-slate-400">
-                      {t.onboardingPreviewFireNumber}: {formatCurrencyShort(firePreview.fireNumber)}
-                    </div>
+              {step === 0 && (
+                <>
+                  <NumberInput
+                    label={t.onboardingAgeLabel}
+                    value={data.currentAge}
+                    onChange={(v) => update("currentAge", v)}
+                    min={18}
+                    max={65}
+                    step={1}
+                  />
+                  <p className="text-[10px] text-slate-500 -mt-3 mb-4 ml-1">{t.onboardingBenchmarkAge}</p>
+                  <NumberInput
+                    label={t.onboardingIncomeLabel}
+                    value={data.monatlichesNetto}
+                    onChange={(v) => update("monatlichesNetto", v)}
+                    min={500}
+                    max={30_000}
+                    step={100}
+                  />
+                  <p className="text-[10px] text-slate-500 -mt-3 mb-2 ml-1">{t.onboardingBenchmarkIncome(currencySymbol)}</p>
+                </>
+              )}
+
+              {step === 1 && (
+                <>
+                  <NumberInput
+                    label={t.onboardingStartCapitalLabel}
+                    value={data.startKapital}
+                    onChange={(v) => update("startKapital", v)}
+                    min={0}
+                    max={2_000_000}
+                    step={1_000}
+                  />
+                  <NumberInput
+                    label={t.onboardingSavingsLabel}
+                    value={data.monatlicheSparrate}
+                    onChange={(v) => update("monatlicheSparrate", v)}
+                    min={50}
+                    max={20_000}
+                    step={50}
+                  />
+                  <p className="text-[10px] text-slate-500 -mt-3 mb-2 ml-1">{t.onboardingBenchmarkSavings(currencySymbol)}</p>
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  <NumberInput
+                    label={t.onboardingDesiredIncomeLabel}
+                    value={data.monatlichesWunschEinkommen}
+                    onChange={(v) => update("monatlichesWunschEinkommen", v)}
+                    min={500}
+                    max={15_000}
+                    step={100}
+                  />
+                  <p className="text-[10px] text-slate-500 -mt-3 mb-2 ml-1">{t.onboardingBenchmarkDesiredIncome(currencySymbol)}</p>
+                </>
+              )}
+
+              {step === 3 && (
+                <div className="mb-5">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">{t.onboardingCountryLabel}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {TAX_COUNTRIES.map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => update("taxCountry", code)}
+                        className={`px-3 py-2.5 rounded-lg text-xs font-medium transition-colors border ${
+                          data.taxCountry === code
+                            ? "bg-emerald-500 border-emerald-400 text-white"
+                            : "bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
+                        }`}
+                      >
+                        {COUNTRY_LABELS[code]}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <p className="text-xs text-amber-400/80">
-                    {t.onboardingPreviewNotReachable}
-                  </p>
-                )}
-              </div>
-            </div>
+
+                  {/* Use country average button */}
+                  <button
+                    type="button"
+                    onClick={applyCountryAvg}
+                    className="mt-3 w-full text-xs text-emerald-400 hover:text-emerald-300 transition-colors py-1.5 rounded-lg border border-dashed border-emerald-500/30 hover:border-emerald-500/60"
+                  >
+                    {t.onboardingUseCountryAvg}
+                  </button>
+
+                  {/* FIRE Preview */}
+                  <div className="mt-4 p-4 rounded-xl bg-slate-700/50 border border-slate-600">
+                    <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
+                      {t.onboardingPreviewTitle}
+                    </h4>
+                    {firePreview.fireAge !== null ? (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🎯</span>
+                          <span className="text-white font-bold text-lg">
+                            {t.onboardingPreviewFireAge(firePreview.fireAge)}
+                          </span>
+                        </div>
+                        <div className="text-xs text-slate-400">
+                          {t.onboardingPreviewFireNumber}: {formatCurrencyShort(firePreview.fireNumber)}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-400/80">
+                        {t.onboardingPreviewNotReachable}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -314,7 +373,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
             onClick={handleNext}
             className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium text-sm px-6 py-2.5 rounded-lg transition-colors shadow-sm"
           >
-            {step === steps.length - 1 ? t.onboardingFinish : t.onboardingNext}
+            {showQuickResult ? t.onboardingQuickResultCelebrate : step === steps.length - 1 ? t.onboardingFinish : t.onboardingNext}
           </button>
         </div>
       </div>

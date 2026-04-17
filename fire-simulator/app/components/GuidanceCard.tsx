@@ -58,9 +58,21 @@ export default function GuidanceCard({ result, inputs }: GuidanceCardProps) {
   if (result.targetReached) {
     if (result.monteCarlo.successRate < 0.5) {
       messages.push({ text: t.guidanceMcWarning(mcPct), type: "warning" });
+      messages.push({ text: t.guidanceActionMcLow(formatCurrency(200)), type: "info" });
     } else if (result.monteCarlo.successRate >= 0.8) {
       messages.push({ text: t.guidanceMcGood(mcPct), type: "success" });
     }
+  }
+
+  // 4. Actionable recommendations
+  if (result.fullFireYear === 0) {
+    messages.push({ text: t.guidanceActionAlreadyFire, type: "success" });
+  } else if (result.targetReached && result.fullFireAge !== null && result.fullFireAge > inputs.renteneintrittsalter) {
+    messages.push({ text: t.guidanceActionRetireEarlier(formatCurrency(200)), type: "info" });
+  }
+
+  if (result.sparquote > 0 && result.sparquote < 20) {
+    messages.push({ text: t.guidanceActionSavingsLow, type: "info" });
   }
 
   if (messages.length === 0) return null;
