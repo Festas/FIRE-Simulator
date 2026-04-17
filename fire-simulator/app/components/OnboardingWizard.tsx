@@ -119,7 +119,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
   });
 
   // Quick FIRE estimate for preview (simplified — no tax, no life events)
-  const firePreview = useMemo(() => {
+  const firePreview = (() => {
     const countryDef = COUNTRY_DEFAULTS[data.taxCountry];
     const roi = countryDef.etfRendite / 100;
     const inf = countryDef.inflation / 100;
@@ -138,9 +138,9 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       }
     }
     return { fireAge: null, fireNumber };
-  }, [data.startKapital, data.monatlicheSparrate, data.monatlichesWunschEinkommen, data.currentAge, data.taxCountry]);
+  })();
 
-  const steps = [
+  const steps = useMemo(() => [
     {
       title: t.onboardingStep1Title,
       desc: t.onboardingStep1Desc,
@@ -161,7 +161,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       desc: t.onboardingStep4Desc,
       icon: "🌍",
     },
-  ];
+  ], [t]);
 
   const handleNext = () => {
     if (step < steps.length - 1) {
