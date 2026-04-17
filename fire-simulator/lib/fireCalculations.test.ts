@@ -3,6 +3,7 @@ import {
   calculateFIRE,
   calculateReverse,
   calculateMCRequiredSparrate,
+  calculateAgeSavingsAnalysis,
   FireInputs,
   formatEuro,
   formatEuroShort,
@@ -1563,4 +1564,118 @@ describe("All countries — zero and negative gains guard rails", () => {
       expect(isFinite(result.totalTaxPaid)).toBe(true);
     });
   }
+});
+
+// =========================================================================
+// Age-based savings analysis (calculateAgeSavingsAnalysis)
+// =========================================================================
+
+describe("calculateAgeSavingsAnalysis", () => {
+  it("returns rows for each step in the age range", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      35, 55, 5,
+    );
+    // Ages: 35, 40, 45, 50, 55 → 5 rows
+    expect(rows).toHaveLength(5);
+    expect(rows[0].exitAge).toBe(35);
+    expect(rows[4].exitAge).toBe(55);
+  });
+
+  it("returns valid savings for each row", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      35, 55, 5,
+    );
+    for (const row of rows) {
+      expect(row.mcSavings).toBeGreaterThanOrEqual(0);
+      expect(row.deterministicSavings).toBeGreaterThanOrEqual(0);
+      expect(row.fireNumber).toBeGreaterThanOrEqual(0);
+      expect(row.mcSuccessRate).toBeGreaterThanOrEqual(0);
+      expect(row.mcSuccessRate).toBeLessThanOrEqual(1);
+      expect(isFinite(row.mcSavings)).toBe(true);
+      expect(isFinite(row.deterministicSavings)).toBe(true);
+    }
+  });
+
+  it("shorter horizon requires higher savings", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      35, 55, 10,
+    );
+    // Age 35 (5 years) should need more savings than age 55 (25 years)
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    expect(rows[0].mcSavings).toBeGreaterThan(rows[rows.length - 1].mcSavings);
+    expect(rows[0].deterministicSavings).toBeGreaterThan(rows[rows.length - 1].deterministicSavings);
+  });
+
+  it("handles empty range gracefully", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      60, 35, 5, // min > max
+    );
+    expect(rows).toHaveLength(0);
+  });
+
+  it("defaults minAge and maxAge when omitted", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      undefined, undefined, 5,
+    );
+    // Default: currentAge+5=35 to currentAge+40=70, step 5 → 8 rows
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].exitAge).toBe(35);
+  });
+
+  it("MC savings are >= deterministic savings for each age", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      40, 55, 5,
+    );
+    for (const row of rows) {
+      // MC accounts for volatility → should be >= deterministic
+      expect(row.mcSavings).toBeGreaterThanOrEqual(row.deterministicSavings);
+    }
+  });
+
+  it("handles zero target income", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      0, 0, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "ewigeRente", 30,
+      "DE", [], 30, 67,
+      40, 50, 5,
+    );
+    // With zero target income, savings should be 0
+    for (const row of rows) {
+      expect(row.mcSavings).toBe(0);
+      expect(row.deterministicSavings).toBe(0);
+    }
+  });
+
+  it("handles kapitalverzehr mode", () => {
+    const rows = calculateAgeSavingsAnalysis(
+      2000, 500, 50_000, 7, 2, 3.5,
+      2, 0, "single", false, "kapitalverzehr", 30,
+      "DE", [], 30, 67,
+      40, 50, 5,
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const row of rows) {
+      expect(isFinite(row.mcSavings)).toBe(true);
+      expect(isFinite(row.fireNumber)).toBe(true);
+      expect(row.fireNumber).toBeGreaterThan(0);
+    }
+  });
 });
