@@ -587,6 +587,9 @@ export interface Translations {
   whatIfSaveMore: (amount: string) => string;
   whatIfRetireLater: string;
   whatIfLessIncome: string;
+  whatIfYearsEarlier: (n: number) => string;
+  whatIfYearsLater: (n: number) => string;
+  whatIfNoChange: string;
 
   // --- NEW: Chart explainers ---
   chartExplainButton: string;
@@ -1172,6 +1175,9 @@ export const de: Translations = {
   whatIfSaveMore: (amount) => `Ich ${amount} mehr spare?`,
   whatIfRetireLater: "Ich 5 Jahre später in Rente gehe?",
   whatIfLessIncome: "Ich weniger Einkommen brauche?",
+  whatIfYearsEarlier: (n) => `${n} ${n === 1 ? "Jahr" : "Jahre"} früher!`,
+  whatIfYearsLater: (n) => `${n} ${n === 1 ? "Jahr" : "Jahre"} später`,
+  whatIfNoChange: "Keine Änderung",
 
   // --- NEW: Chart explainers ---
   chartExplainButton: "Was zeigt dieses Diagramm?",
@@ -1757,6 +1763,9 @@ export const en: Translations = {
   whatIfSaveMore: (amount) => `I save ${amount} more?`,
   whatIfRetireLater: "I retire 5 years later?",
   whatIfLessIncome: "I need less income?",
+  whatIfYearsEarlier: (n) => `${n} ${n === 1 ? "year" : "years"} earlier!`,
+  whatIfYearsLater: (n) => `${n} ${n === 1 ? "year" : "years"} later`,
+  whatIfNoChange: "No change",
 
   // --- NEW: Chart explainers ---
   chartExplainButton: "What does this chart show?",

@@ -116,13 +116,13 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
                       }`}
                     >
                       {isImprovement
-                        ? `${diff} ${diff === 1 ? "year" : "years"} earlier!`
-                        : `${Math.abs(diff)} ${Math.abs(diff) === 1 ? "year" : "years"} later`}
+                        ? t.whatIfYearsEarlier(diff)
+                        : t.whatIfYearsLater(Math.abs(diff))}
                     </span>
                   )}
                   {diff === 0 && (
                     <span className="ml-2 inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                      no change
+                      {t.whatIfNoChange}
                     </span>
                   )}
                 </p>
