@@ -21,6 +21,10 @@ import ScenarioManager from "@/app/components/ScenarioManager";
 import ExamplePlansDropdown from "@/app/components/ExamplePlansDropdown";
 import OnboardingWizard from "@/app/components/OnboardingWizard";
 import DashboardSection from "@/app/components/DashboardSection";
+import FireProgressGauge from "@/app/components/FireProgressGauge";
+import GuidanceCard from "@/app/components/GuidanceCard";
+import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
+import type { TaxCountry } from "@/lib/tax";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 30_000,
@@ -92,6 +96,7 @@ function HomeContent() {
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [showNominal, setShowNominal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale, formatCurrency, setCurrency } = useI18n();
 
@@ -195,6 +200,25 @@ function HomeContent() {
       if (key === "zielvermoegenOverride" && value === false) {
         const swr = next.swr / 100;
         next.zielvermoegen = swr > 0 ? Math.round((next.monatlichesWunschEinkommen * 12) / swr) : next.zielvermoegen;
+      }
+      // Apply country-specific defaults when tax country changes
+      if (key === "taxCountry") {
+        const country = value as TaxCountry;
+        const defaults = COUNTRY_DEFAULTS[country];
+        if (defaults) {
+          next.monatlichesNetto = defaults.monatlichesNetto;
+          next.monatlichesWunschEinkommen = defaults.monatlichesWunschEinkommen;
+          next.gesetzlicheRente = defaults.gesetzlicheRente;
+          next.renteneintrittsalter = defaults.renteneintrittsalter;
+          next.etfRendite = defaults.etfRendite;
+          next.inflation = defaults.inflation;
+          next.swr = defaults.swr;
+          // Auto-recalculate FIRE number with new defaults
+          if (!next.zielvermoegenOverride) {
+            const swr = defaults.swr / 100;
+            next.zielvermoegen = swr > 0 ? Math.round((defaults.monatlichesWunschEinkommen * 12) / swr) : next.zielvermoegen;
+          }
+        }
       }
       saveInputs(next);
       return next;
@@ -591,46 +615,101 @@ function HomeContent() {
           >
             {activeTab === "forward" ? (
               <>
+                {/* Guidance Card — contextual feedback */}
+                <GuidanceCard result={result} inputs={inputs} />
+
                 <Warnings inputs={inputs} />
-                <DashboardSection
-                  title={t.sectionFireJourney}
-                  description={t.sectionFireJourneyDesc}
-                  defaultOpen={true}
-                >
-                  <KPICards result={result} inputs={inputs} />
-                  <FireChart result={result} zielvermoegen={inputs.zielvermoegen} />
-                </DashboardSection>
 
-                <DashboardSection
-                  title={t.sectionStressTesting}
-                  description={t.sectionStressTestingDesc}
-                  defaultOpen={true}
+                <ErrorBoundary
+                  errorTitle={t.errorTitle}
+                  fallbackMessage={t.errorMessage}
+                  errorRetryLabel={t.errorRetry}
                 >
-                  <LifecycleMonteCarloChart result={result} />
-                  <MonteCarloChart result={result} />
-                </DashboardSection>
+                  <DashboardSection
+                    title={t.sectionFireJourney}
+                    description={t.sectionFireJourneyDesc}
+                    defaultOpen={true}
+                  >
+                    {/* Nominal / Real toggle + FIRE Progress Gauge row */}
+                    <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
+                      <div className="flex-1 w-full">
+                        <KPICards result={result} inputs={inputs} />
+                      </div>
+                      <div className="w-full sm:w-auto flex-shrink-0">
+                        <FireProgressGauge result={result} inputs={inputs} />
+                      </div>
+                    </div>
 
-                <DashboardSection
-                  title={t.sectionDrawdownAnalysis}
-                  description={t.sectionDrawdownAnalysisDesc}
-                  defaultOpen={true}
-                >
-                  <DrawdownChart result={result} inputs={inputs} />
-                </DashboardSection>
+                    {/* Nominal/Real toggle */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <button
+                        onClick={() => setShowNominal(!showNominal)}
+                        className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${
+                          showNominal
+                            ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700"
+                            : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700"
+                        }`}
+                        title={t.nominalTooltip}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                        </svg>
+                        {showNominal ? t.showNominal : t.showReal}
+                      </button>
+                    </div>
 
-                <DashboardSection
-                  title={t.sectionPlanning}
-                  description={t.sectionPlanningDesc}
-                  defaultOpen={false}
+                    <FireChart result={result} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
+                  </DashboardSection>
+                </ErrorBoundary>
+
+                <ErrorBoundary
+                  errorTitle={t.errorTitle}
+                  fallbackMessage={t.errorMessage}
+                  errorRetryLabel={t.errorRetry}
                 >
-                  <LifeEventsEditor
-                    events={inputs.lifeEvents}
-                    onChange={handleLifeEventsChange}
-                    startYear={inputs.startYear}
-                  />
-                  <DetailTable result={result} />
-                  <PhasesTimeline result={result} startYear={inputs.startYear} />
-                </DashboardSection>
+                  <DashboardSection
+                    title={t.sectionStressTesting}
+                    description={t.sectionStressTestingDesc}
+                    defaultOpen={true}
+                  >
+                    <LifecycleMonteCarloChart result={result} />
+                    <MonteCarloChart result={result} />
+                  </DashboardSection>
+                </ErrorBoundary>
+
+                <ErrorBoundary
+                  errorTitle={t.errorTitle}
+                  fallbackMessage={t.errorMessage}
+                  errorRetryLabel={t.errorRetry}
+                >
+                  <DashboardSection
+                    title={t.sectionDrawdownAnalysis}
+                    description={t.sectionDrawdownAnalysisDesc}
+                    defaultOpen={true}
+                  >
+                    <DrawdownChart result={result} inputs={inputs} />
+                  </DashboardSection>
+                </ErrorBoundary>
+
+                <ErrorBoundary
+                  errorTitle={t.errorTitle}
+                  fallbackMessage={t.errorMessage}
+                  errorRetryLabel={t.errorRetry}
+                >
+                  <DashboardSection
+                    title={t.sectionPlanning}
+                    description={t.sectionPlanningDesc}
+                    defaultOpen={false}
+                  >
+                    <LifeEventsEditor
+                      events={inputs.lifeEvents}
+                      onChange={handleLifeEventsChange}
+                      startYear={inputs.startYear}
+                    />
+                    <DetailTable result={result} />
+                    <PhasesTimeline result={result} startYear={inputs.startYear} />
+                  </DashboardSection>
+                </ErrorBoundary>
               </>
             ) : (
               <ReversePlanner inputs={inputs} />

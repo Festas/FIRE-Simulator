@@ -1,6 +1,6 @@
 "use client";
 
-import type { FireInputs } from "@/lib/fireCalculations";
+import type { FireInputs, LifeEvent } from "@/lib/fireCalculations";
 
 // ---------------------------------------------------------------------------
 // URL state serialization keys (short to keep URLs compact)
@@ -43,6 +43,57 @@ const REVERSE_KEYS = Object.fromEntries(
 ) as Record<keyof FireInputs, string>;
 
 // ---------------------------------------------------------------------------
+// Life events URL serialization (base64-encoded JSON)
+// ---------------------------------------------------------------------------
+
+const LIFE_EVENTS_KEY = "le";
+
+function encodeLifeEvents(events: LifeEvent[]): string {
+  if (events.length === 0) return "";
+  try {
+    // Compact format: omit id (will be regenerated), abbreviate keys
+    const compact = events.map((e) => ({
+      t: e.type,
+      n: e.name,
+      s: e.startYear,
+      e: e.endYear,
+      a: e.annualAmount,
+      i: e.inflationAdjusted ? 1 : 0,
+    }));
+    const json = JSON.stringify(compact);
+    return btoa(json);
+  } catch {
+    return "";
+  }
+}
+
+function decodeLifeEvents(encoded: string): LifeEvent[] {
+  if (!encoded) return [];
+  try {
+    const json = atob(encoded);
+    const compact = JSON.parse(json) as Array<{
+      t: string;
+      n: string;
+      s: number;
+      e: number;
+      a: number;
+      i: number;
+    }>;
+    return compact.map((c) => ({
+      id: crypto.randomUUID(),
+      type: c.t as LifeEvent["type"],
+      name: c.n,
+      startYear: c.s,
+      endYear: c.e,
+      annualAmount: c.a,
+      inflationAdjusted: c.i === 1,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Parse URL search params → partial FireInputs
 // ---------------------------------------------------------------------------
 
@@ -76,6 +127,16 @@ export function parseURLInputs(): Partial<FireInputs> | null {
     }
   }
 
+  // Decode life events from URL
+  const leParam = params.get(LIFE_EVENTS_KEY);
+  if (leParam) {
+    const events = decodeLifeEvents(leParam);
+    if (events.length > 0) {
+      result.lifeEvents = events;
+      hasAny = true;
+    }
+  }
+
   return hasAny ? (result as Partial<FireInputs>) : null;
 }
 
@@ -93,6 +154,14 @@ export function inputsToURL(inputs: FireInputs): string {
       params.set(short, val ? "1" : "0");
     } else if (val !== undefined && val !== null && !Array.isArray(val)) {
       params.set(short, String(val));
+    }
+  }
+
+  // Encode life events into URL
+  if (inputs.lifeEvents && inputs.lifeEvents.length > 0) {
+    const encoded = encodeLifeEvents(inputs.lifeEvents);
+    if (encoded) {
+      params.set(LIFE_EVENTS_KEY, encoded);
     }
   }
 

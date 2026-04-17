@@ -473,6 +473,38 @@ export interface Translations {
   // Undo / Redo
   undo: string;
   redo: string;
+
+  // FIRE Progress Gauge
+  fireProgressTitle: string;
+  fireProgressSub: string;
+  fireProgressComplete: string;
+  fireProgressOf: string;
+
+  // Contextual Guidance Card
+  guidanceOnTrack: (yearsEarly: number) => string;
+  guidanceNeedMore: (amount: string) => string;
+  guidanceAlreadyFire: string;
+  guidanceNoTarget: string;
+  guidanceTip: string;
+  guidanceMcWarning: (pct: string) => string;
+  guidanceMcGood: (pct: string) => string;
+  guidanceSavingsLow: (current: string, required: string) => string;
+  guidanceSavingsGood: string;
+
+  // Nominal/Real Toggle
+  showNominal: string;
+  showReal: string;
+  nominalTooltip: string;
+
+  // Country-Specific Defaults
+  applyCountryDefaults: string;
+  countryDefaultsApplied: string;
+
+  // Onboarding Result Preview
+  onboardingPreviewTitle: string;
+  onboardingPreviewFireAge: (age: number) => string;
+  onboardingPreviewFireNumber: string;
+  onboardingPreviewNotReachable: string;
 }
 
 export const de: Translations = {
@@ -909,6 +941,38 @@ export const de: Translations = {
   // Undo / Redo
   undo: "Rückgängig",
   redo: "Wiederherstellen",
+
+  // FIRE Progress Gauge
+  fireProgressTitle: "FIRE-Fortschritt",
+  fireProgressSub: "Aktueller Stand zum Ziel",
+  fireProgressComplete: "Ziel erreicht!",
+  fireProgressOf: "von",
+
+  // Contextual Guidance Card
+  guidanceOnTrack: (yearsEarly) => `🎉 Du bist auf Kurs! Du kannst ${yearsEarly} Jahr${yearsEarly !== 1 ? "e" : ""} vor dem Rentenalter in den Ruhestand gehen.`,
+  guidanceNeedMore: (amount) => `💡 Du brauchst ${amount}/Monat mehr Sparrate, um dein FIRE-Ziel zu erreichen.`,
+  guidanceAlreadyFire: "🏆 Glückwunsch! Du hast dein FIRE-Ziel bereits erreicht.",
+  guidanceNoTarget: "⚠️ Mit den aktuellen Einstellungen ist das FIRE-Ziel innerhalb von 50 Jahren nicht erreichbar.",
+  guidanceTip: "Tipp",
+  guidanceMcWarning: (pct) => `⚠️ Monte-Carlo-Erfolgsrate ist nur ${pct}% — erwäge, dein SWR zu senken oder mehr zu sparen.`,
+  guidanceMcGood: (pct) => `✅ Monte-Carlo-Erfolgsrate: ${pct}% — dein Plan ist robust.`,
+  guidanceSavingsLow: (current, required) => `Aktuelle Sparrate: ${current}/Monat vs. benötigt: ${required}/Monat`,
+  guidanceSavingsGood: "Deine Sparrate ist ausreichend — weiter so!",
+
+  // Nominal/Real Toggle
+  showNominal: "Nominal",
+  showReal: "Real (inflationsbereinigt)",
+  nominalTooltip: "Zwischen nominalen und kaufkraftbereinigten Werten wechseln",
+
+  // Country-Specific Defaults
+  applyCountryDefaults: "Landesstandards anwenden",
+  countryDefaultsApplied: "Landesstandards angewendet",
+
+  // Onboarding Result Preview
+  onboardingPreviewTitle: "Deine Vorschau",
+  onboardingPreviewFireAge: (age) => `Geschätztes FIRE-Alter: ${age} Jahre`,
+  onboardingPreviewFireNumber: "FIRE-Ziel",
+  onboardingPreviewNotReachable: "Mit diesen Werten wird das FIRE-Ziel in 50 Jahren nicht erreicht. Du kannst die Werte nach dem Start anpassen.",
 };
 
 export const en: Translations = {
@@ -1345,6 +1409,38 @@ export const en: Translations = {
   // Undo / Redo
   undo: "Undo",
   redo: "Redo",
+
+  // FIRE Progress Gauge
+  fireProgressTitle: "FIRE Progress",
+  fireProgressSub: "Current progress towards goal",
+  fireProgressComplete: "Goal reached!",
+  fireProgressOf: "of",
+
+  // Contextual Guidance Card
+  guidanceOnTrack: (yearsEarly) => `🎉 You're on track! You can retire ${yearsEarly} year${yearsEarly !== 1 ? "s" : ""} before standard retirement age.`,
+  guidanceNeedMore: (amount) => `💡 You need ${amount}/month more savings to reach your FIRE goal.`,
+  guidanceAlreadyFire: "🏆 Congratulations! You've already reached your FIRE goal.",
+  guidanceNoTarget: "⚠️ With current settings, the FIRE goal is not reachable within 50 years.",
+  guidanceTip: "Tip",
+  guidanceMcWarning: (pct) => `⚠️ Monte Carlo success rate is only ${pct}% — consider lowering your SWR or saving more.`,
+  guidanceMcGood: (pct) => `✅ Monte Carlo success rate: ${pct}% — your plan is robust.`,
+  guidanceSavingsLow: (current, required) => `Current savings: ${current}/month vs. required: ${required}/month`,
+  guidanceSavingsGood: "Your savings rate is sufficient — keep it up!",
+
+  // Nominal/Real Toggle
+  showNominal: "Nominal",
+  showReal: "Real (inflation-adjusted)",
+  nominalTooltip: "Toggle between nominal and inflation-adjusted values",
+
+  // Country-Specific Defaults
+  applyCountryDefaults: "Apply country defaults",
+  countryDefaultsApplied: "Country defaults applied",
+
+  // Onboarding Result Preview
+  onboardingPreviewTitle: "Your Preview",
+  onboardingPreviewFireAge: (age) => `Estimated FIRE age: ${age}`,
+  onboardingPreviewFireNumber: "FIRE target",
+  onboardingPreviewNotReachable: "With these values, the FIRE goal won't be reached within 50 years. You can adjust the values after starting.",
 };
 
 const translations: Record<Locale, Translations> = { de, en };

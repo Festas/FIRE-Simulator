@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
 import { TAX_COUNTRIES } from "@/lib/tax";
 import type { TaxCountry } from "@/lib/tax";
+import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
 
 interface OnboardingData {
   currentAge: number;
@@ -106,7 +107,7 @@ function NumberInput({
 }
 
 export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizardProps) {
-  const { t } = useI18n();
+  const { t, formatCurrencyShort } = useI18n();
   const [step, setStep] = useState(0);
   const [data, setData] = useState<OnboardingData>({
     currentAge: 30,
@@ -116,6 +117,28 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     monatlichesWunschEinkommen: 2_500,
     taxCountry: "DE",
   });
+
+  // Quick FIRE estimate for preview (simplified — no tax, no life events)
+  const firePreview = useMemo(() => {
+    const countryDef = COUNTRY_DEFAULTS[data.taxCountry];
+    const roi = countryDef.etfRendite / 100;
+    const inf = countryDef.inflation / 100;
+    const swr = countryDef.swr / 100;
+    const fireNumber = swr > 0 ? (data.monatlichesWunschEinkommen * 12) / swr : 0;
+    if (fireNumber <= 0) return { fireAge: null, fireNumber: 0 };
+
+    let balance = data.startKapital;
+    const dyn = 0.02; // 2% savings growth
+    for (let y = 1; y <= 50; y++) {
+      const savings = data.monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+      balance = (balance + savings * 12) * (1 + roi);
+      const realVal = balance / Math.pow(1 + inf, y);
+      if (realVal >= fireNumber) {
+        return { fireAge: data.currentAge + y, fireNumber };
+      }
+    }
+    return { fireAge: null, fireNumber };
+  }, [data.startKapital, data.monatlicheSparrate, data.monatlichesWunschEinkommen, data.currentAge, data.taxCountry]);
 
   const steps = [
     {
@@ -248,6 +271,30 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                     {COUNTRY_LABELS[code]}
                   </button>
                 ))}
+              </div>
+
+              {/* FIRE Preview */}
+              <div className="mt-5 p-4 rounded-xl bg-slate-700/50 border border-slate-600">
+                <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">
+                  {t.onboardingPreviewTitle}
+                </h4>
+                {firePreview.fireAge !== null ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">🎯</span>
+                      <span className="text-white font-bold text-lg">
+                        {t.onboardingPreviewFireAge(firePreview.fireAge)}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      {t.onboardingPreviewFireNumber}: {formatCurrencyShort(firePreview.fireNumber)}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-400/80">
+                    {t.onboardingPreviewNotReachable}
+                  </p>
+                )}
               </div>
             </div>
           )}

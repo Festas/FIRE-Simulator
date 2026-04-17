@@ -22,9 +22,10 @@ import { yAxisFormatter } from "@/lib/chartUtils";
 interface FireChartProps {
   result: FireResult;
   zielvermoegen: number;
+  showNominal?: boolean;
 }
 
-export default function FireChart({ result, zielvermoegen }: FireChartProps) {
+export default function FireChart({ result, zielvermoegen, showNominal = false }: FireChartProps) {
   const [showScenarios, setShowScenarios] = useState(false);
   const [showNoInvestment, setShowNoInvestment] = useState(false);
   const { t, formatCurrency } = useI18n();
@@ -51,15 +52,20 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
     (fullFireYear !== null ? fullFireYear + 2 : 30),
     yearlyData.length - 1
   );
+
+  /** Return total portfolio value from a data point respecting the nominal/real toggle */
+  const totalValue = (d: YearDataPoint) =>
+    showNominal ? d.etfBalanceNominal + d.lzkBalanceNominal : d.totalReal;
+
   const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint, i: number) => ({
     age: d.age,
     year: d.calendarYear,
-    etf: Math.round(d.etfBalanceReal),
-    lzk: Math.round(d.lzkBalanceReal),
-    total: Math.round(d.totalReal),
-    optimistic: scenarioOptimistic[i] ? Math.round(scenarioOptimistic[i].totalReal) : undefined,
-    pessimistic: scenarioPessimistic[i] ? Math.round(scenarioPessimistic[i].totalReal) : undefined,
-    noInvestment: noInvestmentData[i] ? Math.round(noInvestmentData[i].totalReal) : undefined,
+    etf: Math.round(showNominal ? d.etfBalanceNominal : d.etfBalanceReal),
+    lzk: Math.round(showNominal ? d.lzkBalanceNominal : d.lzkBalanceReal),
+    total: Math.round(totalValue(d)),
+    optimistic: scenarioOptimistic[i] ? Math.round(totalValue(scenarioOptimistic[i])) : undefined,
+    pessimistic: scenarioPessimistic[i] ? Math.round(totalValue(scenarioPessimistic[i])) : undefined,
+    noInvestment: noInvestmentData[i] ? Math.round(totalValue(noInvestmentData[i])) : undefined,
   }));
 
   const milestoneLines = [
