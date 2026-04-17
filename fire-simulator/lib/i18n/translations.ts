@@ -505,6 +505,123 @@ export interface Translations {
   onboardingPreviewFireAge: (age: number) => string;
   onboardingPreviewFireNumber: string;
   onboardingPreviewNotReachable: string;
+
+  // --- NEW: Education Hub / Learn modal ---
+  learnButton: string;
+  learnTitle: string;
+  learnClose: string;
+  learnWhatIsFire: string;
+  learnWhatIsFireDesc: string;
+  learnFireNumber: string;
+  learnFireNumberDesc: string;
+  learnSwr: string;
+  learnSwrDesc: string;
+  learnCoastFire: string;
+  learnCoastFireDesc: string;
+  learnMonteCarlo: string;
+  learnMonteCarloDesc: string;
+  learnDrawdown: string;
+  learnDrawdownDesc: string;
+  learnSavingsRate: string;
+  learnSavingsRateDesc: string;
+  learnCompoundInterest: string;
+  learnCompoundInterestDesc: string;
+
+  // --- NEW: Education panel (What is FIRE?) on dashboard ---
+  fireEducationTitle: string;
+  fireEducationBody: string;
+  fireEducationDismiss: string;
+  fireEducationShowAgain: string;
+
+  // --- NEW: Revamped onboarding (story-driven) ---
+  onboardingStep1DescStory: string;
+  onboardingStep2DescStory: string;
+  onboardingStep3DescStory: string;
+  onboardingStep4DescStory: string;
+  onboardingBenchmarkAge: string;
+  onboardingBenchmarkIncome: (currency: string) => string;
+  onboardingBenchmarkSavings: (currency: string) => string;
+  onboardingBenchmarkDesiredIncome: (currency: string) => string;
+  onboardingUseCountryAvg: string;
+  onboardingQuickResultTitle: string;
+  onboardingQuickResultBody: (age: number) => string;
+  onboardingQuickResultCelebrate: string;
+
+  // --- NEW: Beginner-friendly terminology ---
+  beginnerFireNumber: string;
+  beginnerCoastFire: string;
+  beginnerMonteCarlo: string;
+  beginnerDrawdown: string;
+  beginnerSwr: string;
+  beginnerSavingsRate: string;
+  beginnerPassiveIncome: string;
+  beginnerWithdrawalPreserve: string;
+  beginnerWithdrawalSpend: string;
+
+  // --- NEW: Dashboard mode toggle ---
+  modeBeginner: string;
+  modeStandard: string;
+  modeAdvanced: string;
+  modeLabel: string;
+
+  // --- NEW: Beginner Journey Card ---
+  beginnerJourneyTitle: string;
+  beginnerJourneySavings: (amount: string) => string;
+  beginnerJourneyFireAge: (age: number) => string;
+  beginnerJourneyFireNumber: (amount: string) => string;
+  beginnerJourneyProgress: (pct: string) => string;
+  beginnerJourneyTips: string;
+  beginnerTipSaveMore: string;
+  beginnerTipStartEarly: string;
+  beginnerTipReduceSpending: string;
+  beginnerTipInvest: string;
+
+  // --- NEW: Actionable guidance ---
+  guidanceActionRetireEarlier: (amount: string) => string;
+  guidanceActionMcLow: (amount: string) => string;
+  guidanceActionSavingsLow: string;
+  guidanceActionAlreadyFire: string;
+
+  // --- NEW: What If? panel ---
+  whatIfTitle: string;
+  whatIfSaveMore: (amount: string) => string;
+  whatIfRetireLater: string;
+  whatIfLessIncome: string;
+
+  // --- NEW: Chart explainers ---
+  chartExplainButton: string;
+  chartExplainFireChart: string;
+  chartExplainMonteCarloChart: string;
+  chartExplainDrawdownChart: string;
+  chartExplainLifecycleChart: string;
+  chartSummaryFireChart: (age: number | null) => string;
+  chartSummaryMonteCarloChart: (pct: string) => string;
+  chartSummaryDrawdownChart: (survives: boolean) => string;
+
+  // --- NEW: Milestones ---
+  milestonesTitle: string;
+  milestonesStart: string;
+  milestones25: string;
+  milestonesCoast: string;
+  milestones75: string;
+  milestonesFire: string;
+  milestonesNextTitle: string;
+  milestonesNextBody: (amount: string, months: number) => string;
+  milestonesCompleted: string;
+
+  // --- NEW: FIRE Score ---
+  fireScoreTitle: string;
+  fireScoreSub: string;
+  fireScoreExcellent: string;
+  fireScoreGreat: string;
+  fireScoreGood: string;
+  fireScoreNeedsWork: string;
+
+  // --- NEW: Accessibility ---
+  skipToContent: string;
+  chartAltFireChart: string;
+  chartAltMonteCarloChart: string;
+  chartAltDrawdownChart: string;
 }
 
 export const de: Translations = {
@@ -973,6 +1090,123 @@ export const de: Translations = {
   onboardingPreviewFireAge: (age) => `Geschätztes FIRE-Alter: ${age} Jahre`,
   onboardingPreviewFireNumber: "FIRE-Ziel",
   onboardingPreviewNotReachable: "Mit diesen Werten wird das FIRE-Ziel in 50 Jahren nicht erreicht. Du kannst die Werte nach dem Start anpassen.",
+
+  // --- NEW: Education Hub / Learn modal ---
+  learnButton: "📖 Lernen",
+  learnTitle: "FIRE-Glossar",
+  learnClose: "Schließen",
+  learnWhatIsFire: "Was ist FIRE?",
+  learnWhatIsFireDesc: "FIRE steht für «Financial Independence, Retire Early» — genug Geld gespart zu haben, dass du nie wieder arbeiten musst. Dein Vermögen erzeugt genug passive Einnahmen, um deine Lebenshaltungskosten zu decken.",
+  learnFireNumber: "FIRE-Zahl (Zielvermögen)",
+  learnFireNumberDesc: "Der Gesamtbetrag, den du brauchst. Einfache Formel: Wenn du 2.500 €/Monat brauchst, sind das 30.000 €/Jahr. Multipliziere mit 25–30 = dein Ziel (750.000–900.000 €).",
+  learnSwr: "Entnahmerate (SWR / 4%-Regel)",
+  learnSwrDesc: "Die «Safe Withdrawal Rate» sagt dir, wie viel du jährlich entnehmen kannst, ohne dass dein Geld ausgeht. Bei 4 % entnimmst du 4 % deines Vermögens pro Jahr — das hat historisch über 30+ Jahre funktioniert.",
+  learnCoastFire: "Coast FIRE",
+  learnCoastFireDesc: "Der Punkt, an dem dein Vermögen alleine genug wächst — selbst wenn du keinen Cent mehr sparst. Ab hier arbeitet die Zeit für dich.",
+  learnMonteCarlo: "Stresstest (Monte Carlo)",
+  learnMonteCarloDesc: "Wir simulieren 1.000 verschiedene Marktszenarien mit zufälligen Renditen. Je mehr Szenarien erfolgreich sind, desto sicherer ist dein Plan.",
+  learnDrawdown: "Entnahmephase",
+  learnDrawdownDesc: "Die Zeit NACH dem Ausstieg aus dem Beruf. Hier lebst du von deinem Vermögen. Wir zeigen dir, ob dein Portfolio bis zum Lebensende reicht.",
+  learnSavingsRate: "Sparquote",
+  learnSavingsRateDesc: "Wie viel Prozent deines Einkommens du sparst. Eine höhere Sparquote bedeutet schneller FIRE. Die meisten FIRE-Erreichenden sparen 30–50 %.",
+  learnCompoundInterest: "Zinseszins-Effekt",
+  learnCompoundInterestDesc: "Dein Geld verdient Rendite, und die Rendite verdient wiederum Rendite. Je früher du anfängst, desto stärker wirkt dieser Effekt — Zeit ist dein größter Verbündeter.",
+
+  // --- NEW: Education panel (What is FIRE?) on dashboard ---
+  fireEducationTitle: "🔥 Was ist FIRE?",
+  fireEducationBody: "FIRE bedeutet «Financial Independence, Retire Early» — genug Geld zu haben, dass du von deinen Ersparnissen leben kannst, ohne arbeiten zu müssen. Dieser Simulator zeigt dir, wann du dieses Ziel erreichst und was du tun kannst, um schneller dahin zu kommen.",
+  fireEducationDismiss: "Verstanden!",
+  fireEducationShowAgain: "Was ist FIRE?",
+
+  // --- NEW: Revamped onboarding (story-driven) ---
+  onboardingStep1DescStory: "Lass uns herausfinden, wann du aufhören könntest zu arbeiten. Zuerst: Wo stehst du heute?",
+  onboardingStep2DescStory: "Super! Wie viel hast du bereits gespart, und wie viel kannst du monatlich zurücklegen? Selbst kleine Beträge machen einen großen Unterschied — Zeit ist dein größter Vorteil.",
+  onboardingStep3DescStory: "Stell dir vor, du müsstest nie wieder arbeiten. Wie viel bräuchtest du monatlich, um komfortabel zu leben? Keine Sorge — du kannst alles später anpassen.",
+  onboardingStep4DescStory: "Fast geschafft! Dein Land bestimmt Steuern und Rentenregeln. Den Rest übernehmen wir.",
+  onboardingBenchmarkAge: "Durchschnittlich starten FIRE-Planer mit 25–35 Jahren",
+  onboardingBenchmarkIncome: (currency) => `Typisch: ${currency} 2.500–5.000 netto`,
+  onboardingBenchmarkSavings: (currency) => `Die meisten in deinem Alter sparen ${currency} 300–800/Monat`,
+  onboardingBenchmarkDesiredIncome: (currency) => `Typisch: ${currency} 2.000–4.000 monatlich`,
+  onboardingUseCountryAvg: "Landesdurchschnitt verwenden",
+  onboardingQuickResultTitle: "🎉 Dein Ergebnis",
+  onboardingQuickResultBody: (age) => `Du könntest mit ${age} Jahren finanziell frei sein!`,
+  onboardingQuickResultCelebrate: "Los geht's!",
+
+  // --- NEW: Beginner-friendly terminology ---
+  beginnerFireNumber: "Dein Zielbetrag",
+  beginnerCoastFire: "Spar-Autopilot",
+  beginnerMonteCarlo: "Wie sicher ist dein Plan?",
+  beginnerDrawdown: "Nach dem Ausstieg",
+  beginnerSwr: "Jährliche Entnahme",
+  beginnerSavingsRate: "Anteil den du sparst",
+  beginnerPassiveIncome: "Einkommen ohne Arbeit",
+  beginnerWithdrawalPreserve: "Von Erträgen leben",
+  beginnerWithdrawalSpend: "Kapital aufbrauchen",
+
+  // --- NEW: Dashboard mode toggle ---
+  modeBeginner: "Einsteiger",
+  modeStandard: "Standard",
+  modeAdvanced: "Erweitert",
+  modeLabel: "Ansicht",
+
+  // --- NEW: Beginner Journey Card ---
+  beginnerJourneyTitle: "Dein Weg zur finanziellen Freiheit",
+  beginnerJourneySavings: (amount) => `Wenn du ${amount}/Monat sparst und investierst…`,
+  beginnerJourneyFireAge: (age) => `…kannst du mit ${age} in Rente gehen`,
+  beginnerJourneyFireNumber: (amount) => `Du brauchst insgesamt ${amount}`,
+  beginnerJourneyProgress: (pct) => `Du bist bereits ${pct}% auf dem Weg`,
+  beginnerJourneyTips: "Wie kommst du schneller ans Ziel?",
+  beginnerTipSaveMore: "Spare 100 € mehr pro Monat",
+  beginnerTipStartEarly: "Je früher du anfängst, desto besser",
+  beginnerTipReduceSpending: "Überprüfe deine monatlichen Ausgaben",
+  beginnerTipInvest: "Investiere in breit gestreute ETFs",
+
+  // --- NEW: Actionable guidance ---
+  guidanceActionRetireEarlier: (amount) => `💡 Um früher in Rente zu gehen, erhöhe deine Sparrate um ${amount}/Monat oder reduziere dein Wunsch-Einkommen.`,
+  guidanceActionMcLow: (amount) => `⚠️ Dein Plan hat Risiken. Spare ${amount} mehr pro Monat oder reduziere dein Wunsch-Einkommen leicht.`,
+  guidanceActionSavingsLow: "📊 Deine Sparquote ist niedrig. Die meisten FIRE-Erreichenden sparen 30–50 % ihres Einkommens.",
+  guidanceActionAlreadyFire: "🎉 Herzlichen Glückwunsch! Du hast bereits finanzielle Unabhängigkeit erreicht. Deine Investments decken deinen gewünschten Lebensstil.",
+
+  // --- NEW: What If? panel ---
+  whatIfTitle: "Was wäre wenn…",
+  whatIfSaveMore: (amount) => `Ich ${amount} mehr spare?`,
+  whatIfRetireLater: "Ich 5 Jahre später in Rente gehe?",
+  whatIfLessIncome: "Ich weniger Einkommen brauche?",
+
+  // --- NEW: Chart explainers ---
+  chartExplainButton: "Was zeigt dieses Diagramm?",
+  chartExplainFireChart: "Der grüne Bereich zeigt, wie dein Vermögen über die Zeit wächst. Die gepunktete Linie ist dein Ziel. Wo sie sich treffen = dein FIRE-Datum!",
+  chartExplainMonteCarloChart: "Wir haben 1.000 verschiedene Marktszenarien simuliert. Je mehr grün, desto sicherer ist dein Plan.",
+  chartExplainDrawdownChart: "Das zeigt, was mit deinem Geld NACH dem Ausstieg passiert. Solange die Linie über null bleibt, bist du sicher!",
+  chartExplainLifecycleChart: "Diese Simulation zeigt verschiedene mögliche Verläufe deiner Ansparphase mit zufälligen Renditen.",
+  chartSummaryFireChart: (age) => age !== null ? `Basierend auf deinen Eingaben erreichst du dein Ziel mit ${age} Jahren.` : "Mit den aktuellen Eingaben wird das Ziel in 50 Jahren nicht erreicht.",
+  chartSummaryMonteCarloChart: (pct) => `In ${pct}% der simulierten Szenarien reicht dein Geld. Über 80% gilt als robust.`,
+  chartSummaryDrawdownChart: (survives) => survives ? "Gute Nachrichten: Dein Portfolio überlebt die Entnahmephase!" : "Achtung: Dein Portfolio könnte während der Entnahmephase aufgebraucht werden.",
+
+  // --- NEW: Milestones ---
+  milestonesTitle: "Deine Meilensteine",
+  milestonesStart: "Start (heute)",
+  milestones25: "25% des Ziels",
+  milestonesCoast: "Spar-Autopilot",
+  milestones75: "75% des Ziels",
+  milestonesFire: "FIRE erreicht!",
+  milestonesNextTitle: "Dein nächster Meilenstein",
+  milestonesNextBody: (amount, months) => `Du bist ${amount} von deinem nächsten Meilenstein entfernt! Bei deiner aktuellen Sparrate erreichst du ihn in ${months} Monaten.`,
+  milestonesCompleted: "Erreicht ✓",
+
+  // --- NEW: FIRE Score ---
+  fireScoreTitle: "FIRE Score",
+  fireScoreSub: "Gesamtbewertung deines Plans",
+  fireScoreExcellent: "Ausgezeichnet",
+  fireScoreGreat: "Sehr gut",
+  fireScoreGood: "Gut",
+  fireScoreNeedsWork: "Verbesserbar",
+
+  // --- NEW: Accessibility ---
+  skipToContent: "Zum Inhalt springen",
+  chartAltFireChart: "Diagramm der Vermögensentwicklung über die Zeit",
+  chartAltMonteCarloChart: "Monte-Carlo-Simulation: Verteilung der Ergebnisse",
+  chartAltDrawdownChart: "Diagramm der Portfolio-Entwicklung in der Entnahmephase",
 };
 
 export const en: Translations = {
@@ -1441,6 +1675,123 @@ export const en: Translations = {
   onboardingPreviewFireAge: (age) => `Estimated FIRE age: ${age}`,
   onboardingPreviewFireNumber: "FIRE target",
   onboardingPreviewNotReachable: "With these values, the FIRE goal won't be reached within 50 years. You can adjust the values after starting.",
+
+  // --- NEW: Education Hub / Learn modal ---
+  learnButton: "📖 Learn",
+  learnTitle: "FIRE Glossary",
+  learnClose: "Close",
+  learnWhatIsFire: "What is FIRE?",
+  learnWhatIsFireDesc: "FIRE stands for «Financial Independence, Retire Early» — having enough money saved that you never need to work again. Your investments generate enough passive income to cover all living expenses.",
+  learnFireNumber: "FIRE Number (Target Wealth)",
+  learnFireNumberDesc: "The total amount you need. Simple formula: If you need €2,500/month, that's €30,000/year. Multiply by 25–30× = your target (€750,000–€900,000).",
+  learnSwr: "Withdrawal Rate (SWR / 4% Rule)",
+  learnSwrDesc: "The «Safe Withdrawal Rate» tells you how much you can take out each year without running out of money. At 4%, you withdraw 4% of your savings per year — this has historically worked for 30+ years.",
+  learnCoastFire: "Coast FIRE",
+  learnCoastFireDesc: "The point where your investments grow enough on their own — even if you stop saving entirely. From here, time works for you.",
+  learnMonteCarlo: "Stress Test (Monte Carlo)",
+  learnMonteCarloDesc: "We simulate 1,000 different market scenarios with random returns. The more scenarios where your money lasts, the safer your plan.",
+  learnDrawdown: "Spending Phase (Drawdown)",
+  learnDrawdownDesc: "The period AFTER you stop working. You live off your investments. We show you whether your portfolio lasts through your lifetime.",
+  learnSavingsRate: "Savings Rate",
+  learnSavingsRateDesc: "What percentage of your income you save. A higher savings rate means faster FIRE. Most FIRE achievers save 30–50%.",
+  learnCompoundInterest: "Compound Interest",
+  learnCompoundInterestDesc: "Your money earns returns, and those returns earn returns. The earlier you start, the more powerful this effect — time is your greatest ally.",
+
+  // --- NEW: Education panel (What is FIRE?) on dashboard ---
+  fireEducationTitle: "🔥 What is FIRE?",
+  fireEducationBody: "FIRE means «Financial Independence, Retire Early» — having enough money that you can live off your savings without needing to work. This simulator shows you when you'll reach that goal and what you can do to get there faster.",
+  fireEducationDismiss: "Got it!",
+  fireEducationShowAgain: "What is FIRE?",
+
+  // --- NEW: Revamped onboarding (story-driven) ---
+  onboardingStep1DescStory: "Let's figure out when you could stop working. First, tell us where you are today.",
+  onboardingStep2DescStory: "Great! How much have you already saved, and how much can you put aside each month? Even small amounts matter — time is your biggest advantage.",
+  onboardingStep3DescStory: "Imagine you never had to work again. How much would you need each month to live comfortably? Don't overthink it — you can always adjust later.",
+  onboardingStep4DescStory: "Almost done! Your country determines taxes and pension rules. We'll handle the rest.",
+  onboardingBenchmarkAge: "Most FIRE planners start at age 25–35",
+  onboardingBenchmarkIncome: (currency) => `Typical: ${currency}2,500–5,000 net`,
+  onboardingBenchmarkSavings: (currency) => `Most people your age save ${currency}300–800/month`,
+  onboardingBenchmarkDesiredIncome: (currency) => `Typical: ${currency}2,000–4,000 monthly`,
+  onboardingUseCountryAvg: "Use country average",
+  onboardingQuickResultTitle: "🎉 Your Result",
+  onboardingQuickResultBody: (age) => `You could be financially free at age ${age}!`,
+  onboardingQuickResultCelebrate: "Let's go!",
+
+  // --- NEW: Beginner-friendly terminology ---
+  beginnerFireNumber: "Your Goal Amount",
+  beginnerCoastFire: "Savings Autopilot",
+  beginnerMonteCarlo: "How Safe Is Your Plan?",
+  beginnerDrawdown: "After You Stop Working",
+  beginnerSwr: "Annual Withdrawal Rate",
+  beginnerSavingsRate: "How Much You're Saving",
+  beginnerPassiveIncome: "Income Without Working",
+  beginnerWithdrawalPreserve: "Live Off the Earnings",
+  beginnerWithdrawalSpend: "Spend It All",
+
+  // --- NEW: Dashboard mode toggle ---
+  modeBeginner: "Beginner",
+  modeStandard: "Standard",
+  modeAdvanced: "Advanced",
+  modeLabel: "View",
+
+  // --- NEW: Beginner Journey Card ---
+  beginnerJourneyTitle: "Your Path to Financial Freedom",
+  beginnerJourneySavings: (amount) => `If you save ${amount}/month and invest it…`,
+  beginnerJourneyFireAge: (age) => `…you could retire at age ${age}`,
+  beginnerJourneyFireNumber: (amount) => `You need ${amount} total`,
+  beginnerJourneyProgress: (pct) => `You're already ${pct}% of the way there`,
+  beginnerJourneyTips: "How to get there faster:",
+  beginnerTipSaveMore: "Save an extra €100 per month",
+  beginnerTipStartEarly: "The earlier you start, the better",
+  beginnerTipReduceSpending: "Review your monthly expenses",
+  beginnerTipInvest: "Invest in diversified ETFs",
+
+  // --- NEW: Actionable guidance ---
+  guidanceActionRetireEarlier: (amount) => `💡 To retire earlier, try increasing your monthly savings by ${amount}, or consider a lower desired income.`,
+  guidanceActionMcLow: (amount) => `⚠️ Your plan has some risk. Save ${amount} more per month or target a slightly lower monthly income.`,
+  guidanceActionSavingsLow: "📊 Your savings rate is low. Most FIRE achievers save 30–50% of their income.",
+  guidanceActionAlreadyFire: "🎉 Congratulations! You've already reached financial independence. Your investments can cover your desired lifestyle.",
+
+  // --- NEW: What If? panel ---
+  whatIfTitle: "What if…",
+  whatIfSaveMore: (amount) => `I save ${amount} more?`,
+  whatIfRetireLater: "I retire 5 years later?",
+  whatIfLessIncome: "I need less income?",
+
+  // --- NEW: Chart explainers ---
+  chartExplainButton: "What does this chart show?",
+  chartExplainFireChart: "The green area shows your savings growing over time. The dotted line is your goal. Where they meet = your FIRE date!",
+  chartExplainMonteCarloChart: "We ran 1,000 different random market scenarios. The more green you see, the safer your plan is.",
+  chartExplainDrawdownChart: "This shows what happens to your money AFTER you stop working. As long as the line stays above zero, you're good!",
+  chartExplainLifecycleChart: "This simulation shows different possible paths for your savings phase with random market returns.",
+  chartSummaryFireChart: (age) => age !== null ? `Based on your inputs, you'll reach your goal at age ${age}.` : "With current inputs, the goal won't be reached within 50 years.",
+  chartSummaryMonteCarloChart: (pct) => `In ${pct}% of simulated scenarios, your money lasts. Above 80% is considered robust.`,
+  chartSummaryDrawdownChart: (survives) => survives ? "Good news: Your portfolio survives the spending phase!" : "Warning: Your portfolio may run out during the spending phase.",
+
+  // --- NEW: Milestones ---
+  milestonesTitle: "Your Milestones",
+  milestonesStart: "Start (today)",
+  milestones25: "25% of goal",
+  milestonesCoast: "Savings autopilot",
+  milestones75: "75% of goal",
+  milestonesFire: "FIRE reached!",
+  milestonesNextTitle: "Your Next Milestone",
+  milestonesNextBody: (amount, months) => `You're ${amount} away from your next milestone! At your current savings rate, you'll hit it in ${months} months.`,
+  milestonesCompleted: "Completed ✓",
+
+  // --- NEW: FIRE Score ---
+  fireScoreTitle: "FIRE Score",
+  fireScoreSub: "Overall assessment of your plan",
+  fireScoreExcellent: "Excellent",
+  fireScoreGreat: "Great",
+  fireScoreGood: "Good",
+  fireScoreNeedsWork: "Needs Work",
+
+  // --- NEW: Accessibility ---
+  skipToContent: "Skip to content",
+  chartAltFireChart: "Chart showing wealth growth over time",
+  chartAltMonteCarloChart: "Monte Carlo simulation: distribution of outcomes",
+  chartAltDrawdownChart: "Chart showing portfolio evolution during the spending phase",
 };
 
 const translations: Record<Locale, Translations> = { de, en };
