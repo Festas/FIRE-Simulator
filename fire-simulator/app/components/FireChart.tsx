@@ -22,9 +22,10 @@ import { yAxisFormatter } from "@/lib/chartUtils";
 interface FireChartProps {
   result: FireResult;
   zielvermoegen: number;
+  showNominal?: boolean;
 }
 
-export default function FireChart({ result, zielvermoegen }: FireChartProps) {
+export default function FireChart({ result, zielvermoegen, showNominal = false }: FireChartProps) {
   const [showScenarios, setShowScenarios] = useState(false);
   const [showNoInvestment, setShowNoInvestment] = useState(false);
   const { t, formatCurrency } = useI18n();
@@ -54,12 +55,12 @@ export default function FireChart({ result, zielvermoegen }: FireChartProps) {
   const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint, i: number) => ({
     age: d.age,
     year: d.calendarYear,
-    etf: Math.round(d.etfBalanceReal),
-    lzk: Math.round(d.lzkBalanceReal),
-    total: Math.round(d.totalReal),
-    optimistic: scenarioOptimistic[i] ? Math.round(scenarioOptimistic[i].totalReal) : undefined,
-    pessimistic: scenarioPessimistic[i] ? Math.round(scenarioPessimistic[i].totalReal) : undefined,
-    noInvestment: noInvestmentData[i] ? Math.round(noInvestmentData[i].totalReal) : undefined,
+    etf: Math.round(showNominal ? d.etfBalanceNominal : d.etfBalanceReal),
+    lzk: Math.round(showNominal ? d.lzkBalanceNominal : d.lzkBalanceReal),
+    total: Math.round(showNominal ? (d.etfBalanceNominal + d.lzkBalanceNominal) : d.totalReal),
+    optimistic: scenarioOptimistic[i] ? Math.round(showNominal ? (scenarioOptimistic[i].etfBalanceNominal + scenarioOptimistic[i].lzkBalanceNominal) : scenarioOptimistic[i].totalReal) : undefined,
+    pessimistic: scenarioPessimistic[i] ? Math.round(showNominal ? (scenarioPessimistic[i].etfBalanceNominal + scenarioPessimistic[i].lzkBalanceNominal) : scenarioPessimistic[i].totalReal) : undefined,
+    noInvestment: noInvestmentData[i] ? Math.round(showNominal ? (noInvestmentData[i].etfBalanceNominal + noInvestmentData[i].lzkBalanceNominal) : noInvestmentData[i].totalReal) : undefined,
   }));
 
   const milestoneLines = [
