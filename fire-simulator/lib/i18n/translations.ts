@@ -619,6 +619,10 @@ export interface Translations {
   fireScoreGreat: string;
   fireScoreGood: string;
   fireScoreNeedsWork: string;
+  fireScoreSavingsRate: string;
+  fireScoreTimeline: string;
+  fireScoreMonteCarlo: string;
+  fireScoreDrawdown: string;
 
   // --- NEW: Accessibility ---
   skipToContent: string;
@@ -1207,6 +1211,10 @@ export const de: Translations = {
   fireScoreGreat: "Sehr gut",
   fireScoreGood: "Gut",
   fireScoreNeedsWork: "Verbesserbar",
+  fireScoreSavingsRate: "Sparquote",
+  fireScoreTimeline: "Zeithorizont",
+  fireScoreMonteCarlo: "Monte Carlo",
+  fireScoreDrawdown: "Entnahmesicherheit",
 
   // --- NEW: Accessibility ---
   skipToContent: "Zum Inhalt springen",
@@ -1795,6 +1803,10 @@ export const en: Translations = {
   fireScoreGreat: "Great",
   fireScoreGood: "Good",
   fireScoreNeedsWork: "Needs Work",
+  fireScoreSavingsRate: "Savings Rate",
+  fireScoreTimeline: "Timeline",
+  fireScoreMonteCarlo: "Monte Carlo",
+  fireScoreDrawdown: "Drawdown Safety",
 
   // --- NEW: Accessibility ---
   skipToContent: "Skip to content",
