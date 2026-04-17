@@ -15,6 +15,7 @@ export type {
   LifecycleMonteCarloResult,
   FireResult,
   SensitivityRow,
+  AgeSavingsRow,
   ReverseResult,
 } from "./types";
 
@@ -33,7 +34,7 @@ export {
 export { simulateAccumulation, simulateNoInvestment } from "./accumulation";
 export { simulateDrawdown } from "./drawdown";
 export { simulateMonteCarlo, simulateLifecycleMonteCarlo, calculateMCRequiredSparrate } from "./monteCarlo";
-export { calculateRequiredSparrate, calculateReverse } from "./reverse";
+export { calculateRequiredSparrate, calculateReverse, calculateAgeSavingsAnalysis } from "./reverse";
 export { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 export { calculateTax, makeTaxConfig } from "./tax";
 

@@ -3,6 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import type {
+  AgeSavingsRow,
   FireInputs,
   LifeEvent,
   ReverseResult,
@@ -257,4 +258,142 @@ export function calculateReverse(
     mcSuccessRate: mcResult.successRate,
     accumulationMonteCarlo,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Age-based savings analysis — MC-simulated savings for each exit age
+// ---------------------------------------------------------------------------
+
+/**
+ * For each exit age in range [minAge, maxAge], calculate the MC-recommended
+ * monthly savings rate and deterministic savings needed to reach FIRE.
+ *
+ * Failproof: clamps inputs, handles edge cases (already FIRE, impossible goals),
+ * and never throws.
+ */
+export function calculateAgeSavingsAnalysis(
+  targetMonthlyIncome: number,
+  statePension: number,
+  startCapital: number,
+  expectedReturn: number,
+  inflation: number,
+  swr: number,
+  dynamicSavings: number,
+  bavAnnual: number,
+  steuerModell: "single" | "couple",
+  kirchensteuer: boolean,
+  entnahmeModell: "ewigeRente" | "kapitalverzehr",
+  kapitalverzehrJahre: number,
+  taxCountry: TaxCountry = "DE",
+  lifeEvents: LifeEvent[] = [],
+  currentAge: number = 30,
+  renteneintrittsalter: number = 67,
+  minAge?: number,
+  maxAge?: number,
+  ageStep: number = 1,
+): AgeSavingsRow[] {
+  const rows: AgeSavingsRow[] = [];
+
+  // Clamp inputs to safe ranges
+  const safeCurrentAge = Math.max(18, Math.min(80, Math.round(currentAge)));
+  const effectiveMinAge = Math.max(safeCurrentAge + 5, Math.round(minAge ?? safeCurrentAge + 5));
+  const effectiveMaxAge = Math.min(safeCurrentAge + 45, Math.round(maxAge ?? safeCurrentAge + 40));
+  const safeStep = Math.max(1, Math.min(10, Math.round(ageStep)));
+  const swrDecimal = swr / 100;
+  const inf = inflation / 100;
+
+  if (effectiveMinAge > effectiveMaxAge) return rows;
+
+  const monthlyGapFull = targetMonthlyIncome;
+
+  for (let exitAge = effectiveMinAge; exitAge <= effectiveMaxAge; exitAge += safeStep) {
+    const targetYears = exitAge - safeCurrentAge;
+    if (targetYears <= 0) continue;
+
+    try {
+      // Calculate FIRE number for this time horizon
+      let fireNumber: number;
+      if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0 && swrDecimal > 0) {
+        const conservativeReturn = Math.max(0, expectedReturn - DRAWDOWN_RETURN_DEDUCTION) / 100;
+        const realReturn = (1 + conservativeReturn) / (1 + inf) - 1;
+        const annualNeed = monthlyGapFull * 12;
+        if (realReturn <= 0) {
+          fireNumber = annualNeed * kapitalverzehrJahre;
+        } else {
+          fireNumber = annualNeed * (1 - Math.pow(1 + realReturn, -kapitalverzehrJahre)) / realReturn;
+        }
+      } else {
+        fireNumber = swrDecimal > 0 ? (monthlyGapFull * 12) / swrDecimal : 0;
+      }
+
+      if (fireNumber <= 0) {
+        rows.push({
+          exitAge,
+          targetYears,
+          mcSavings: 0,
+          mcSuccessRate: 1,
+          deterministicSavings: 0,
+          fireNumber: 0,
+        });
+        continue;
+      }
+
+      // Build inputs for this horizon
+      const inputs: FireInputs = {
+        startKapital: startCapital,
+        monatlicheSparrate: 0,
+        dynamikSparrate: dynamicSavings,
+        etfRendite: expectedReturn,
+        inflation,
+        bavJaehrlich: bavAnnual,
+        zielvermoegen: fireNumber,
+        zielvermoegenOverride: false,
+        lzkJahre: 3,
+        lzkRendite: 3.5,
+        startYear: new Date().getFullYear(),
+        currentAge: safeCurrentAge,
+        monatlichesWunschEinkommen: targetMonthlyIncome,
+        gesetzlicheRente: statePension,
+        renteneintrittsalter,
+        swr,
+        steuerModell,
+        kirchensteuer,
+        entnahmeModell,
+        kapitalverzehrJahre,
+        monatlichesNetto: 0,
+        taxCountry,
+        lifeEvents,
+        arbeitszeitkontoEnabled: false,
+        stundenProJahr: 0,
+        wochenStunden: 40,
+      };
+
+      // Deterministic savings
+      const detSavings = calculateRequiredSparrate(inputs, targetYears);
+
+      // MC-backed savings
+      const mcResult = calculateMCRequiredSparrate(inputs, targetYears);
+
+      rows.push({
+        exitAge,
+        targetYears,
+        mcSavings: Math.max(0, mcResult.monthlySavings),
+        mcSuccessRate: mcResult.successRate,
+        deterministicSavings: Math.max(0, detSavings),
+        fireNumber: Math.round(fireNumber),
+      });
+    } catch {
+      // Failproof: on any error, push a fallback row
+      rows.push({
+        exitAge,
+        targetYears,
+        mcSavings: 0,
+        mcSuccessRate: 0,
+        deterministicSavings: 0,
+        fireNumber: 0,
+      });
+    }
+  }
+
+  return rows;
 }

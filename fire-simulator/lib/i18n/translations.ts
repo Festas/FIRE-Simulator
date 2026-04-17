@@ -317,6 +317,18 @@ export interface Translations {
   reverseAccMcSubtitle: string;
   reverseMcConfidenceBadge: (pct: number) => string;
 
+  // Age-based savings analysis
+  reverseAgeSavingsTitle: string;
+  reverseAgeSavingsSubtitle: string;
+  reverseAgeSavingsAge: string;
+  reverseAgeSavingsMc: string;
+  reverseAgeSavingsDet: string;
+  reverseAgeSavingsFireNum: string;
+  reverseAgeSavingsSuccessRate: string;
+  reverseAgeSavingsYears: string;
+  reverseAgeSavingsChartLabel: string;
+  reverseAgeSavingsDetLabel: string;
+
   // Presets
   presetConservative: string;
   presetBalanced: string;
@@ -750,6 +762,17 @@ export const de: Translations = {
   reverseAccMcSubtitle: "500 Simulationen: Vermögenswachstum mit empfohlener Sparrate",
   reverseMcConfidenceBadge: (pct: number) => `${pct.toFixed(0)} % Konfidenz`,
 
+  reverseAgeSavingsTitle: "Sparraten nach Ausstiegsalter",
+  reverseAgeSavingsSubtitle: "Monte-Carlo-simulierte Sparrate für verschiedene FIRE-Alter",
+  reverseAgeSavingsAge: "Alter",
+  reverseAgeSavingsMc: "MC-Sparrate",
+  reverseAgeSavingsDet: "Deterministisch",
+  reverseAgeSavingsFireNum: "FIRE-Zahl",
+  reverseAgeSavingsSuccessRate: "MC-Erfolg",
+  reverseAgeSavingsYears: "Jahre",
+  reverseAgeSavingsChartLabel: "MC-Sparrate (75 % Konfidenz)",
+  reverseAgeSavingsDetLabel: "Deterministisch",
+
   presetConservative: "Konservativ",
   presetBalanced: "Ausgewogen",
   presetAggressive: "Aggressiv",
@@ -1174,6 +1197,17 @@ export const en: Translations = {
   reverseAccMcTitle: "Monte Carlo – Accumulation Phase",
   reverseAccMcSubtitle: "500 simulations: portfolio growth at recommended savings rate",
   reverseMcConfidenceBadge: (pct: number) => `${pct.toFixed(0)}% confidence`,
+
+  reverseAgeSavingsTitle: "Savings by Exit Age",
+  reverseAgeSavingsSubtitle: "Monte Carlo–simulated savings rate for different FIRE ages",
+  reverseAgeSavingsAge: "Age",
+  reverseAgeSavingsMc: "MC Savings",
+  reverseAgeSavingsDet: "Deterministic",
+  reverseAgeSavingsFireNum: "FIRE Number",
+  reverseAgeSavingsSuccessRate: "MC Success",
+  reverseAgeSavingsYears: "Years",
+  reverseAgeSavingsChartLabel: "MC Savings (75% Confidence)",
+  reverseAgeSavingsDetLabel: "Deterministic",
 
   presetConservative: "Conservative",
   presetBalanced: "Balanced",

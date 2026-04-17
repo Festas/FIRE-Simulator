@@ -200,6 +200,16 @@ export interface SensitivityRow {
   fireNumber: number;
 }
 
+/** Row in the age-based savings analysis table */
+export interface AgeSavingsRow {
+  exitAge: number;
+  targetYears: number;
+  mcSavings: number;
+  mcSuccessRate: number;
+  deterministicSavings: number;
+  fireNumber: number;
+}
+
 export interface ReverseResult {
   requiredMonthlySavings: number;
   fireNumber: number;

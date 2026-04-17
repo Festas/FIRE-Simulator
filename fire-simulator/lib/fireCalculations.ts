@@ -17,6 +17,7 @@ export {
   type LifecycleMonteCarloResult,
   type FireResult,
   type SensitivityRow,
+  type AgeSavingsRow,
   type ReverseResult,
   // Constants
   MAX_YEARS,
@@ -29,6 +30,7 @@ export {
   // Functions
   calculateFIRE,
   calculateReverse,
+  calculateAgeSavingsAnalysis,
   calculateMCRequiredSparrate,
   formatEuro,
   formatEuroShort,

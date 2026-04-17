@@ -4,6 +4,8 @@ import React, { useMemo, useState } from "react";
 import {
   AreaChart,
   Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -11,8 +13,9 @@ import {
   ResponsiveContainer,
   ReferenceLine,
   Legend,
+  Cell,
 } from "recharts";
-import { calculateReverse, FireInputs, ReverseResult } from "@/lib/fireCalculations";
+import { calculateReverse, calculateAgeSavingsAnalysis, FireInputs, ReverseResult, AgeSavingsRow } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 import { ChartTooltipContent } from "@/app/components/ChartTooltip";
 import { yAxisFormatter } from "@/lib/chartUtils";
@@ -87,6 +90,60 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
   const mcPct = reverseResult.monteCarlo.successRate * 100;
   const mcLabel = mcPct.toFixed(0) + "%";
   const mcRecPct = reverseResult.mcSuccessRate * 100;
+
+  // Age-based savings analysis (MC-simulated)
+  const ageSavingsData: AgeSavingsRow[] = useMemo(
+    () =>
+      calculateAgeSavingsAnalysis(
+        targetIncome,
+        statePension,
+        startCapital,
+        returnRate,
+        inflationRate,
+        swrRate,
+        inputs.dynamikSparrate,
+        inputs.bavJaehrlich,
+        inputs.steuerModell,
+        inputs.kirchensteuer,
+        inputs.entnahmeModell,
+        inputs.kapitalverzehrJahre,
+        inputs.taxCountry,
+        inputs.lifeEvents,
+        inputs.currentAge,
+        inputs.renteneintrittsalter,
+        inputs.currentAge + 5,
+        inputs.currentAge + 40,
+        5,
+      ),
+    [
+      targetIncome,
+      statePension,
+      startCapital,
+      returnRate,
+      inflationRate,
+      swrRate,
+      inputs.dynamikSparrate,
+      inputs.bavJaehrlich,
+      inputs.steuerModell,
+      inputs.kirchensteuer,
+      inputs.entnahmeModell,
+      inputs.kapitalverzehrJahre,
+      inputs.taxCountry,
+      inputs.lifeEvents,
+      inputs.currentAge,
+      inputs.renteneintrittsalter,
+    ],
+  );
+
+  // Chart data for age savings analysis
+  const ageSavingsChartData = ageSavingsData.map((row) => ({
+    age: row.exitAge,
+    mcSavings: row.mcSavings,
+    detSavings: row.deterministicSavings,
+    fireNumber: row.fireNumber,
+    mcSuccess: Math.round(row.mcSuccessRate * 100),
+    isCurrentAge: row.exitAge === exitAge,
+  }));
 
   // Accumulation chart data with scenario bands
   const chartData = reverseResult.yearlyProjection.map((d, i) => {
@@ -715,6 +772,132 @@ export default function ReversePlanner({ inputs }: ReversePlannerProps) {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+
+      {/* Age-based Savings Analysis (MC-simulated) */}
+      {ageSavingsChartData.length > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-bold text-[#0f294d] dark:text-white">
+              {t.reverseAgeSavingsTitle}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {t.reverseAgeSavingsSubtitle}
+            </p>
+          </div>
+
+          {/* Bar chart */}
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={ageSavingsChartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
+              <XAxis
+                dataKey="age"
+                tick={{ fontSize: 12, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={false}
+                label={{ value: t.reverseAgeSavingsAge, position: "insideBottom", offset: -2, fontSize: 11, fill: "#94a3b8" }}
+              />
+              <YAxis
+                tickFormatter={yAxisFormatter}
+                tick={{ fontSize: 12, fill: "#94a3b8" }}
+                tickLine={false}
+                axisLine={false}
+                width={55}
+              />
+              <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
+              <Bar dataKey="mcSavings" name={t.reverseAgeSavingsChartLabel} radius={[4, 4, 0, 0]}>
+                {ageSavingsChartData.map((entry, index) => (
+                  <Cell
+                    key={`mc-${index}`}
+                    fill={entry.isCurrentAge ? "#0f294d" : "#10b981"}
+                    fillOpacity={entry.isCurrentAge ? 1 : 0.7}
+                  />
+                ))}
+              </Bar>
+              <Bar dataKey="detSavings" name={t.reverseAgeSavingsDetLabel} radius={[4, 4, 0, 0]}>
+                {ageSavingsChartData.map((entry, index) => (
+                  <Cell
+                    key={`det-${index}`}
+                    fill={entry.isCurrentAge ? "#1e3a5f" : "#94a3b8"}
+                    fillOpacity={entry.isCurrentAge ? 0.7 : 0.4}
+                  />
+                ))}
+              </Bar>
+              {reverseResult.mcRecommendedSavings > 0 && (
+                <ReferenceLine
+                  y={reverseResult.mcRecommendedSavings}
+                  stroke="#f59e0b"
+                  strokeDasharray="6 3"
+                  strokeWidth={1.5}
+                  label={{
+                    value: formatCurrency(reverseResult.mcRecommendedSavings),
+                    position: "right",
+                    fontSize: 10,
+                    fill: "#f59e0b",
+                  }}
+                />
+              )}
+              <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} />
+            </BarChart>
+          </ResponsiveContainer>
+
+          {/* Table */}
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-700 text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">
+                  <th scope="col" className="px-4 py-3 text-left font-semibold">{t.reverseAgeSavingsAge}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t.reverseAgeSavingsYears}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t.reverseAgeSavingsMc}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t.reverseAgeSavingsDet}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t.reverseAgeSavingsFireNum}</th>
+                  <th scope="col" className="px-4 py-3 text-right font-semibold">{t.reverseAgeSavingsSuccessRate}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ageSavingsData.map((row) => (
+                  <tr
+                    key={row.exitAge}
+                    className={`border-t border-slate-100 dark:border-slate-700 ${
+                      row.exitAge === exitAge
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 font-semibold"
+                        : "hover:bg-slate-50 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
+                      {row.exitAge}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
+                      {row.targetYears}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-emerald-600 dark:text-emerald-400 font-medium">
+                      {formatCurrency(row.mcSavings)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
+                      {formatCurrency(row.deterministicSavings)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right text-slate-600 dark:text-slate-400">
+                      {formatCurrencyShort(row.fireNumber)}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          row.mcSuccessRate >= 0.75
+                            ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+                            : row.mcSuccessRate >= 0.5
+                              ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
+                              : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400"
+                        }`}
+                      >
+                        {(row.mcSuccessRate * 100).toFixed(0)}%
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Sensitivity Analysis */}
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
