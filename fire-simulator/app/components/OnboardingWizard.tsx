@@ -4,6 +4,7 @@ import React, { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
 import { TAX_COUNTRIES } from "@/lib/tax";
 import type { TaxCountry } from "@/lib/tax";
+import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
 
 interface OnboardingData {
   currentAge: number;
@@ -119,9 +120,10 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   // Quick FIRE estimate for preview (simplified — no tax, no life events)
   const firePreview = useMemo(() => {
-    const roi = 0.07; // 7% nominal
-    const inf = 0.025; // 2.5% inflation
-    const swr = 0.035; // 3.5% SWR
+    const countryDef = COUNTRY_DEFAULTS[data.taxCountry];
+    const roi = countryDef.etfRendite / 100;
+    const inf = countryDef.inflation / 100;
+    const swr = countryDef.swr / 100;
     const fireNumber = swr > 0 ? (data.monatlichesWunschEinkommen * 12) / swr : 0;
     if (fireNumber <= 0) return { fireAge: null, fireNumber: 0 };
 
@@ -136,7 +138,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       }
     }
     return { fireAge: null, fireNumber };
-  }, [data.startKapital, data.monatlicheSparrate, data.monatlichesWunschEinkommen, data.currentAge]);
+  }, [data.startKapital, data.monatlicheSparrate, data.monatlichesWunschEinkommen, data.currentAge, data.taxCountry]);
 
   const steps = [
     {

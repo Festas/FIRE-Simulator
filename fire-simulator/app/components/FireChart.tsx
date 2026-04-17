@@ -52,15 +52,20 @@ export default function FireChart({ result, zielvermoegen, showNominal = false }
     (fullFireYear !== null ? fullFireYear + 2 : 30),
     yearlyData.length - 1
   );
+
+  /** Return total portfolio value from a data point respecting the nominal/real toggle */
+  const totalValue = (d: YearDataPoint) =>
+    showNominal ? d.etfBalanceNominal + d.lzkBalanceNominal : d.totalReal;
+
   const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint, i: number) => ({
     age: d.age,
     year: d.calendarYear,
     etf: Math.round(showNominal ? d.etfBalanceNominal : d.etfBalanceReal),
     lzk: Math.round(showNominal ? d.lzkBalanceNominal : d.lzkBalanceReal),
-    total: Math.round(showNominal ? (d.etfBalanceNominal + d.lzkBalanceNominal) : d.totalReal),
-    optimistic: scenarioOptimistic[i] ? Math.round(showNominal ? (scenarioOptimistic[i].etfBalanceNominal + scenarioOptimistic[i].lzkBalanceNominal) : scenarioOptimistic[i].totalReal) : undefined,
-    pessimistic: scenarioPessimistic[i] ? Math.round(showNominal ? (scenarioPessimistic[i].etfBalanceNominal + scenarioPessimistic[i].lzkBalanceNominal) : scenarioPessimistic[i].totalReal) : undefined,
-    noInvestment: noInvestmentData[i] ? Math.round(showNominal ? (noInvestmentData[i].etfBalanceNominal + noInvestmentData[i].lzkBalanceNominal) : noInvestmentData[i].totalReal) : undefined,
+    total: Math.round(totalValue(d)),
+    optimistic: scenarioOptimistic[i] ? Math.round(totalValue(scenarioOptimistic[i])) : undefined,
+    pessimistic: scenarioPessimistic[i] ? Math.round(totalValue(scenarioPessimistic[i])) : undefined,
+    noInvestment: noInvestmentData[i] ? Math.round(totalValue(noInvestmentData[i])) : undefined,
   }));
 
   const milestoneLines = [
