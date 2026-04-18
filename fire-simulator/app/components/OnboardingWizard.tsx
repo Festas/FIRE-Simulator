@@ -5,6 +5,8 @@ import { useI18n } from "@/lib/i18n";
 import { TAX_COUNTRIES } from "@/lib/tax";
 import type { TaxCountry } from "@/lib/tax";
 import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
+import { calculateFIRE } from "@/lib/fireCalculations";
+import type { FireInputs } from "@/lib/fireCalculations";
 
 interface OnboardingData {
   currentAge: number;
@@ -118,27 +120,53 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     taxCountry: "DE",
   });
 
-  // Quick FIRE estimate for preview (simplified — no tax, no life events)
-  const firePreview = (() => {
+  // Build full FireInputs from wizard data + country defaults so the preview
+  // uses exactly the same calculation as the main simulator.
+  const previewInputs = useMemo((): FireInputs => {
     const countryDef = COUNTRY_DEFAULTS[data.taxCountry];
-    const roi = countryDef.etfRendite / 100;
-    const inf = countryDef.inflation / 100;
-    const swr = countryDef.swr / 100;
-    const fireNumber = swr > 0 ? (data.monatlichesWunschEinkommen * 12) / swr : 0;
-    if (fireNumber <= 0) return { fireAge: null, fireNumber: 0 };
+    const swrPct = countryDef.swr;
+    const swrDecimal = swrPct / 100;
+    const zielvermoegen =
+      swrDecimal > 0
+        ? Math.round((data.monatlichesWunschEinkommen * 12) / swrDecimal)
+        : 0;
+    return {
+      startKapital: data.startKapital,
+      monatlicheSparrate: data.monatlicheSparrate,
+      dynamikSparrate: 2.0,
+      etfRendite: countryDef.etfRendite,
+      inflation: countryDef.inflation,
+      bavJaehrlich: 0,
+      zielvermoegen,
+      zielvermoegenOverride: false,
+      lzkJahre: 0,
+      lzkRendite: 0,
+      startYear: new Date().getFullYear(),
+      currentAge: data.currentAge,
+      monatlichesWunschEinkommen: data.monatlichesWunschEinkommen,
+      gesetzlicheRente: countryDef.gesetzlicheRente,
+      renteneintrittsalter: countryDef.renteneintrittsalter,
+      swr: swrPct,
+      steuerModell: "single",
+      kirchensteuer: false,
+      taxCountry: data.taxCountry,
+      entnahmeModell: "ewigeRente",
+      kapitalverzehrJahre: 30,
+      monatlichesNetto: data.monatlichesNetto,
+      lifeEvents: [],
+      arbeitszeitkontoEnabled: false,
+      stundenProJahr: 0,
+      wochenStunden: 40,
+    };
+  }, [data]);
 
-    let balance = data.startKapital;
-    const dyn = 0.02; // 2% savings growth
-    for (let y = 1; y <= 50; y++) {
-      const savings = data.monatlicheSparrate * Math.pow(1 + dyn, y - 1);
-      balance = (balance + savings * 12) * (1 + roi);
-      const realVal = balance / Math.pow(1 + inf, y);
-      if (realVal >= fireNumber) {
-        return { fireAge: data.currentAge + y, fireNumber };
-      }
-    }
-    return { fireAge: null, fireNumber };
-  })();
+  const firePreview = useMemo(() => {
+    const result = calculateFIRE(previewInputs);
+    return {
+      fireAge: result.fullFireAge,
+      fireNumber: result.derivedFireNumber,
+    };
+  }, [previewInputs]);
 
   const [showQuickResult, setShowQuickResult] = useState(false);
 

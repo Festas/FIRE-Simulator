@@ -384,8 +384,11 @@ function HomeContent() {
     monatlichesWunschEinkommen: number;
     taxCountry: string;
   }) => {
-    const swr = 3.5;
-    const zielvermoegen = Math.round((data.monatlichesWunschEinkommen * 12) / (swr / 100));
+    const country = data.taxCountry as FireInputs["taxCountry"];
+    const countryDef = COUNTRY_DEFAULTS[country];
+    const swr = countryDef.swr;
+    const swrDecimal = swr / 100;
+    const zielvermoegen = swrDecimal > 0 ? Math.round((data.monatlichesWunschEinkommen * 12) / swrDecimal) : DEFAULT_INPUTS.zielvermoegen;
     const merged: FireInputs = {
       ...DEFAULT_INPUTS,
       currentAge: data.currentAge,
@@ -393,7 +396,12 @@ function HomeContent() {
       startKapital: data.startKapital,
       monatlicheSparrate: data.monatlicheSparrate,
       monatlichesWunschEinkommen: data.monatlichesWunschEinkommen,
-      taxCountry: data.taxCountry as FireInputs["taxCountry"],
+      taxCountry: country,
+      gesetzlicheRente: countryDef.gesetzlicheRente,
+      renteneintrittsalter: countryDef.renteneintrittsalter,
+      etfRendite: countryDef.etfRendite,
+      inflation: countryDef.inflation,
+      swr,
       zielvermoegen,
     };
     setInputs(merged);
