@@ -83,6 +83,14 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
               <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
               <stop offset="95%" stopColor="#10b981" stopOpacity={0.05} />
             </linearGradient>
+            <linearGradient id="mc25" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.12} />
+              <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
+            </linearGradient>
+            <linearGradient id="mc10" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.1} />
+              <stop offset="95%" stopColor="#ef4444" stopOpacity={0.01} />
+            </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
           <XAxis
@@ -132,7 +140,7 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
             dataKey="p25"
             stroke="#f59e0b"
             strokeWidth={1}
-            fill="none"
+            fill="url(#mc25)"
             name={t.monteCarloP25}
             dot={false}
           />
@@ -142,7 +150,7 @@ export default function MonteCarloChart({ result }: MonteCarloChartProps) {
             stroke="#ef4444"
             strokeWidth={1}
             strokeDasharray="4 2"
-            fill="none"
+            fill="url(#mc10)"
             name={t.monteCarloP10}
             dot={false}
           />

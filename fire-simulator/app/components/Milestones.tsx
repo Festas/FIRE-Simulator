@@ -161,8 +161,7 @@ export default function Milestones({ result, inputs }: MilestonesProps) {
 
                 {m.age != null && (
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {m.age}{" "}
-                    {m.age === 1 ? "year" : "years"}
+                    {t.kpiAgeLabel(m.age)}
                   </span>
                 )}
               </div>
@@ -241,7 +240,7 @@ export default function Milestones({ result, inputs }: MilestonesProps) {
                 </span>
                 {m.age != null && (
                   <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
-                    ({m.age} {m.age === 1 ? "year" : "years"})
+                    ({t.kpiAgeLabel(m.age)})
                   </span>
                 )}
               </div>
