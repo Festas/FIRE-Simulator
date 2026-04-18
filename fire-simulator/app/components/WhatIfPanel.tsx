@@ -29,19 +29,12 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
     };
     const saveMoreResult = calculateFIRE(saveMoreInputs);
 
-    // Scenario 2: Retire 5 years later
-    const retireLaterInputs: FireInputs = {
+    // Scenario 2: 1% higher return
+    const higherReturnInputs: FireInputs = {
       ...inputs,
-      renteneintrittsalter: inputs.renteneintrittsalter + 5,
+      etfRendite: inputs.etfRendite + 1,
     };
-    // Recalculate zielvermoegen if not manually overridden
-    if (!retireLaterInputs.zielvermoegenOverride) {
-      const adjustedMonthlyNeed =
-        retireLaterInputs.monatlichesWunschEinkommen - retireLaterInputs.gesetzlicheRente;
-      retireLaterInputs.zielvermoegen =
-        (Math.max(adjustedMonthlyNeed, 0) * 12) / (retireLaterInputs.swr / 100);
-    }
-    const retireLaterResult = calculateFIRE(retireLaterInputs);
+    const higherReturnResult = calculateFIRE(higherReturnInputs);
 
     // Scenario 3: Need €300 less monthly income
     const lessIncomeInputs: FireInputs = {
@@ -61,10 +54,10 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
         apply: () => onChange("monatlicheSparrate", inputs.monatlicheSparrate + 200),
       },
       {
-        label: t.whatIfRetireLater,
-        fireAge: retireLaterResult.fullFireAge,
+        label: t.whatIfHigherReturn,
+        fireAge: higherReturnResult.fullFireAge,
         apply: () =>
-          onChange("renteneintrittsalter", inputs.renteneintrittsalter + 5),
+          onChange("etfRendite", inputs.etfRendite + 1),
       },
       {
         label: t.whatIfLessIncome,
