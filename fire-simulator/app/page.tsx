@@ -444,7 +444,7 @@ function HomeContent() {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
+    <div className="flex h-screen overflow-hidden overflow-x-hidden bg-[#f8fafc] dark:bg-slate-900">
       {/* Skip to content link for accessibility */}
       <a
         href="#main-content"
@@ -486,9 +486,9 @@ function HomeContent() {
       </aside>
 
       {/* Main area */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0">
         {/* Top bar */}
-        <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-100 dark:border-slate-700 px-6 py-4 flex items-center gap-4">
+        <header className="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur border-b border-slate-100 dark:border-slate-700 px-3 sm:px-6 py-3 sm:py-4 flex items-center flex-wrap gap-2 sm:gap-4">
           <button
             className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300"
             onClick={() => setSidebarOpen(true)}
@@ -499,8 +499,8 @@ function HomeContent() {
             </svg>
           </button>
 
-          <div className="flex-1">
-            <h1 className="text-lg font-bold text-[#0f294d] dark:text-white leading-tight">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-[#0f294d] dark:text-white leading-tight truncate">
               {t.appTitle}
             </h1>
             <p className="text-xs text-slate-400 dark:text-slate-500 hidden sm:block">
@@ -666,7 +666,7 @@ function HomeContent() {
         </header>
 
         {/* Dashboard content */}
-        <div id="main-content" className="px-6 py-6 max-w-7xl mx-auto">
+        <div id="main-content" className="px-3 sm:px-6 py-6 max-w-7xl mx-auto">
           {/* Dashboard Mode Toggle */}
           <div className="flex flex-wrap items-center gap-3 mb-6">
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
