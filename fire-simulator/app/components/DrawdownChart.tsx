@@ -41,7 +41,7 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
   const chartData = drawdownData.map((d) => ({
     age: d.age,
     year: d.calendarYear,
-    portfolio: Math.round(d.totalReal),
+    portfolioBalance: Math.round(d.totalReal),
   }));
 
   return (
@@ -81,7 +81,7 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
           <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 2" strokeWidth={1} />
           <Area
             type="monotone"
-            dataKey="portfolio"
+            dataKey="portfolioBalance"
             stroke={drawdownSurvives ? "#10b981" : "#ef4444"}
             strokeWidth={2.5}
             fill="url(#drawdownGradient)"

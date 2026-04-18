@@ -18,7 +18,9 @@ export default function FireProgressGauge({ result, inputs }: FireProgressGaugeP
   // Progress = current savings / FIRE number (capped at 100%)
   const capitalProgress = fireNumber > 0 ? Math.min(100, (currentSavings / fireNumber) * 100) : 0;
 
-  // If user has 0 savings but high savings rate, show at least a trajectory hint
+  // If user has 0 savings but high savings rate, show at least a trajectory hint.
+  // Capped at 5% so the bar isn't misleading; 25/fullFireYear gives a small boost
+  // proportional to how quickly FIRE is reached (e.g. 10 years → 2.5%, 5 years → 5%).
   const trajectoryBonus = (result.targetReached && result.fullFireYear !== null && result.fullFireYear > 0 && capitalProgress < 5)
     ? Math.min(5, 25 / result.fullFireYear)
     : 0;

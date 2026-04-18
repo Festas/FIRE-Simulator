@@ -21,10 +21,10 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
 
   const currentFireAge = result.fullFireAge;
 
-  // Scale scenario amounts based on country savings rate (roughly proportional)
-  // Use 10% of net income as the "save more" amount, rounded to nearest 50
+  // Scale scenario amounts based on country income (roughly proportional)
+  // Use ~6% of net income as the "save more" amount, rounded to nearest 50
   const saveMoreAmount = Math.max(50, Math.round((inputs.monatlichesNetto * 0.06) / 50) * 50);
-  // Use 10% of desired income as the "less income" amount, rounded to nearest 50
+  // Use ~10% of desired income as the "less income" amount, rounded to nearest 50
   const lessIncomeAmount = Math.max(50, Math.round((inputs.monatlichesWunschEinkommen * 0.1) / 50) * 50);
 
   const scenarios: Scenario[] = useMemo(() => {
