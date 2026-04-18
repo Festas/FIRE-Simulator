@@ -20,9 +20,9 @@ export default function GuidanceCard({ result, inputs }: GuidanceCardProps) {
   } else if (result.targetReached && result.fullFireAge !== null) {
     const yearsEarly = inputs.renteneintrittsalter - result.fullFireAge;
     if (yearsEarly > 0) {
-      messages.push({ text: t.guidanceOnTrack(yearsEarly), type: "success" });
+      messages.push({ text: t.guidanceOnTrack(result.fullFireAge, yearsEarly), type: "success" });
     } else {
-      messages.push({ text: t.guidanceOnTrack(0), type: "info" });
+      messages.push({ text: t.guidanceOnTrack(result.fullFireAge, 0), type: "info" });
     }
   } else {
     messages.push({ text: t.guidanceNoTarget, type: "warning" });

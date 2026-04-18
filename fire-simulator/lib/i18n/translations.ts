@@ -481,7 +481,7 @@ export interface Translations {
   fireProgressOf: string;
 
   // Contextual Guidance Card
-  guidanceOnTrack: (yearsEarly: number) => string;
+  guidanceOnTrack: (fireAge: number, yearsEarly: number) => string;
   guidanceNeedMore: (amount: string) => string;
   guidanceAlreadyFire: string;
   guidanceNoTarget: string;
@@ -1073,7 +1073,9 @@ export const de: Translations = {
   fireProgressOf: "von",
 
   // Contextual Guidance Card
-  guidanceOnTrack: (yearsEarly) => `🎉 Du bist auf Kurs! Du kannst ${yearsEarly} Jahr${yearsEarly !== 1 ? "e" : ""} vor dem Rentenalter in den Ruhestand gehen.`,
+  guidanceOnTrack: (fireAge, yearsEarly) => yearsEarly > 0
+    ? `🎉 Du bist auf Kurs! Du kannst mit ${fireAge} in den Ruhestand gehen — ${yearsEarly} Jahr${yearsEarly !== 1 ? "e" : ""} vor dem Rentenalter.`
+    : `🎉 Du bist auf Kurs! Du kannst mit ${fireAge} in den Ruhestand gehen.`,
   guidanceNeedMore: (amount) => `💡 Du brauchst ${amount}/Monat mehr Sparrate, um dein FIRE-Ziel zu erreichen.`,
   guidanceAlreadyFire: "🏆 Glückwunsch! Du hast dein FIRE-Ziel bereits erreicht.",
   guidanceNoTarget: "⚠️ Mit den aktuellen Einstellungen ist das FIRE-Ziel innerhalb von 50 Jahren nicht erreichbar.",
@@ -1665,7 +1667,9 @@ export const en: Translations = {
   fireProgressOf: "of",
 
   // Contextual Guidance Card
-  guidanceOnTrack: (yearsEarly) => `🎉 You're on track! You can retire ${yearsEarly} year${yearsEarly !== 1 ? "s" : ""} before standard retirement age.`,
+  guidanceOnTrack: (fireAge, yearsEarly) => yearsEarly > 0
+    ? `🎉 You're on track! You can retire at age ${fireAge} — ${yearsEarly} year${yearsEarly !== 1 ? "s" : ""} before standard retirement age.`
+    : `🎉 You're on track! You can retire at age ${fireAge}.`,
   guidanceNeedMore: (amount) => `💡 You need ${amount}/month more savings to reach your FIRE goal.`,
   guidanceAlreadyFire: "🏆 Congratulations! You've already reached your FIRE goal.",
   guidanceNoTarget: "⚠️ With current settings, the FIRE goal is not reachable within 50 years.",
