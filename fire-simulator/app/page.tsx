@@ -444,7 +444,7 @@ function HomeContent() {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden overflow-x-hidden bg-[#f8fafc] dark:bg-slate-900">
+    <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
       {/* Skip to content link for accessibility */}
       <a
         href="#main-content"
