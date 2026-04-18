@@ -585,7 +585,7 @@ export interface Translations {
   // --- NEW: What If? panel ---
   whatIfTitle: string;
   whatIfSaveMore: (amount: string) => string;
-  whatIfRetireLater: string;
+  whatIfHigherReturn: string;
   whatIfLessIncome: string;
   whatIfYearsEarlier: (n: number) => string;
   whatIfYearsLater: (n: number) => string;
@@ -1179,7 +1179,7 @@ export const de: Translations = {
   // --- NEW: What If? panel ---
   whatIfTitle: "Was wäre wenn…",
   whatIfSaveMore: (amount) => `Ich ${amount} mehr spare?`,
-  whatIfRetireLater: "Ich 5 Jahre später in Rente gehe?",
+  whatIfHigherReturn: "Meine Rendite 1 % höher ist?",
   whatIfLessIncome: "Ich weniger Einkommen brauche?",
   whatIfYearsEarlier: (n) => `${n} ${n === 1 ? "Jahr" : "Jahre"} früher!`,
   whatIfYearsLater: (n) => `${n} ${n === 1 ? "Jahr" : "Jahre"} später`,
@@ -1773,7 +1773,7 @@ export const en: Translations = {
   // --- NEW: What If? panel ---
   whatIfTitle: "What if…",
   whatIfSaveMore: (amount) => `I save ${amount} more?`,
-  whatIfRetireLater: "I retire 5 years later?",
+  whatIfHigherReturn: "My return is 1% higher?",
   whatIfLessIncome: "I need less income?",
   whatIfYearsEarlier: (n) => `${n} ${n === 1 ? "year" : "years"} earlier!`,
   whatIfYearsLater: (n) => `${n} ${n === 1 ? "year" : "years"} later`,
