@@ -23,8 +23,17 @@ import OnboardingWizard from "@/app/components/OnboardingWizard";
 import DashboardSection from "@/app/components/DashboardSection";
 import FireProgressGauge from "@/app/components/FireProgressGauge";
 import GuidanceCard from "@/app/components/GuidanceCard";
+import LearnGlossaryModal from "@/app/components/LearnGlossaryModal";
+import FireEducationPanel from "@/app/components/FireEducationPanel";
+import BeginnerJourneyCard from "@/app/components/BeginnerJourneyCard";
+import WhatIfPanel from "@/app/components/WhatIfPanel";
+import ChartExplainer from "@/app/components/ChartExplainer";
+import Milestones from "@/app/components/Milestones";
+import FireScore from "@/app/components/FireScore";
 import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
 import type { TaxCountry } from "@/lib/tax";
+
+type DashboardMode = "beginner" | "standard" | "advanced";
 
 const DEFAULT_INPUTS: FireInputs = {
   startKapital: 30_000,
@@ -59,6 +68,25 @@ const LS_KEY = "fire-simulator-inputs";
 const LS_ONBOARDING_KEY = "fire-simulator-onboarded";
 const UNDO_LIMIT = 30;
 
+/** Detect likely tax country from browser locale */
+function detectCountryFromLocale(): FireInputs["taxCountry"] | null {
+  try {
+    const lang = navigator.language || (navigator.languages?.[0] ?? "");
+    const region = lang.split("-")[1]?.toUpperCase();
+    const mapping: Record<string, FireInputs["taxCountry"]> = {
+      DE: "DE", AT: "AT", CH: "CH", US: "US", GB: "UK", UK: "UK",
+      NL: "NL", CA: "CA", AU: "AU", FR: "FR",
+    };
+    if (region && mapping[region]) return mapping[region];
+    // Fallback: match language prefix
+    const langPrefix = lang.split("-")[0].toLowerCase();
+    const langMap: Record<string, FireInputs["taxCountry"]> = {
+      de: "DE", en: "US", fr: "FR", nl: "NL",
+    };
+    return langMap[langPrefix] ?? null;
+  } catch { return null; }
+}
+
 function getInitialInputs(): FireInputs {
   if (typeof window === "undefined") return DEFAULT_INPUTS;
 
@@ -77,6 +105,28 @@ function getInitialInputs(): FireInputs {
   } catch {
     // ignore
   }
+
+  // Auto-detect country from browser locale for first-time visitors
+  const detectedCountry = detectCountryFromLocale();
+  if (detectedCountry && detectedCountry !== DEFAULT_INPUTS.taxCountry) {
+    const defaults = COUNTRY_DEFAULTS[detectedCountry];
+    if (defaults) {
+      const swr = defaults.swr / 100;
+      return {
+        ...DEFAULT_INPUTS,
+        taxCountry: detectedCountry,
+        monatlichesNetto: defaults.monatlichesNetto,
+        monatlichesWunschEinkommen: defaults.monatlichesWunschEinkommen,
+        gesetzlicheRente: defaults.gesetzlicheRente,
+        renteneintrittsalter: defaults.renteneintrittsalter,
+        etfRendite: defaults.etfRendite,
+        inflation: defaults.inflation,
+        swr: defaults.swr,
+        zielvermoegen: swr > 0 ? Math.round((defaults.monatlichesWunschEinkommen * 12) / swr) : DEFAULT_INPUTS.zielvermoegen,
+      };
+    }
+  }
+
   return DEFAULT_INPUTS;
 }
 
@@ -94,6 +144,15 @@ function HomeContent() {
   const [shareTooltip, setShareTooltip] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [learnModalOpen, setLearnModalOpen] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState<DashboardMode>(() => {
+    if (typeof window === "undefined") return "standard";
+    try {
+      const saved = localStorage.getItem("fire-simulator-mode");
+      if (saved === "beginner" || saved === "standard" || saved === "advanced") return saved;
+    } catch { /* ignore */ }
+    return "standard";
+  });
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [showNominal, setShowNominal] = useState(false);
@@ -371,8 +430,24 @@ function HomeContent() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleUndo, handleRedo]);
 
+  const handleModeChange = useCallback((mode: DashboardMode) => {
+    setDashboardMode(mode);
+    try { localStorage.setItem("fire-simulator-mode", mode); } catch { /* ignore */ }
+  }, []);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#f8fafc] dark:bg-slate-900">
+      {/* Skip to content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-emerald-500 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg"
+      >
+        {t.skipToContent}
+      </a>
+
+      {/* Learn Glossary Modal */}
+      <LearnGlossaryModal isOpen={learnModalOpen} onClose={() => setLearnModalOpen(false)} />
+
       {/* Onboarding Wizard */}
       {showOnboarding && (
         <OnboardingWizard
@@ -545,6 +620,16 @@ function HomeContent() {
             )}
           </div>
 
+          {/* Learn button */}
+          <button
+            onClick={() => setLearnModalOpen(true)}
+            className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 px-2.5 py-2 rounded-lg border border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
+            title={t.learnTitle}
+          >
+            <span className="hidden sm:inline">{t.learnButton}</span>
+            <span className="sm:hidden">📖</span>
+          </button>
+
           {/* Language toggle */}
           <button
             onClick={() => setLocale(locale === "de" ? "en" : "de")}
@@ -573,12 +658,39 @@ function HomeContent() {
         </header>
 
         {/* Dashboard content */}
-        <div className="px-6 py-6 max-w-7xl mx-auto">
-          {/* Scenario Manager & Example Plans */}
-          <ScenarioManager currentInputs={inputs} onLoad={handleScenarioLoad} />
-          <div className="mb-6">
-            <ExamplePlansDropdown onLoad={handleScenarioLoad} />
+        <div id="main-content" className="px-6 py-6 max-w-7xl mx-auto">
+          {/* Dashboard Mode Toggle */}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              {t.modeLabel}:
+            </span>
+            {(["beginner", "standard", "advanced"] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => handleModeChange(mode)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                  dashboardMode === mode
+                    ? "bg-emerald-500 border-emerald-400 text-white shadow-sm"
+                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+                }`}
+              >
+                {mode === "beginner" ? t.modeBeginner : mode === "standard" ? t.modeStandard : t.modeAdvanced}
+              </button>
+            ))}
           </div>
+
+          {/* FIRE Education Panel — show for beginners */}
+          {dashboardMode === "beginner" && <FireEducationPanel />}
+
+          {/* Scenario Manager & Example Plans — hide in beginner mode */}
+          {dashboardMode !== "beginner" && (
+            <>
+              <ScenarioManager currentInputs={inputs} onLoad={handleScenarioLoad} />
+              <div className="mb-6">
+                <ExamplePlansDropdown onLoad={handleScenarioLoad} />
+              </div>
+            </>
+          )}
 
           {/* Tab navigation */}
           <div className="flex gap-2 mb-6" role="tablist">
@@ -620,96 +732,162 @@ function HomeContent() {
 
                 <Warnings inputs={inputs} />
 
-                <ErrorBoundary
-                  errorTitle={t.errorTitle}
-                  fallbackMessage={t.errorMessage}
-                  errorRetryLabel={t.errorRetry}
-                >
-                  <DashboardSection
-                    title={t.sectionFireJourney}
-                    description={t.sectionFireJourneyDesc}
-                    defaultOpen={true}
-                  >
-                    {/* Nominal / Real toggle + FIRE Progress Gauge row */}
-                    <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
-                      <div className="flex-1 w-full">
-                        <KPICards result={result} inputs={inputs} />
-                      </div>
-                      <div className="w-full sm:w-auto flex-shrink-0">
-                        <FireProgressGauge result={result} inputs={inputs} />
-                      </div>
-                    </div>
-
-                    {/* Nominal/Real toggle */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <button
-                        onClick={() => setShowNominal(!showNominal)}
-                        className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${
-                          showNominal
-                            ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700"
-                            : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700"
-                        }`}
-                        title={t.nominalTooltip}
+                {/* Beginner Mode: simplified view */}
+                {dashboardMode === "beginner" ? (
+                  <>
+                    <BeginnerJourneyCard result={result} inputs={inputs} />
+                    <WhatIfPanel inputs={inputs} result={result} onChange={handleChange} />
+                    <Milestones result={result} inputs={inputs} />
+                    <ErrorBoundary
+                      errorTitle={t.errorTitle}
+                      fallbackMessage={t.errorMessage}
+                      errorRetryLabel={t.errorRetry}
+                    >
+                      <DashboardSection
+                        title={t.sectionFireJourney}
+                        description={t.sectionFireJourneyDesc}
+                        defaultOpen={true}
                       >
-                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                        </svg>
-                        {showNominal ? t.showNominal : t.showReal}
-                      </button>
-                    </div>
+                        <div className="relative">
+                          <ChartExplainer
+                            explanation={t.chartExplainFireChart}
+                            summary={t.chartSummaryFireChart(result.fullFireAge)}
+                          />
+                          <FireChart result={result} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
+                        </div>
+                      </DashboardSection>
+                    </ErrorBoundary>
+                    <FireScore result={result} inputs={inputs} />
+                  </>
+                ) : (
+                  /* Standard / Advanced Mode */
+                  <>
+                    <ErrorBoundary
+                      errorTitle={t.errorTitle}
+                      fallbackMessage={t.errorMessage}
+                      errorRetryLabel={t.errorRetry}
+                    >
+                      <DashboardSection
+                        title={t.sectionFireJourney}
+                        description={t.sectionFireJourneyDesc}
+                        defaultOpen={true}
+                      >
+                        {/* Nominal / Real toggle + FIRE Progress Gauge row */}
+                        <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
+                          <div className="flex-1 w-full">
+                            <KPICards result={result} inputs={inputs} />
+                          </div>
+                          <div className="w-full sm:w-auto flex-shrink-0 flex flex-col gap-4">
+                            <FireProgressGauge result={result} inputs={inputs} />
+                            <FireScore result={result} inputs={inputs} />
+                          </div>
+                        </div>
 
-                    <FireChart result={result} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
-                  </DashboardSection>
-                </ErrorBoundary>
+                        {/* Nominal/Real toggle */}
+                        <div className="flex items-center gap-2 mb-4">
+                          <button
+                            onClick={() => setShowNominal(!showNominal)}
+                            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${
+                              showNominal
+                                ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700"
+                                : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700"
+                            }`}
+                            title={t.nominalTooltip}
+                          >
+                            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                            </svg>
+                            {showNominal ? t.showNominal : t.showReal}
+                          </button>
+                        </div>
 
-                <ErrorBoundary
-                  errorTitle={t.errorTitle}
-                  fallbackMessage={t.errorMessage}
-                  errorRetryLabel={t.errorRetry}
-                >
-                  <DashboardSection
-                    title={t.sectionStressTesting}
-                    description={t.sectionStressTestingDesc}
-                    defaultOpen={true}
-                  >
-                    <LifecycleMonteCarloChart result={result} />
-                    <MonteCarloChart result={result} />
-                  </DashboardSection>
-                </ErrorBoundary>
+                        <div className="relative">
+                          <ChartExplainer
+                            explanation={t.chartExplainFireChart}
+                            summary={t.chartSummaryFireChart(result.fullFireAge)}
+                          />
+                          <FireChart result={result} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
+                        </div>
+                      </DashboardSection>
+                    </ErrorBoundary>
 
-                <ErrorBoundary
-                  errorTitle={t.errorTitle}
-                  fallbackMessage={t.errorMessage}
-                  errorRetryLabel={t.errorRetry}
-                >
-                  <DashboardSection
-                    title={t.sectionDrawdownAnalysis}
-                    description={t.sectionDrawdownAnalysisDesc}
-                    defaultOpen={true}
-                  >
-                    <DrawdownChart result={result} inputs={inputs} />
-                  </DashboardSection>
-                </ErrorBoundary>
+                    {/* What If panel — in standard+ modes */}
+                    <WhatIfPanel inputs={inputs} result={result} onChange={handleChange} />
 
-                <ErrorBoundary
-                  errorTitle={t.errorTitle}
-                  fallbackMessage={t.errorMessage}
-                  errorRetryLabel={t.errorRetry}
-                >
-                  <DashboardSection
-                    title={t.sectionPlanning}
-                    description={t.sectionPlanningDesc}
-                    defaultOpen={false}
-                  >
-                    <LifeEventsEditor
-                      events={inputs.lifeEvents}
-                      onChange={handleLifeEventsChange}
-                      startYear={inputs.startYear}
-                    />
-                    <DetailTable result={result} />
-                    <PhasesTimeline result={result} startYear={inputs.startYear} />
-                  </DashboardSection>
-                </ErrorBoundary>
+                    {/* Milestones — in standard+ modes */}
+                    <Milestones result={result} inputs={inputs} />
+
+                    <ErrorBoundary
+                      errorTitle={t.errorTitle}
+                      fallbackMessage={t.errorMessage}
+                      errorRetryLabel={t.errorRetry}
+                    >
+                      <DashboardSection
+                        title={t.sectionStressTesting}
+                        description={t.sectionStressTestingDesc}
+                        defaultOpen={true}
+                      >
+                        <div className="relative">
+                          <ChartExplainer
+                            explanation={t.chartExplainLifecycleChart}
+                            summary={t.chartSummaryMonteCarloChart((result.monteCarlo.successRate * 100).toFixed(0))}
+                          />
+                          <LifecycleMonteCarloChart result={result} />
+                        </div>
+                        <div className="relative">
+                          <ChartExplainer
+                            explanation={t.chartExplainMonteCarloChart}
+                            summary={t.chartSummaryMonteCarloChart((result.monteCarlo.successRate * 100).toFixed(0))}
+                          />
+                          <MonteCarloChart result={result} />
+                        </div>
+                      </DashboardSection>
+                    </ErrorBoundary>
+
+                    <ErrorBoundary
+                      errorTitle={t.errorTitle}
+                      fallbackMessage={t.errorMessage}
+                      errorRetryLabel={t.errorRetry}
+                    >
+                      <DashboardSection
+                        title={t.sectionDrawdownAnalysis}
+                        description={t.sectionDrawdownAnalysisDesc}
+                        defaultOpen={true}
+                      >
+                        <div className="relative">
+                          <ChartExplainer
+                            explanation={t.chartExplainDrawdownChart}
+                            summary={t.chartSummaryDrawdownChart(result.drawdownSurvives)}
+                          />
+                          <DrawdownChart result={result} inputs={inputs} />
+                        </div>
+                      </DashboardSection>
+                    </ErrorBoundary>
+
+                    {/* Planning section — only in advanced mode */}
+                    {dashboardMode === "advanced" && (
+                      <ErrorBoundary
+                        errorTitle={t.errorTitle}
+                        fallbackMessage={t.errorMessage}
+                        errorRetryLabel={t.errorRetry}
+                      >
+                        <DashboardSection
+                          title={t.sectionPlanning}
+                          description={t.sectionPlanningDesc}
+                          defaultOpen={false}
+                        >
+                          <LifeEventsEditor
+                            events={inputs.lifeEvents}
+                            onChange={handleLifeEventsChange}
+                            startYear={inputs.startYear}
+                          />
+                          <DetailTable result={result} />
+                          <PhasesTimeline result={result} startYear={inputs.startYear} />
+                        </DashboardSection>
+                      </ErrorBoundary>
+                    )}
+                  </>
+                )}
               </>
             ) : (
               <ReversePlanner inputs={inputs} />
