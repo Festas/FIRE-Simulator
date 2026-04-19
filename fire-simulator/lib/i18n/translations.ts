@@ -237,6 +237,12 @@ export interface Translations {
   chartLabelWithdrawal: string;
   calendarYear: string;
 
+  // Lifecycle chart phases
+  chartPhaseAccumulation: string;
+  chartPhaseWithdrawal: string;
+  chartPhasePension: string;
+  chartPensionLabel: string;
+
   // Share / Copy
   shareLink: string;
   linkCopied: string;
@@ -760,8 +766,8 @@ export const de: Translations = {
   kpiLzkStartSub: "Freistellung beginnt · Kein neues Sparen",
   kpiSavingsRateIncrease: "Ziel > 50 Jahre",
 
-  chartTitle: "Portfolio-Entwicklung",
-  chartSubtitle: "Kaufkraftbereinigt in heutigen € (real, nach Steuern)",
+  chartTitle: "Dein Lebensplan",
+  chartSubtitle: "Kompletter Lebenszyklus: Ansparphase → Entnahmephase → Rente (kaufkraftbereinigt)",
   chartScenarios: "Szenarien ±2%",
   chartScenariosHide: "Szenarien ausblenden",
   chartTarget: (amount) => `Ziel: ${amount}`,
@@ -846,6 +852,12 @@ export const de: Translations = {
   chartLabelPortfolio: "Portfolio (real)",
   chartLabelWithdrawal: "Entnahme",
   calendarYear: "Kalenderjahr",
+
+  // Lifecycle chart phases
+  chartPhaseAccumulation: "Ansparphase",
+  chartPhaseWithdrawal: "Entnahmephase",
+  chartPhasePension: "Rente",
+  chartPensionLabel: "Rentenbeginn",
 
   shareLink: "Link teilen",
   linkCopied: "Link kopiert!",
@@ -1191,7 +1203,7 @@ export const de: Translations = {
 
   // --- NEW: Chart explainers ---
   chartExplainButton: "Was zeigt dieses Diagramm?",
-  chartExplainFireChart: "Der grüne Bereich zeigt, wie dein Vermögen über die Zeit wächst. Die gepunktete Linie ist dein Ziel. Wo sie sich treffen = dein FIRE-Datum!",
+  chartExplainFireChart: "Dieser Chart zeigt deinen kompletten Lebensplan: Ansparphase (Vermögensaufbau), Entnahmephase (nach FIRE) und Rentenphase. Die gepunktete Linie ist dein Ziel.",
   chartExplainMonteCarloChart: "Wir haben 1.000 verschiedene Marktszenarien simuliert. Je mehr grün, desto sicherer ist dein Plan.",
   chartExplainDrawdownChart: "Das zeigt, was mit deinem Geld NACH dem Ausstieg passiert. Solange die Linie über null bleibt, bist du sicher!",
   chartExplainLifecycleChart: "Diese Simulation zeigt verschiedene mögliche Verläufe deiner Ansparphase mit zufälligen Renditen.",
@@ -1356,8 +1368,8 @@ export const en: Translations = {
   kpiLzkStartSub: "Paid leave begins · No new savings",
   kpiSavingsRateIncrease: "Target > 50 years",
 
-  chartTitle: "Portfolio Growth",
-  chartSubtitle: "Inflation-adjusted in today's € (real, after taxes)",
+  chartTitle: "Your Life Plan",
+  chartSubtitle: "Full lifecycle: Accumulation → Withdrawal → Pension (inflation-adjusted)",
   chartScenarios: "Scenarios ±2%",
   chartScenariosHide: "Hide scenarios",
   chartTarget: (amount) => `Target: ${amount}`,
@@ -1442,6 +1454,12 @@ export const en: Translations = {
   chartLabelPortfolio: "Portfolio (real)",
   chartLabelWithdrawal: "Withdrawal",
   calendarYear: "Calendar Year",
+
+  // Lifecycle chart phases
+  chartPhaseAccumulation: "Accumulation",
+  chartPhaseWithdrawal: "Withdrawal Phase",
+  chartPhasePension: "Pension",
+  chartPensionLabel: "Pension Start",
 
   shareLink: "Share Link",
   linkCopied: "Link copied!",
@@ -1787,7 +1805,7 @@ export const en: Translations = {
 
   // --- NEW: Chart explainers ---
   chartExplainButton: "What does this chart show?",
-  chartExplainFireChart: "The green area shows your savings growing over time. The dotted line is your goal. Where they meet = your FIRE date!",
+  chartExplainFireChart: "This chart shows your complete life plan: accumulation phase (building wealth), withdrawal phase (after FIRE), and pension phase. The dotted line is your target.",
   chartExplainMonteCarloChart: "We ran 1,000 different random market scenarios. The more green you see, the safer your plan is.",
   chartExplainDrawdownChart: "This shows what happens to your money AFTER you stop working. As long as the line stays above zero, you're good!",
   chartExplainLifecycleChart: "This simulation shows different possible paths for your savings phase with random market returns.",
