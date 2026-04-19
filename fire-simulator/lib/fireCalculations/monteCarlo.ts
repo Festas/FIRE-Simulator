@@ -11,6 +11,8 @@ import {
   TAX_RATE_BASE,
   TAX_RATE_KIST,
   MAX_YEARS,
+  LIFECYCLE_END_AGE,
+  DRAWDOWN_RETURN_DEDUCTION,
 } from "./constants";
 import { calculateTax, makeTaxConfig } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
@@ -162,7 +164,7 @@ export function simulateLifecycleMonteCarlo(
   } = inputs;
 
   const meanReturnAccum = etfRendite / 100;
-  const meanReturnDrawdown = Math.max(0, etfRendite - 1) / 100; // conservative for drawdown
+  const meanReturnDrawdown = Math.max(0, etfRendite - DRAWDOWN_RETURN_DEDUCTION) / 100; // conservative for drawdown
   const stdDev = 0.15;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
@@ -171,9 +173,8 @@ export function simulateLifecycleMonteCarlo(
   const monthlyGapFull = monatlichesWunschEinkommen;
   const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
 
-  // Full lifecycle horizon: simulate until age 90 (at least MAX_YEARS)
-  const END_AGE = 90;
-  const totalYears = Math.max(MAX_YEARS, END_AGE - currentAge);
+  // Full lifecycle horizon: simulate until LIFECYCLE_END_AGE (at least MAX_YEARS)
+  const totalYears = Math.max(MAX_YEARS, LIFECYCLE_END_AGE - currentAge);
 
   const rng = mulberry32(123); // different seed from drawdown
   const fireYears: number[] = [];

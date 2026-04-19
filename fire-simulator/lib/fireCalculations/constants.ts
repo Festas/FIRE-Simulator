@@ -5,6 +5,9 @@
 /** Maximum accumulation simulation horizon (years) */
 export const MAX_YEARS = 50;
 
+/** Target end age for full lifecycle simulation */
+export const LIFECYCLE_END_AGE = 90;
+
 /** Drawdown simulation length (years) */
 export const DRAWDOWN_YEARS = 40;
 
