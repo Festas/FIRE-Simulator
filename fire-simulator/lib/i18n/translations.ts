@@ -154,6 +154,7 @@ export interface Translations {
   drawdownDepleted: (year: number) => string;
   drawdownNoTarget: string;
   drawdownWithdrawalInfo: (amount: string) => string;
+  drawdownDeterministic: string;
 
   // Monte Carlo
   monteCarloTitle: string;
@@ -772,6 +773,7 @@ export const de: Translations = {
   drawdownDepleted: (year) => `⚠️ Aufgebraucht ${year}`,
   drawdownNoTarget: "Das FIRE-Ziel wurde innerhalb von 50 Jahren nicht erreicht. Passen Sie Ihre Parameter an.",
   drawdownWithdrawalInfo: (amount) => `Jährliche Entnahme: ${amount}`,
+  drawdownDeterministic: "Deterministisch",
 
   monteCarloTitle: "Monte-Carlo-Simulation",
   monteCarloSubtitle: "1.000 stochastische Szenarien der Entnahmephase",
@@ -1367,6 +1369,7 @@ export const en: Translations = {
   drawdownDepleted: (year) => `⚠️ Depleted ${year}`,
   drawdownNoTarget: "The FIRE target was not reached within 50 years. Please adjust your parameters.",
   drawdownWithdrawalInfo: (amount) => `Annual withdrawal: ${amount}`,
+  drawdownDeterministic: "Deterministic",
 
   monteCarloTitle: "Monte Carlo Simulation",
   monteCarloSubtitle: "1,000 stochastic scenarios of the withdrawal phase",
