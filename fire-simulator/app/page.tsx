@@ -7,7 +7,6 @@ import { ThemeProvider, useTheme } from "@/lib/theme";
 import { parseURLInputs, inputsToURL } from "@/app/hooks/useUrlState";
 import Sidebar from "@/app/components/Sidebar";
 import KPICards from "@/app/components/KPICards";
-import FireChart from "@/app/components/FireChart";
 import DrawdownChart from "@/app/components/DrawdownChart";
 import LifecycleMonteCarloChart from "@/app/components/LifecycleMonteCarloChart";
 import DetailTable from "@/app/components/DetailTable";
@@ -154,7 +153,6 @@ function HomeContent() {
   });
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [showNominal, setShowNominal] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const { t, locale, setLocale, formatCurrency, setCurrency } = useI18n();
 
@@ -757,10 +755,10 @@ function HomeContent() {
                       >
                         <div className="relative">
                           <ChartExplainer
-                            explanation={t.chartExplainFireChart}
-                            summary={t.chartSummaryFireChart(result.fullFireAge)}
+                            explanation={t.chartExplainLifecycleChart}
+                            summary={t.chartSummaryMonteCarloChart((result.lifecycleMonteCarlo.fireSuccessRate * 100).toFixed(0))}
                           />
-                          <FireChart result={result} inputs={inputs} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
+                          <LifecycleMonteCarloChart result={result} inputs={inputs} />
                         </div>
                       </DashboardSection>
                     </ErrorBoundary>
@@ -779,7 +777,7 @@ function HomeContent() {
                         description={t.sectionFireJourneyDesc}
                         defaultOpen={true}
                       >
-                        {/* Nominal / Real toggle + FIRE Progress Gauge row */}
+                        {/* KPI Cards + FIRE Progress Gauge row */}
                         <div className="flex flex-col sm:flex-row items-start gap-4 mb-4">
                           <div className="flex-1 w-full">
                             <KPICards result={result} inputs={inputs} />
@@ -790,50 +788,6 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {/* Nominal/Real toggle */}
-                        <div className="flex items-center gap-2 mb-4">
-                          <button
-                            onClick={() => setShowNominal(!showNominal)}
-                            className={`flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors border ${
-                              showNominal
-                                ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-700"
-                                : "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700"
-                            }`}
-                            title={t.nominalTooltip}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                            </svg>
-                            {showNominal ? t.showNominal : t.showReal}
-                          </button>
-                        </div>
-
-                        <div className="relative">
-                          <ChartExplainer
-                            explanation={t.chartExplainFireChart}
-                            summary={t.chartSummaryFireChart(result.fullFireAge)}
-                          />
-                          <FireChart result={result} inputs={inputs} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
-                        </div>
-                      </DashboardSection>
-                    </ErrorBoundary>
-
-                    {/* What If panel — in standard+ modes */}
-                    <WhatIfPanel inputs={inputs} result={result} onChange={handleChange} />
-
-                    {/* Milestones — in standard+ modes */}
-                    <Milestones result={result} inputs={inputs} />
-
-                    <ErrorBoundary
-                      errorTitle={t.errorTitle}
-                      fallbackMessage={t.errorMessage}
-                      errorRetryLabel={t.errorRetry}
-                    >
-                      <DashboardSection
-                        title={t.sectionStressTesting}
-                        description={t.sectionStressTestingDesc}
-                        defaultOpen={true}
-                      >
                         <div className="relative">
                           <ChartExplainer
                             explanation={t.chartExplainLifecycleChart}
@@ -843,6 +797,12 @@ function HomeContent() {
                         </div>
                       </DashboardSection>
                     </ErrorBoundary>
+
+                    {/* What If panel — in standard+ modes */}
+                    <WhatIfPanel inputs={inputs} result={result} onChange={handleChange} />
+
+                    {/* Milestones — in standard+ modes */}
+                    <Milestones result={result} inputs={inputs} />
 
                     <ErrorBoundary
                       errorTitle={t.errorTitle}
