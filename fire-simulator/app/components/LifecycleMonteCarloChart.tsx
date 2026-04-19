@@ -195,7 +195,7 @@ export default function LifecycleMonteCarloChart({ result, inputs }: LifecycleMo
           <Area
             type="monotone"
             dataKey="p50"
-            stroke="#0f294d"
+            stroke="#047857"
             strokeWidth={2.5}
             fill="url(#lmc50)"
             name={t.monteCarloMedian}
