@@ -837,9 +837,9 @@ function HomeContent() {
                         <div className="relative">
                           <ChartExplainer
                             explanation={t.chartExplainLifecycleChart}
-                            summary={t.chartSummaryMonteCarloChart((result.monteCarlo.successRate * 100).toFixed(0))}
+                            summary={t.chartSummaryMonteCarloChart((result.lifecycleMonteCarlo.fireSuccessRate * 100).toFixed(0))}
                           />
-                          <LifecycleMonteCarloChart result={result} />
+                          <LifecycleMonteCarloChart result={result} inputs={inputs} />
                         </div>
                       </DashboardSection>
                     </ErrorBoundary>
