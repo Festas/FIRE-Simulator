@@ -9,7 +9,6 @@ import Sidebar from "@/app/components/Sidebar";
 import KPICards from "@/app/components/KPICards";
 import FireChart from "@/app/components/FireChart";
 import DrawdownChart from "@/app/components/DrawdownChart";
-import MonteCarloChart from "@/app/components/MonteCarloChart";
 import LifecycleMonteCarloChart from "@/app/components/LifecycleMonteCarloChart";
 import DetailTable from "@/app/components/DetailTable";
 import PhasesTimeline from "@/app/components/PhasesTimeline";
@@ -841,13 +840,6 @@ function HomeContent() {
                             summary={t.chartSummaryMonteCarloChart((result.monteCarlo.successRate * 100).toFixed(0))}
                           />
                           <LifecycleMonteCarloChart result={result} />
-                        </div>
-                        <div className="relative">
-                          <ChartExplainer
-                            explanation={t.chartExplainMonteCarloChart}
-                            summary={t.chartSummaryMonteCarloChart((result.monteCarlo.successRate * 100).toFixed(0))}
-                          />
-                          <MonteCarloChart result={result} />
                         </div>
                       </DashboardSection>
                     </ErrorBoundary>
