@@ -1009,8 +1009,8 @@ export const de: Translations = {
   scenariosEmpty: "Keine gespeicherten Szenarien",
 
   // Lifecycle Monte Carlo
-  lifecycleMCTitle: "Lebenszyklus Monte Carlo",
-  lifecycleMCSubtitle: "500 stochastische Simulationen — Anspar- & Entnahmephase",
+  lifecycleMCTitle: "Monte Carlo bis Full FIRE",
+  lifecycleMCSubtitle: "500 stochastische Simulationen — Ansparphase bis zum FIRE-Ziel",
   lifecycleMCSuccess: (rate: string) => `${rate} % erreichen FIRE`,
   lifecycleMCSurvival: (rate: string) => `${rate} % Portfolio überlebt`,
   lifecycleMCYearsToFire: "FIRE-Alter",
@@ -1212,9 +1212,9 @@ export const de: Translations = {
   chartExplainFireChart: "Dieser Chart zeigt deinen kompletten Lebensplan: Ansparphase (Vermögensaufbau), Entnahmephase (nach FIRE) und Rentenphase. Die gepunktete Linie ist dein Ziel.",
   chartExplainMonteCarloChart: "Wir haben 1.000 verschiedene Marktszenarien simuliert. Je mehr grün, desto sicherer ist dein Plan.",
   chartExplainDrawdownChart: "Das zeigt, was mit deinem Geld NACH dem Ausstieg passiert. Solange die Linie über null bleibt, bist du sicher!",
-  chartExplainLifecycleChart: "Diese Simulation zeigt verschiedene mögliche Verläufe deiner Ansparphase mit zufälligen Renditen.",
+  chartExplainLifecycleChart: "500 zufällige Marktszenarien zeigen, wie wahrscheinlich du dein FIRE-Ziel erreichst. Die Bänder zeigen die Spanne der möglichen Verläufe.",
   chartSummaryFireChart: (age) => age !== null ? `Basierend auf deinen Eingaben erreichst du dein Ziel mit ${age} Jahren.` : "Mit den aktuellen Eingaben wird das Ziel in 50 Jahren nicht erreicht.",
-  chartSummaryMonteCarloChart: (pct) => `In ${pct}% der simulierten Szenarien reicht dein Geld. Über 80% gilt als robust.`,
+  chartSummaryMonteCarloChart: (pct) => `In ${pct}% der Simulationen erreichst du dein FIRE-Ziel. Über 80% gilt als robust.`,
   chartSummaryDrawdownChart: (survives) => survives ? "Gute Nachrichten: Dein Portfolio überlebt die Entnahmephase!" : "Achtung: Dein Portfolio könnte während der Entnahmephase aufgebraucht werden.",
 
   // --- NEW: Milestones ---
@@ -1614,8 +1614,8 @@ export const en: Translations = {
   scenariosEmpty: "No saved scenarios",
 
   // Lifecycle Monte Carlo
-  lifecycleMCTitle: "Lifecycle Monte Carlo",
-  lifecycleMCSubtitle: "500 stochastic simulations — accumulation & drawdown phases",
+  lifecycleMCTitle: "Monte Carlo to Full FIRE",
+  lifecycleMCSubtitle: "500 stochastic simulations — accumulation phase to FIRE target",
   lifecycleMCSuccess: (rate: string) => `${rate}% reach FIRE`,
   lifecycleMCSurvival: (rate: string) => `${rate}% portfolio survives`,
   lifecycleMCYearsToFire: "FIRE Age",
@@ -1817,9 +1817,9 @@ export const en: Translations = {
   chartExplainFireChart: "This chart shows your complete life plan: accumulation phase (building wealth), withdrawal phase (after FIRE), and pension phase. The dotted line is your target.",
   chartExplainMonteCarloChart: "We ran 1,000 different random market scenarios. The more green you see, the safer your plan is.",
   chartExplainDrawdownChart: "This shows what happens to your money AFTER you stop working. As long as the line stays above zero, you're good!",
-  chartExplainLifecycleChart: "This simulation shows different possible paths for your savings phase with random market returns.",
+  chartExplainLifecycleChart: "500 random market scenarios show how likely you are to reach your FIRE target. The bands show the range of possible outcomes.",
   chartSummaryFireChart: (age) => age !== null ? `Based on your inputs, you'll reach your goal at age ${age}.` : "With current inputs, the goal won't be reached within 50 years.",
-  chartSummaryMonteCarloChart: (pct) => `In ${pct}% of simulated scenarios, your money lasts. Above 80% is considered robust.`,
+  chartSummaryMonteCarloChart: (pct) => `In ${pct}% of simulations you reach your FIRE target. Above 80% is considered robust.`,
   chartSummaryDrawdownChart: (survives) => survives ? "Good news: Your portfolio survives the spending phase!" : "Warning: Your portfolio may run out during the spending phase.",
 
   // --- NEW: Milestones ---
