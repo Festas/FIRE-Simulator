@@ -767,7 +767,7 @@ export const de: Translations = {
   kpiSavingsRateIncrease: "Ziel > 50 Jahre",
 
   chartTitle: "Dein Lebensplan",
-  chartSubtitle: "Kompletter Lebenszyklus: Ansparphase → Entnahme → Rente (kaufkraftbereinigt)",
+  chartSubtitle: "Kompletter Lebenszyklus: Ansparphase → Entnahmephase → Rente (kaufkraftbereinigt)",
   chartScenarios: "Szenarien ±2%",
   chartScenariosHide: "Szenarien ausblenden",
   chartTarget: (amount) => `Ziel: ${amount}`,

@@ -73,11 +73,12 @@ export default function FireChart({ result, inputs, zielvermoegen, showNominal =
   const ddData = drawdownData.map((d: YearDataPoint) => {
     const nominal = d.etfBalanceNominal;
     const real = d.totalReal;
-    // Derive real-terms withdrawal from the nominal/real ratio
-    const realFactor = nominal > 0 && real > 0 ? nominal / real : 1;
+    // Derive inflation factor from balance: nominal / real = Math.pow(1+inf, years)
+    // Dividing nominal withdrawal by this converts to today's purchasing power
+    const inflationFactor = nominal > 0 && real > 0 ? nominal / real : 1;
     const withdrawalDisplay = showNominal
       ? d.annualWithdrawal
-      : realFactor > 0 ? d.annualWithdrawal / realFactor : d.annualWithdrawal;
+      : inflationFactor > 0 ? d.annualWithdrawal / inflationFactor : d.annualWithdrawal;
     return {
       age: d.age,
       year: d.calendarYear,
