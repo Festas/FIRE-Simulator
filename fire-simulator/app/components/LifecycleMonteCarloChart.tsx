@@ -10,6 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import { FireResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
@@ -30,14 +31,15 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
 
   // Convert calendar years to ages for X-axis
   const startAge = result.yearlyData[0]?.age ?? 29;
-  const chartData = mc.accumulationYears.map((year, i) => ({
+
+  const chartData = mc.lifecycleYears.map((year, i) => ({
     age: startAge + i + 1,
     year,
-    p90: mc.accumulationPercentiles.p90[i],
-    p75: mc.accumulationPercentiles.p75[i],
-    p50: mc.accumulationPercentiles.p50[i],
-    p25: mc.accumulationPercentiles.p25[i],
-    p10: mc.accumulationPercentiles.p10[i],
+    p90: mc.lifecyclePercentiles.p90[i],
+    p75: mc.lifecyclePercentiles.p75[i],
+    p50: mc.lifecyclePercentiles.p50[i],
+    p25: mc.lifecyclePercentiles.p25[i],
+    p10: mc.lifecyclePercentiles.p10[i],
   }));
 
   const { fireYearPercentiles } = mc;
@@ -46,6 +48,13 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
   const p50Age = fireYearPercentiles.p50 !== null ? startAge + fireYearPercentiles.p50 : null;
   const p10Age = fireYearPercentiles.p10 !== null ? startAge + fireYearPercentiles.p10 : null;
   const p90Age = fireYearPercentiles.p90 !== null ? startAge + fireYearPercentiles.p90 : null;
+
+  // Phase reference lines
+  const fireRefAge = mc.medianFireYear !== null ? startAge + mc.medianFireYear : null;
+  const pensionRefAge = mc.pensionStartYear > 0 ? startAge + mc.pensionStartYear : null;
+
+  // Survival rate badge
+  const survivalPct = (mc.lifecycleSuccessRate * 100).toFixed(0);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
@@ -69,6 +78,17 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
             }`}
           >
             {t.lifecycleMCSuccess(successPct)}
+          </div>
+          <div
+            className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
+              mc.lifecycleSuccessRate >= 0.8
+                ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700"
+                : mc.lifecycleSuccessRate >= 0.5
+                  ? "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700"
+                  : "bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-700"
+            }`}
+          >
+            {t.lifecycleMCSurvival(survivalPct)}
           </div>
           {p50Age !== null && (
             <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -128,6 +148,37 @@ export default function LifecycleMonteCarloChart({ result }: LifecycleMonteCarlo
             width={55}
           />
           <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
+
+          {/* Phase reference lines */}
+          {fireRefAge !== null && (
+            <ReferenceLine
+              x={fireRefAge}
+              stroke="#10b981"
+              strokeDasharray="6 3"
+              strokeWidth={1.5}
+              label={{
+                value: t.lifecycleMCFireLine,
+                position: "top",
+                fontSize: 10,
+                fill: "#10b981",
+              }}
+            />
+          )}
+          {pensionRefAge !== null && pensionRefAge <= startAge + mc.lifecycleTotalYears && (
+            <ReferenceLine
+              x={pensionRefAge}
+              stroke="#8b5cf6"
+              strokeDasharray="6 3"
+              strokeWidth={1.5}
+              label={{
+                value: t.lifecycleMCPensionLine,
+                position: "top",
+                fontSize: 10,
+                fill: "#8b5cf6",
+              }}
+            />
+          )}
+
           <Area
             type="monotone"
             dataKey="p90"

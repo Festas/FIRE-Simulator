@@ -125,7 +125,7 @@ export interface LifecycleMonteCarloResult {
   };
   /** Percentage of simulations that reach FIRE within MAX_YEARS */
   fireSuccessRate: number;
-  /** Percentile bands for portfolio value during accumulation */
+  /** Percentile bands for portfolio value during accumulation (first MAX_YEARS) */
   accumulationPercentiles: {
     p10: number[];
     p25: number[];
@@ -134,6 +134,24 @@ export interface LifecycleMonteCarloResult {
     p90: number[];
   };
   accumulationYears: number[]; // calendar years
+
+  /** Full lifecycle percentiles (accumulation + drawdown, up to age ~90) */
+  lifecyclePercentiles: {
+    p10: number[];
+    p25: number[];
+    p50: number[];
+    p75: number[];
+    p90: number[];
+  };
+  lifecycleYears: number[]; // calendar years for full lifecycle
+  /** Total years in the lifecycle simulation */
+  lifecycleTotalYears: number;
+  /** Median FIRE year offset from start (for reference line) */
+  medianFireYear: number | null;
+  /** Year offset from start when pension begins */
+  pensionStartYear: number;
+  /** Fraction of simulations where portfolio survives to end of lifecycle */
+  lifecycleSuccessRate: number;
 }
 
 export interface FireResult {
