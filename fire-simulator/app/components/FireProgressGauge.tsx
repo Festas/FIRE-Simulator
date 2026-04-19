@@ -16,16 +16,18 @@ export default function FireProgressGauge({ result, inputs }: FireProgressGaugeP
   const currentSavings = inputs.startKapital;
 
   // Progress = current savings / FIRE number (capped at 100%)
-  const progress = fireNumber > 0 ? Math.min(100, (currentSavings / fireNumber) * 100) : 0;
+  const capitalProgress = fireNumber > 0 ? Math.min(100, (currentSavings / fireNumber) * 100) : 0;
+
+  // If user has 0 savings but high savings rate, show at least a trajectory hint.
+  // Capped at 5% so the bar isn't misleading; 25/fullFireYear gives a small boost
+  // proportional to how quickly FIRE is reached (e.g. 10 years → 2.5%, 5 years → 5%).
+  const trajectoryBonus = (result.targetReached && result.fullFireYear !== null && result.fullFireYear > 0 && capitalProgress < 5)
+    ? Math.min(5, 25 / result.fullFireYear)
+    : 0;
+
+  const progress = Math.min(100, capitalProgress + trajectoryBonus);
   const progressRounded = Math.round(progress * 10) / 10;
   const isComplete = progress >= 100;
-
-  // SVG circle parameters
-  const size = 120;
-  const strokeWidth = 8;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (progress / 100) * circumference;
 
   // Color based on progress
   const progressColor = isComplete
@@ -35,47 +37,18 @@ export default function FireProgressGauge({ result, inputs }: FireProgressGaugeP
       : "#6366f1"; // indigo
 
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 flex flex-col items-center gap-2">
-      <div className="flex items-center gap-2 w-full">
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5">
+      <div className="flex items-center gap-2 mb-3">
         <span className="text-lg" role="img" aria-label={t.fireProgressTitle}>📊</span>
         <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           {t.fireProgressTitle}
         </span>
       </div>
 
-      {/* Circular gauge */}
-      <div className="relative flex items-center justify-center">
-        <svg width={size} height={size} className="-rotate-90">
-          {/* Background circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={strokeWidth}
-            className="text-slate-200 dark:text-slate-700"
-          />
-          {/* Progress circle */}
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={progressColor}
-            strokeWidth={strokeWidth}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            className="transition-all duration-700 ease-out"
-          />
-        </svg>
-        {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: progressColor }}
-          >
+      {/* Horizontal progress bar */}
+      <div className="mb-2">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-2xl font-bold tracking-tight" style={{ color: progressColor }}>
             {progressRounded}%
           </span>
           {isComplete && (
@@ -84,13 +57,19 @@ export default function FireProgressGauge({ result, inputs }: FireProgressGaugeP
             </span>
           )}
         </div>
+        <div className="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${progress}%`, backgroundColor: progressColor }}
+          />
+        </div>
       </div>
 
       {/* Sub-text */}
-      <div className="text-xs text-slate-500 dark:text-slate-400 text-center">
+      <div className="text-xs text-slate-500 dark:text-slate-400">
         {formatCurrencyShort(currentSavings)} {t.fireProgressOf} {formatCurrencyShort(fireNumber)}
       </div>
-      <div className="text-[10px] text-slate-400 dark:text-slate-500 text-center">
+      <div className="text-[10px] text-slate-400 dark:text-slate-500">
         {t.fireProgressSub}
       </div>
     </div>

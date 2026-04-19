@@ -18,16 +18,19 @@ export default function FireScore({ result, inputs }: FireScoreProps) {
     sparquote >= 50 ? 25 : sparquote >= 30 ? 20 : sparquote >= 20 ? 15 : sparquote >= 10 ? 8 : 0;
 
   // --- FIRE Timeline (0-25) ---
+  // Score based on how quickly FIRE is reached relative to a 30-year horizon.
+  // Reaching FIRE in year 1 = 25 pts, year 15 = ~13 pts, year 30 = 0 pts.
+  const maxTimelineYears = 30;
   const timelinePoints =
     result.targetReached && result.fullFireYear !== null
-      ? Math.max(0, 25 - result.fullFireYear)
+      ? Math.max(0, Math.round(25 * (1 - result.fullFireYear / maxTimelineYears)))
       : 0;
 
   // --- Monte Carlo (0-25) ---
   const monteCarloPoints = Math.round(result.monteCarlo.successRate * 25);
 
   // --- Drawdown Safety (0-25) ---
-  const drawdownPoints = result.drawdownSurvives ? 25 : 10;
+  const drawdownPoints = result.drawdownSurvives ? 25 : 0;
 
   // --- Total ---
   const totalScore = Math.min(100, savingsPoints + timelinePoints + monteCarloPoints + drawdownPoints);

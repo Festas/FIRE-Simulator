@@ -10,7 +10,6 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
-  Legend,
 } from "recharts";
 import { FireResult, FireInputs } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
@@ -37,11 +36,12 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
     );
   }
 
+  const annualWithdrawal = drawdownData[0]?.annualWithdrawal ?? 0;
+
   const chartData = drawdownData.map((d) => ({
     age: d.age,
     year: d.calendarYear,
-    portfolio: Math.round(d.totalReal),
-    withdrawal: Math.round(d.annualWithdrawal),
+    portfolioBalance: Math.round(d.totalReal),
   }));
 
   return (
@@ -81,7 +81,7 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
           <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 2" strokeWidth={1} />
           <Area
             type="monotone"
-            dataKey="portfolio"
+            dataKey="portfolioBalance"
             stroke={drawdownSurvives ? "#10b981" : "#ef4444"}
             strokeWidth={2.5}
             fill="url(#drawdownGradient)"
@@ -89,19 +89,15 @@ export default function DrawdownChart({ result, inputs }: DrawdownChartProps) {
             dot={false}
             activeDot={{ r: 4 }}
           />
-          <Area
-            type="monotone"
-            dataKey="withdrawal"
-            stroke="#f59e0b"
-            strokeWidth={1.5}
-            fill="none"
-            name={t.chartLabelWithdrawal}
-            dot={false}
-            strokeDasharray="4 2"
-          />
-          <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="line" />
         </AreaChart>
       </ResponsiveContainer>
+
+      {/* Withdrawal info as text instead of a barely-visible line */}
+      {annualWithdrawal > 0 && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center">
+          {t.drawdownWithdrawalInfo(formatCurrency(Math.round(annualWithdrawal)))}
+        </p>
+      )}
     </div>
   );
 }

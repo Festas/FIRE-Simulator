@@ -153,6 +153,7 @@ export interface Translations {
   drawdownSurvives40: string;
   drawdownDepleted: (year: number) => string;
   drawdownNoTarget: string;
+  drawdownWithdrawalInfo: (amount: string) => string;
 
   // Monte Carlo
   monteCarloTitle: string;
@@ -586,7 +587,7 @@ export interface Translations {
   whatIfTitle: string;
   whatIfSaveMore: (amount: string) => string;
   whatIfHigherReturn: string;
-  whatIfLessIncome: string;
+  whatIfLessIncome: (amount: string) => string;
   whatIfYearsEarlier: (n: number) => string;
   whatIfYearsLater: (n: number) => string;
   whatIfNoChange: string;
@@ -770,6 +771,7 @@ export const de: Translations = {
   drawdownSurvives40: "✅ Portfolio überlebt 40 Jahre",
   drawdownDepleted: (year) => `⚠️ Aufgebraucht ${year}`,
   drawdownNoTarget: "Das FIRE-Ziel wurde innerhalb von 50 Jahren nicht erreicht. Passen Sie Ihre Parameter an.",
+  drawdownWithdrawalInfo: (amount) => `Jährliche Entnahme: ${amount}`,
 
   monteCarloTitle: "Monte-Carlo-Simulation",
   monteCarloSubtitle: "1.000 stochastische Szenarien der Entnahmephase",
@@ -1180,7 +1182,7 @@ export const de: Translations = {
   whatIfTitle: "Was wäre wenn…",
   whatIfSaveMore: (amount) => `Ich ${amount} mehr spare?`,
   whatIfHigherReturn: "Meine Rendite 1 % höher ist?",
-  whatIfLessIncome: "Ich weniger Einkommen brauche?",
+  whatIfLessIncome: (amount) => `Ich ${amount} weniger Einkommen brauche?`,
   whatIfYearsEarlier: (n) => `${n} ${n === 1 ? "Jahr" : "Jahre"} früher!`,
   whatIfYearsLater: (n) => `${n} ${n === 1 ? "Jahr" : "Jahre"} später`,
   whatIfNoChange: "Keine Änderung",
@@ -1364,6 +1366,7 @@ export const en: Translations = {
   drawdownSurvives40: "✅ Portfolio survives 40 years",
   drawdownDepleted: (year) => `⚠️ Depleted ${year}`,
   drawdownNoTarget: "The FIRE target was not reached within 50 years. Please adjust your parameters.",
+  drawdownWithdrawalInfo: (amount) => `Annual withdrawal: ${amount}`,
 
   monteCarloTitle: "Monte Carlo Simulation",
   monteCarloSubtitle: "1,000 stochastic scenarios of the withdrawal phase",
@@ -1774,7 +1777,7 @@ export const en: Translations = {
   whatIfTitle: "What if…",
   whatIfSaveMore: (amount) => `I save ${amount} more?`,
   whatIfHigherReturn: "My return is 1% higher?",
-  whatIfLessIncome: "I need less income?",
+  whatIfLessIncome: (amount) => `I need ${amount} less income?`,
   whatIfYearsEarlier: (n) => `${n} ${n === 1 ? "year" : "years"} earlier!`,
   whatIfYearsLater: (n) => `${n} ${n === 1 ? "year" : "years"} later`,
   whatIfNoChange: "No change",

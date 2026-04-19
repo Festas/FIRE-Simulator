@@ -21,11 +21,17 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
 
   const currentFireAge = result.fullFireAge;
 
+  // Scale scenario amounts based on country income (roughly proportional)
+  // Use ~6% of net income as the "save more" amount, rounded to nearest 50
+  const saveMoreAmount = Math.max(50, Math.round((inputs.monatlichesNetto * 0.06) / 50) * 50);
+  // Use ~10% of desired income as the "less income" amount, rounded to nearest 50
+  const lessIncomeAmount = Math.max(50, Math.round((inputs.monatlichesWunschEinkommen * 0.1) / 50) * 50);
+
   const scenarios: Scenario[] = useMemo(() => {
-    // Scenario 1: Save €200 more per month
+    // Scenario 1: Save more per month (scaled to income)
     const saveMoreInputs: FireInputs = {
       ...inputs,
-      monatlicheSparrate: inputs.monatlicheSparrate + 200,
+      monatlicheSparrate: inputs.monatlicheSparrate + saveMoreAmount,
     };
     const saveMoreResult = calculateFIRE(saveMoreInputs);
 
@@ -36,10 +42,10 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
     };
     const higherReturnResult = calculateFIRE(higherReturnInputs);
 
-    // Scenario 3: Need €300 less monthly income
+    // Scenario 3: Need less monthly income (scaled to income)
     const lessIncomeInputs: FireInputs = {
       ...inputs,
-      monatlichesWunschEinkommen: Math.max(inputs.monatlichesWunschEinkommen - 300, 0),
+      monatlichesWunschEinkommen: Math.max(inputs.monatlichesWunschEinkommen - lessIncomeAmount, 0),
     };
     if (!lessIncomeInputs.zielvermoegenOverride) {
       lessIncomeInputs.zielvermoegen =
@@ -49,9 +55,9 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
 
     return [
       {
-        label: t.whatIfSaveMore(formatCurrency(200)),
+        label: t.whatIfSaveMore(formatCurrency(saveMoreAmount)),
         fireAge: saveMoreResult.fullFireAge,
-        apply: () => onChange("monatlicheSparrate", inputs.monatlicheSparrate + 200),
+        apply: () => onChange("monatlicheSparrate", inputs.monatlicheSparrate + saveMoreAmount),
       },
       {
         label: t.whatIfHigherReturn,
@@ -60,16 +66,16 @@ export default function WhatIfPanel({ inputs, result, onChange }: WhatIfPanelPro
           onChange("etfRendite", inputs.etfRendite + 1),
       },
       {
-        label: t.whatIfLessIncome,
+        label: t.whatIfLessIncome(formatCurrency(lessIncomeAmount)),
         fireAge: lessIncomeResult.fullFireAge,
         apply: () =>
           onChange(
             "monatlichesWunschEinkommen",
-            Math.max(inputs.monatlichesWunschEinkommen - 300, 0)
+            Math.max(inputs.monatlichesWunschEinkommen - lessIncomeAmount, 0)
           ),
       },
     ];
-  }, [inputs, t, formatCurrency, onChange]);
+  }, [inputs, t, formatCurrency, onChange, saveMoreAmount, lessIncomeAmount]);
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 mb-6">

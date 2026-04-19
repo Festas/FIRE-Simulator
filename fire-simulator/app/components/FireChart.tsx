@@ -37,7 +37,6 @@ export default function FireChart({ result, zielvermoegen, showNominal = false }
     coastFireCalendarYear,
     fullFireCalendarYear,
     lzkStartCalendarYear,
-    coastFireAmount,
     scenarioOptimistic,
     scenarioPessimistic,
     noInvestmentData,
@@ -172,7 +171,6 @@ export default function FireChart({ result, zielvermoegen, showNominal = false }
             <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
             <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
             <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
-            <ReferenceLine y={coastFireAmount} stroke="#10b981" strokeDasharray="4 2" strokeWidth={1} label={{ value: `${t.coastFireLabel} ${yAxisFormatter(coastFireAmount)}`, position: "insideTopRight", fontSize: 11, fill: "#10b981" }} />
             {milestoneLines.map((m) => (
               <ReferenceLine key={m.label} x={m.age} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
             ))}
