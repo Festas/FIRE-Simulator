@@ -2,9 +2,8 @@
 
 import React, { useState } from "react";
 import {
-  AreaChart,
+  ComposedChart,
   Area,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -12,33 +11,33 @@ import {
   Tooltip,
   ResponsiveContainer,
   ReferenceLine,
+  ReferenceArea,
   Legend,
 } from "recharts";
-import { FireResult, YearDataPoint } from "@/lib/fireCalculations";
+import { FireResult, FireInputs, YearDataPoint } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 import { ChartTooltipContent } from "@/app/components/ChartTooltip";
 import { yAxisFormatter } from "@/lib/chartUtils";
 
 interface FireChartProps {
   result: FireResult;
+  inputs: FireInputs;
   zielvermoegen: number;
   showNominal?: boolean;
 }
 
-export default function FireChart({ result, zielvermoegen, showNominal = false }: FireChartProps) {
-  const [showScenarios, setShowScenarios] = useState(false);
+export default function FireChart({ result, inputs, zielvermoegen, showNominal = false }: FireChartProps) {
   const [showNoInvestment, setShowNoInvestment] = useState(false);
   const { t, formatCurrency } = useI18n();
   const {
     yearlyData,
+    drawdownData,
     coastFireYear,
     fullFireYear,
     lzkStartYear,
     coastFireCalendarYear,
     fullFireCalendarYear,
     lzkStartCalendarYear,
-    scenarioOptimistic,
-    scenarioPessimistic,
     noInvestmentData,
     coastFireAge,
     fullFireAge,
@@ -47,28 +46,62 @@ export default function FireChart({ result, zielvermoegen, showNominal = false }
     freistellungEndAge,
   } = result;
 
-  const displayEnd = Math.min(
-    (fullFireYear !== null ? fullFireYear + 2 : 30),
-    yearlyData.length - 1
-  );
+  const pensionAge = inputs.renteneintrittsalter ?? 67;
 
   /** Return total portfolio value from a data point respecting the nominal/real toggle */
   const totalValue = (d: YearDataPoint) =>
     showNominal ? d.etfBalanceNominal + d.lzkBalanceNominal : d.totalReal;
 
-  const chartData = yearlyData.slice(0, displayEnd + 1).map((d: YearDataPoint, i: number) => ({
+  // ---------------------------------------------------------------------------
+  // Merge accumulation + drawdown data into one continuous lifecycle dataset
+  // ---------------------------------------------------------------------------
+  const accEnd = fullFireYear !== null ? fullFireYear : yearlyData.length - 1;
+
+  // Accumulation data points
+  const accData = yearlyData.slice(0, accEnd + 1).map((d: YearDataPoint, i: number) => ({
     age: d.age,
     year: d.calendarYear,
+    portfolio: Math.round(totalValue(d)),
     etf: Math.round(showNominal ? d.etfBalanceNominal : d.etfBalanceReal),
     lzk: Math.round(showNominal ? d.lzkBalanceNominal : d.lzkBalanceReal),
-    total: Math.round(totalValue(d)),
-    optimistic: scenarioOptimistic[i] ? Math.round(totalValue(scenarioOptimistic[i])) : undefined,
-    pessimistic: scenarioPessimistic[i] ? Math.round(totalValue(scenarioPessimistic[i])) : undefined,
+    withdrawal: undefined as number | undefined,
     noInvestment: noInvestmentData[i] ? Math.round(totalValue(noInvestmentData[i])) : undefined,
+    isDrawdown: false,
   }));
 
+  // Drawdown data points
+  const ddData = drawdownData.map((d: YearDataPoint) => {
+    const nominal = d.etfBalanceNominal;
+    const real = d.totalReal;
+    // Derive real-terms withdrawal from the nominal/real ratio
+    const realFactor = nominal > 0 && real > 0 ? nominal / real : 1;
+    const withdrawalDisplay = showNominal
+      ? d.annualWithdrawal
+      : realFactor > 0 ? d.annualWithdrawal / realFactor : d.annualWithdrawal;
+    return {
+      age: d.age,
+      year: d.calendarYear,
+      portfolio: Math.round(showNominal ? nominal : real),
+      etf: undefined as number | undefined,
+      lzk: undefined as number | undefined,
+      withdrawal: Math.round(withdrawalDisplay),
+      noInvestment: undefined as number | undefined,
+      isDrawdown: true,
+    };
+  });
+
+  const chartData = [...accData, ...ddData];
+
+  // Determine display range — show up to a reasonable end age
+  const startAge = yearlyData[0]?.age ?? inputs.currentAge;
+  const lastAge = chartData.length > 0 ? chartData[chartData.length - 1].age : startAge + 50;
+  const fireAge = fullFireAge ?? lastAge;
+
+  // ---------------------------------------------------------------------------
+  // Milestone vertical reference lines
+  // ---------------------------------------------------------------------------
   const milestoneLines = [
-    coastFireYear !== null && coastFireAge !== null && {
+    coastFireYear !== null && coastFireAge !== null && coastFireAge < fireAge && {
       age: coastFireAge,
       label: t.coastFireLabel,
       color: "#10b981",
@@ -98,7 +131,17 @@ export default function FireChart({ result, zielvermoegen, showNominal = false }
       color: "#6366f1",
       year: fullFireCalendarYear,
     },
+    // Pension age milestone (only if it falls within the chart range and after FIRE)
+    fullFireYear !== null && pensionAge > fireAge && pensionAge <= lastAge && {
+      age: pensionAge,
+      label: t.chartPensionLabel,
+      color: "#3b82f6",
+      year: null,
+    },
   ].filter(Boolean) as { age: number; label: string; color: string; year: number | null }[];
+
+  // Phase boundaries for background shading
+  const hasDrawdown = fullFireYear !== null && ddData.length > 0;
 
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6 mb-6">
@@ -119,67 +162,117 @@ export default function FireChart({ result, zielvermoegen, showNominal = false }
           >
             {t.noInvestmentLabel}
           </button>
-          <button
-            onClick={() => setShowScenarios((p) => !p)}
-            className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
-              showScenarios
-                ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
-                : "bg-slate-50 dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600"
-            }`}
-          >
-            {showScenarios ? t.chartScenariosHide : t.chartScenarios}
-          </button>
-          <span className="flex items-center gap-1.5 hidden sm:flex">
-            <span className="inline-block w-3 h-3 rounded-full bg-emerald-500" />
-            {t.chartLabelETF}
-          </span>
-          <span className="flex items-center gap-1.5 hidden sm:flex text-slate-600 dark:text-slate-400">
-            <span className="inline-block w-3 h-3 rounded-full bg-blue-400" />
-            {t.chartLabelLZK}
-          </span>
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={380}>
-        {showScenarios ? (
-          <LineChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
-            <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
-            <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} />
-            <Line type="monotone" dataKey="optimistic" stroke="#10b981" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name={t.chartLabelOptimistic} />
-            <Line type="monotone" dataKey="total" stroke="#0f294d" strokeWidth={2.5} dot={false} name={t.chartLabelRealistic} />
-            <Line type="monotone" dataKey="pessimistic" stroke="#ef4444" strokeWidth={1.5} strokeDasharray="4 2" dot={false} name={t.chartLabelPessimistic} />
-            {showNoInvestment && <Line type="monotone" dataKey="noInvestment" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} name={t.chartLabelNoInvestment} />}
-            <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} />
-          </LineChart>
-        ) : (
-          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
-            <defs>
-              <linearGradient id="etfGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
-              </linearGradient>
-              <linearGradient id="lzkGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.05} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
-            <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
-            <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
-            <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
-            {milestoneLines.map((m) => (
-              <ReferenceLine key={m.label} x={m.age} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
-            ))}
-            <Area type="monotone" dataKey="lzk" stackId="portfolio" stroke="#60a5fa" strokeWidth={2} fill="url(#lzkGradient)" name={t.chartLabelLZK} dot={false} activeDot={{ r: 4 }} />
-            <Area type="monotone" dataKey="etf" stackId="portfolio" stroke="#10b981" strokeWidth={2.5} fill="url(#etfGradient)" name={t.chartLabelETF} dot={false} activeDot={{ r: 5 }} />
-            {showNoInvestment && <Line type="monotone" dataKey="noInvestment" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} name={t.chartLabelNoInvestment} />}
-            <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="circle" />
-          </AreaChart>
+      {/* Phase legend badges */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-700">
+          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          {t.chartPhaseAccumulation}
+        </span>
+        {hasDrawdown && (
+          <>
+            <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-700">
+              <span className="w-2 h-2 rounded-full bg-amber-500" />
+              {t.chartPhaseWithdrawal}
+            </span>
+            {pensionAge > fireAge && pensionAge <= lastAge && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-700">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                {t.chartPhasePension}
+              </span>
+            )}
+          </>
         )}
+      </div>
+
+      <ResponsiveContainer width="100%" height={420}>
+        <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 20, bottom: 0 }}>
+          <defs>
+            <linearGradient id="etfGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+              <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+            </linearGradient>
+            <linearGradient id="lzkGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.4} />
+              <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.05} />
+            </linearGradient>
+            <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#0f294d" stopOpacity={0.2} />
+              <stop offset="95%" stopColor="#0f294d" stopOpacity={0.02} />
+            </linearGradient>
+            <linearGradient id="withdrawalGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.02} />
+            </linearGradient>
+          </defs>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:opacity-20" />
+          <XAxis dataKey="age" tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} />
+          <YAxis tickFormatter={yAxisFormatter} tick={{ fontSize: 12, fill: "#94a3b8" }} tickLine={false} axisLine={false} width={55} />
+          <Tooltip content={<ChartTooltipContent formatValue={formatCurrency} />} />
+
+          {/* Phase background shading */}
+          {hasDrawdown && (
+            <ReferenceArea
+              x1={fireAge}
+              x2={pensionAge <= lastAge ? Math.min(pensionAge, lastAge) : lastAge}
+              fill="#f59e0b"
+              fillOpacity={0.04}
+              ifOverflow="extendDomain"
+            />
+          )}
+          {hasDrawdown && pensionAge > fireAge && pensionAge <= lastAge && (
+            <ReferenceArea
+              x1={pensionAge}
+              x2={lastAge}
+              fill="#3b82f6"
+              fillOpacity={0.04}
+              ifOverflow="extendDomain"
+            />
+          )}
+
+          {/* Target line */}
+          <ReferenceLine y={zielvermoegen} stroke="#6366f1" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: t.chartTarget(yAxisFormatter(zielvermoegen)), position: "insideTopRight", fontSize: 11, fill: "#6366f1" }} />
+
+          {/* Milestone vertical lines */}
+          {milestoneLines.map((m) => (
+            <ReferenceLine key={m.label} x={m.age} stroke={m.color} strokeDasharray="4 3" strokeWidth={1.5} label={{ value: m.label, position: "top", fontSize: 10, fill: m.color, angle: -45, offset: 10 }} />
+          ))}
+
+          {/* Portfolio value — continuous area across entire lifecycle */}
+          <Area
+            type="monotone"
+            dataKey="portfolio"
+            stroke="#0f294d"
+            strokeWidth={2.5}
+            fill="url(#portfolioGradient)"
+            name={t.chartLabelPortfolio}
+            dot={false}
+            activeDot={{ r: 5 }}
+          />
+
+          {/* Withdrawal amount — only visible during drawdown phase */}
+          {hasDrawdown && (
+            <Area
+              type="monotone"
+              dataKey="withdrawal"
+              stroke="#f59e0b"
+              strokeWidth={1.5}
+              fill="url(#withdrawalGradient)"
+              name={t.chartLabelWithdrawal}
+              dot={false}
+              activeDot={{ r: 3 }}
+            />
+          )}
+
+          {/* No-investment comparison */}
+          {showNoInvestment && (
+            <Line type="monotone" dataKey="noInvestment" stroke="#f97316" strokeWidth={2} strokeDasharray="6 3" dot={false} name={t.chartLabelNoInvestment} />
+          )}
+
+          <Legend wrapperStyle={{ fontSize: "12px", paddingTop: "16px" }} iconType="circle" />
+        </ComposedChart>
       </ResponsiveContainer>
 
       {/* Milestone badges */}

@@ -760,7 +760,7 @@ function HomeContent() {
                             explanation={t.chartExplainFireChart}
                             summary={t.chartSummaryFireChart(result.fullFireAge)}
                           />
-                          <FireChart result={result} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
+                          <FireChart result={result} inputs={inputs} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
                         </div>
                       </DashboardSection>
                     </ErrorBoundary>
@@ -813,7 +813,7 @@ function HomeContent() {
                             explanation={t.chartExplainFireChart}
                             summary={t.chartSummaryFireChart(result.fullFireAge)}
                           />
-                          <FireChart result={result} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
+                          <FireChart result={result} inputs={inputs} zielvermoegen={inputs.zielvermoegen} showNominal={showNominal} />
                         </div>
                       </DashboardSection>
                     </ErrorBoundary>
