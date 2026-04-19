@@ -409,9 +409,12 @@ export interface Translations {
   lifecycleMCTitle: string;
   lifecycleMCSubtitle: string;
   lifecycleMCSuccess: (rate: string) => string;
+  lifecycleMCSurvival: (rate: string) => string;
   lifecycleMCYearsToFire: string;
   lifecycleMCP50Years: (age: string) => string;
   lifecycleMCRange: (p10: string, p90: string) => string;
+  lifecycleMCFireLine: string;
+  lifecycleMCPensionLine: string;
 
   // Example Plans
   examplePlansSection: string;
@@ -1007,11 +1010,14 @@ export const de: Translations = {
 
   // Lifecycle Monte Carlo
   lifecycleMCTitle: "Lebenszyklus Monte Carlo",
-  lifecycleMCSubtitle: "500 stochastische Simulationen der Ansparphase",
+  lifecycleMCSubtitle: "500 stochastische Simulationen — Anspar- & Entnahmephase",
   lifecycleMCSuccess: (rate: string) => `${rate} % erreichen FIRE`,
+  lifecycleMCSurvival: (rate: string) => `${rate} % Portfolio überlebt`,
   lifecycleMCYearsToFire: "FIRE-Alter",
   lifecycleMCP50Years: (age: string) => `Median: Alter ${age}`,
   lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
+  lifecycleMCFireLine: "FIRE",
+  lifecycleMCPensionLine: "Rente",
 
   // Example Plans
   examplePlansSection: "Beispiel-FIRE-Pläne",
@@ -1609,11 +1615,14 @@ export const en: Translations = {
 
   // Lifecycle Monte Carlo
   lifecycleMCTitle: "Lifecycle Monte Carlo",
-  lifecycleMCSubtitle: "500 stochastic simulations of the accumulation phase",
+  lifecycleMCSubtitle: "500 stochastic simulations — accumulation & drawdown phases",
   lifecycleMCSuccess: (rate: string) => `${rate}% reach FIRE`,
+  lifecycleMCSurvival: (rate: string) => `${rate}% portfolio survives`,
   lifecycleMCYearsToFire: "FIRE Age",
   lifecycleMCP50Years: (age: string) => `Median: Age ${age}`,
   lifecycleMCRange: (p10: string, p90: string) => `P10–P90: ${p10}–${p90}`,
+  lifecycleMCFireLine: "FIRE",
+  lifecycleMCPensionLine: "Pension",
 
   // Example Plans
   examplePlansSection: "Example FIRE Plans",

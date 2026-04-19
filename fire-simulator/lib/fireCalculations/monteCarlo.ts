@@ -152,52 +152,129 @@ export function simulateLifecycleMonteCarlo(
     bavJaehrlich,
     zielvermoegen,
     startYear,
+    currentAge,
     lifeEvents,
+    monatlichesWunschEinkommen,
+    gesetzlicheRente,
+    renteneintrittsalter,
+    entnahmeModell,
+    kapitalverzehrJahre,
   } = inputs;
 
-  const meanReturn = etfRendite / 100;
+  const meanReturnAccum = etfRendite / 100;
+  const meanReturnDrawdown = Math.max(0, etfRendite - 1) / 100; // conservative for drawdown
   const stdDev = 0.15;
   const inf = inflation / 100;
   const dyn = dynamikSparrate / 100;
+  const pensionAge = renteneintrittsalter ?? 67;
+  const pensionStartYearOffset = Math.max(0, pensionAge - currentAge);
+  const monthlyGapFull = monatlichesWunschEinkommen;
+  const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
+
+  // Full lifecycle horizon: simulate until age 90 (at least MAX_YEARS)
+  const END_AGE = 90;
+  const totalYears = Math.max(MAX_YEARS, END_AGE - currentAge);
 
   const rng = mulberry32(123); // different seed from drawdown
   const fireYears: number[] = [];
-  const balancesByYear: number[][] = Array.from(
+
+  // Track balances for both accumulation-only and full lifecycle
+  const accBalancesByYear: number[][] = Array.from(
     { length: MAX_YEARS },
     () => [],
   );
+  const lifecycleBalancesByYear: number[][] = Array.from(
+    { length: totalYears },
+    () => [],
+  );
+
+  let lifecycleSurvivals = 0;
 
   for (let sim = 0; sim < MC_LIFECYCLE_SIMULATIONS; sim++) {
     let balance = startKapital;
     let fireYear: number | null = null;
+    let survived = true;
 
-    for (let y = 1; y <= MAX_YEARS; y++) {
-      const override = getSavingsRateOverride(lifeEvents, startYear + y);
-      const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
-      const contrib = savings * 12 + bavJaehrlich;
+    for (let y = 1; y <= totalYears; y++) {
+      const age = currentAge + y;
 
-      const annualReturn = meanReturn + stdDev * normalRandom(rng);
-      const prev = balance;
-      balance = (balance + contrib) * (1 + annualReturn);
-      const gains = balance - prev - contrib;
-      balance -= calculateTax(Math.max(0, gains), inputs);
+      if (fireYear === null) {
+        // === ACCUMULATION PHASE ===
+        const override = getSavingsRateOverride(lifeEvents, startYear + y);
+        const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
+        const contrib = savings * 12 + bavJaehrlich;
 
-      // Life events
-      const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-      balance += eventCF;
-      balance = Math.max(0, balance);
+        const annualReturn = meanReturnAccum + stdDev * normalRandom(rng);
+        const prev = balance;
+        balance = (balance + contrib) * (1 + annualReturn);
+        const gains = balance - prev - contrib;
+        balance -= calculateTax(Math.max(0, gains), inputs);
 
-      const realVal = balance / Math.pow(1 + inf, y);
-      balancesByYear[y - 1].push(realVal);
+        // Life events
+        const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+        balance += eventCF;
+        balance = Math.max(0, balance);
 
-      if (fireYear === null && realVal >= zielvermoegen) {
-        fireYear = y;
+        const realVal = balance / Math.pow(1 + inf, y);
+
+        // Track accumulation percentiles (first MAX_YEARS only)
+        if (y <= MAX_YEARS) {
+          accBalancesByYear[y - 1].push(realVal);
+        }
+
+        lifecycleBalancesByYear[y - 1].push(realVal);
+
+        if (realVal >= zielvermoegen) {
+          fireYear = y;
+        }
+      } else {
+        // === DRAWDOWN PHASE ===
+        if (balance <= 0) {
+          lifecycleBalancesByYear[y - 1].push(0);
+          if (y <= MAX_YEARS) accBalancesByYear[y - 1].push(0);
+          survived = false;
+          continue;
+        }
+
+        // Stochastic return (conservative for drawdown)
+        const annualReturn = meanReturnDrawdown + stdDev * normalRandom(rng);
+        const prev = balance;
+        balance *= 1 + annualReturn;
+        const gains = balance - prev;
+        balance -= calculateTax(Math.max(0, gains), inputs);
+
+        // Withdrawal
+        let withdrawal: number;
+        if (entnahmeModell === "kapitalverzehr") {
+          const drawdownYear = y - fireYear;
+          const remaining = kapitalverzehrJahre - (drawdownYear - 1);
+          if (remaining <= 1) {
+            withdrawal = balance;
+          } else {
+            withdrawal = balance / remaining;
+          }
+        } else {
+          const gap = age >= pensionAge ? monthlyGapWithPension : monthlyGapFull;
+          withdrawal = gap * 12 * Math.pow(1 + inf, y);
+        }
+
+        withdrawal = Math.min(withdrawal, balance);
+        balance -= withdrawal;
+        if (balance <= 0) balance = 0;
+
+        const realVal = balance / Math.pow(1 + inf, y);
+        lifecycleBalancesByYear[y - 1].push(realVal);
+
+        if (y <= MAX_YEARS) {
+          accBalancesByYear[y - 1].push(realVal);
+        }
       }
     }
 
     if (fireYear !== null) {
       fireYears.push(fireYear);
     }
+    if (survived && balance > 0) lifecycleSurvivals++;
   }
 
   // Percentiles for fire year
@@ -208,6 +285,7 @@ export function simulateLifecycleMonteCarlo(
     return sortedYears[idx];
   };
 
+  // Accumulation percentiles (backward compat, first MAX_YEARS)
   const accYears: number[] = [];
   const accP10: number[] = [];
   const accP25: number[] = [];
@@ -217,12 +295,30 @@ export function simulateLifecycleMonteCarlo(
 
   for (let y = 0; y < MAX_YEARS; y++) {
     accYears.push(startYear + y + 1);
-    const vals = balancesByYear[y];
+    const vals = accBalancesByYear[y];
     accP10.push(Math.round(percentile(vals, 0.1)));
     accP25.push(Math.round(percentile(vals, 0.25)));
     accP50.push(Math.round(percentile(vals, 0.5)));
     accP75.push(Math.round(percentile(vals, 0.75)));
     accP90.push(Math.round(percentile(vals, 0.9)));
+  }
+
+  // Full lifecycle percentiles
+  const lcYears: number[] = [];
+  const lcP10: number[] = [];
+  const lcP25: number[] = [];
+  const lcP50: number[] = [];
+  const lcP75: number[] = [];
+  const lcP90: number[] = [];
+
+  for (let y = 0; y < totalYears; y++) {
+    lcYears.push(startYear + y + 1);
+    const vals = lifecycleBalancesByYear[y];
+    lcP10.push(Math.round(percentile(vals, 0.1)));
+    lcP25.push(Math.round(percentile(vals, 0.25)));
+    lcP50.push(Math.round(percentile(vals, 0.5)));
+    lcP75.push(Math.round(percentile(vals, 0.75)));
+    lcP90.push(Math.round(percentile(vals, 0.9)));
   }
 
   return {
@@ -242,6 +338,18 @@ export function simulateLifecycleMonteCarlo(
       p90: accP90,
     },
     accumulationYears: accYears,
+    lifecyclePercentiles: {
+      p10: lcP10,
+      p25: lcP25,
+      p50: lcP50,
+      p75: lcP75,
+      p90: lcP90,
+    },
+    lifecycleYears: lcYears,
+    lifecycleTotalYears: totalYears,
+    medianFireYear: pctFire(0.5),
+    pensionStartYear: pensionStartYearOffset,
+    lifecycleSuccessRate: lifecycleSurvivals / MC_LIFECYCLE_SIMULATIONS,
   };
 }
 
