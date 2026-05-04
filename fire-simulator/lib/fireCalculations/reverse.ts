@@ -212,19 +212,19 @@ export function calculateReverse(
   const sensitivity: SensitivityRow[] = [];
   for (let r = SENSITIVITY_MIN_RETURN; r <= SENSITIVITY_MAX_RETURN; r += SENSITIVITY_STEP) {
     const sensInputs = { ...inputs, etfRendite: r };
-    // Recalculate FIRE number for this return rate
+    // Recalculate FIRE number for this return rate using full income (matching the main fireNumber above)
     let sensFireNumber: number;
     if (entnahmeModell === "kapitalverzehr" && kapitalverzehrJahre > 0) {
       const sensConservativeReturn = Math.max(0, r - DRAWDOWN_RETURN_DEDUCTION) / 100;
       const sensRealReturn = (1 + sensConservativeReturn) / (1 + inf) - 1;
-      const annualNeed = monthlyGap * 12;
+      const annualNeed = monthlyGapFull * 12;
       if (sensRealReturn <= 0) {
         sensFireNumber = annualNeed * kapitalverzehrJahre;
       } else {
         sensFireNumber = annualNeed * (1 - Math.pow(1 + sensRealReturn, -kapitalverzehrJahre)) / sensRealReturn;
       }
     } else {
-      sensFireNumber = swrDecimal > 0 ? (monthlyGap * 12) / swrDecimal : 0;
+      sensFireNumber = swrDecimal > 0 ? (monthlyGapFull * 12) / swrDecimal : 0;
     }
     sensInputs.zielvermoegen = sensFireNumber;
     const sensSavings = calculateRequiredSparrate(sensInputs, targetYears);

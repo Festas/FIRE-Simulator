@@ -263,6 +263,7 @@ function HomeContent() {
         const defaults = COUNTRY_DEFAULTS[country];
         if (defaults) {
           next.monatlichesNetto = defaults.monatlichesNetto;
+          next.monatlicheSparrate = defaults.monatlicheSparrate;
           next.monatlichesWunschEinkommen = defaults.monatlichesWunschEinkommen;
           next.gesetzlicheRente = defaults.gesetzlicheRente;
           next.renteneintrittsalter = defaults.renteneintrittsalter;

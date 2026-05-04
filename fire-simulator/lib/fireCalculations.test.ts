@@ -21,6 +21,7 @@ const defaultInputs: FireInputs = {
   inflation: 2.5,
   bavJaehrlich: 8_000,
   zielvermoegen: 1_650_000,
+  zielvermoegenOverride: false,
   lzkJahre: 3,
   lzkRendite: 3.5,
   startYear: 2026,
@@ -704,6 +705,18 @@ describe("Reverse planner (calculateReverse)", () => {
     expect(high!.requiredSavings).toBeLessThan(low!.requiredSavings);
   });
 
+  it("sensitivity FIRE numbers match main FIRE number (ewigeRente)", () => {
+    const result = calculateReverse(
+      4_000, 15, 1_500, 50_000, 7, 2.5, 4.0, 0, 0,
+      "single", false, "ewigeRente", 30,
+    );
+    // All sensitivity rows should use full income (4000 * 12 / swr), not pension-reduced
+    for (const row of result.sensitivity) {
+      // ewigeRente: fireNumber = (income * 12) / swr — same swr as main call
+      expect(row.fireNumber).toBeCloseTo(result.fireNumber, -2);
+    }
+  });
+
   it("returns current projection when current savings differ from required", () => {
     const result = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
@@ -1155,6 +1168,7 @@ describe("Monte Carlo–backed savings rate (calculateMCRequiredSparrate)", () =
     inflation: 2.5,
     bavJaehrlich: 0,
     zielvermoegen: 1_000_000,
+    zielvermoegenOverride: false,
     lzkJahre: 3,
     lzkRendite: 3.5,
     startYear: 2026,
@@ -1677,5 +1691,35 @@ describe("calculateAgeSavingsAnalysis", () => {
       expect(isFinite(row.fireNumber)).toBe(true);
       expect(row.fireNumber).toBeGreaterThan(0);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// percentile helper — edge cases
+// ---------------------------------------------------------------------------
+
+import { percentile } from "./fireCalculations/helpers";
+
+describe("percentile helper", () => {
+  it("returns 0 for empty array", () => {
+    expect(percentile([], 0.5)).toBe(0);
+    expect(percentile([], 0.1)).toBe(0);
+    expect(percentile([], 0.9)).toBe(0);
+  });
+
+  it("returns the only element for a single-element array", () => {
+    expect(percentile([42], 0.5)).toBe(42);
+    expect(percentile([42], 0.0)).toBe(42);
+    expect(percentile([42], 1.0)).toBe(42);
+  });
+
+  it("returns the median for an odd-length array", () => {
+    expect(percentile([1, 2, 3, 4, 5], 0.5)).toBe(3);
+  });
+
+  it("returns correct p10 and p90 for a uniform array", () => {
+    const arr = Array.from({ length: 10 }, (_, i) => i + 1); // [1..10]
+    expect(percentile(arr, 0.0)).toBe(1);
+    expect(percentile(arr, 1.0)).toBe(10);
   });
 });
