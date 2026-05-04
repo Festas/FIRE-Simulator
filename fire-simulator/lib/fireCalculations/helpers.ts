@@ -85,8 +85,10 @@ export function normalRandom(rng: () => number): number {
 
 /**
  * Calculate a percentile value from a sorted array of numbers.
+ * Returns 0 for empty arrays.
  */
 export function percentile(arr: number[], p: number): number {
+  if (arr.length === 0) return 0;
   const sorted = [...arr].sort((a, b) => a - b);
   const idx = Math.floor(p * (sorted.length - 1));
   return sorted[idx];
