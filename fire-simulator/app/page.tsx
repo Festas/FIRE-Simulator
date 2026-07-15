@@ -30,6 +30,7 @@ import Milestones from "@/app/components/Milestones";
 import FireScore from "@/app/components/FireScore";
 import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
 import type { TaxCountry } from "@/lib/tax";
+import { IconButton, SegmentedControl } from "@/app/components/ui/primitives";
 
 type DashboardMode = "beginner" | "standard" | "advanced";
 
@@ -508,28 +509,26 @@ function HomeContent() {
 
           {/* Undo / Redo */}
           <div className="flex items-center gap-1">
-            <button
+            <IconButton
               onClick={handleUndo}
               disabled={!canUndo}
-              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title={`${t.undo} (Ctrl+Z)`}
               aria-label={t.undo}
             >
               <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M7.707 3.293a1 1 0 010 1.414L5.414 7H11a7 7 0 017 7v2a1 1 0 11-2 0v-2a5 5 0 00-5-5H5.414l2.293 2.293a1 1 0 11-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
-            </button>
-            <button
+            </IconButton>
+            <IconButton
               onClick={handleRedo}
               disabled={!canRedo}
-              className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               title={`${t.redo} (Ctrl+Shift+Z)`}
               aria-label={t.redo}
             >
               <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M12.293 3.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 9H9a5 5 0 00-5 5v2a1 1 0 11-2 0v-2a7 7 0 017-7h5.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
-            </button>
+            </IconButton>
           </div>
 
           {/* Share Link button */}
@@ -670,19 +669,17 @@ function HomeContent() {
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               {t.modeLabel}:
             </span>
-            {(["beginner", "standard", "advanced"] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => handleModeChange(mode)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                  dashboardMode === mode
-                    ? "bg-emerald-500 border-emerald-400 text-white shadow-sm"
-                    : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-                }`}
-              >
-                {mode === "beginner" ? t.modeBeginner : mode === "standard" ? t.modeStandard : t.modeAdvanced}
-              </button>
-            ))}
+            <SegmentedControl<DashboardMode>
+              ariaLabel={t.modeLabel}
+              size="sm"
+              value={dashboardMode}
+              onChange={handleModeChange}
+              options={[
+                { value: "beginner", label: t.modeBeginner },
+                { value: "standard", label: t.modeStandard },
+                { value: "advanced", label: t.modeAdvanced },
+              ]}
+            />
           </div>
 
           {/* FIRE Education Panel — show for beginners */}
@@ -699,31 +696,16 @@ function HomeContent() {
           )}
 
           {/* Tab navigation */}
-          <div className="flex gap-2 mb-6" role="tablist">
-            <button
-              onClick={() => setActiveTab("forward")}
-              role="tab"
-              aria-selected={activeTab === "forward"}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "forward"
-                  ? "bg-emerald-500 text-white shadow-sm"
-                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
-            >
-              {t.forwardSimTab}
-            </button>
-            <button
-              onClick={() => setActiveTab("reverse")}
-              role="tab"
-              aria-selected={activeTab === "reverse"}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "reverse"
-                  ? "bg-emerald-500 text-white shadow-sm"
-                  : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
-            >
-              {t.reversePlannerTab}
-            </button>
+          <div className="mb-6">
+            <SegmentedControl<"forward" | "reverse">
+              ariaLabel={t.forwardSimTab}
+              value={activeTab}
+              onChange={setActiveTab}
+              options={[
+                { value: "forward", label: t.forwardSimTab },
+                { value: "reverse", label: t.reversePlannerTab },
+              ]}
+            />
           </div>
 
           <ErrorBoundary
