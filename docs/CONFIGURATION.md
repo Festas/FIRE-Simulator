@@ -110,9 +110,6 @@ The simulator applies the German **Abgeltungssteuer** to investment gains.
 | Kirchensteuer (`kirchensteuer`) | Optional 8/9% church-tax surcharge      |
 | Teilfreistellung     | 30% partial exemption for equity ETFs              |
 | Sparer-Pauschbetrag  | 1.000 € (single) / 2.000 € (couple) annual allowance |
-| 🇨🇦 CA  | 50% inclusion rate + marginal income tax               |
-| 🇦🇺 AU  | 50% CGT discount for assets held >12 months            |
-| 🇫🇷 FR  | 30% flat PFU (Prélèvement Forfaitaire Unique)          |
 
 ### Filing Status (`steuerModell`)
 - **Options:** Single, Couple
