@@ -19,7 +19,7 @@
 
 ## ✨ Highlights
 
-- **9 Country Tax Models** — DE, US, UK, CH, AT, NL, CA, AU, FR with pluggable engine
+- **German Tax Model** — Abgeltungssteuer (26.375%) + optional Kirchensteuer, Teilfreistellung & Sparer-Pauschbetrag
 - **Monte Carlo Simulation** — 1,000+ simulation runs for drawdown confidence intervals
 - **Full Lifecycle Analysis** — Accumulation through retirement (to age 90) with percentile bands
 - **Life Events Timeline** — Model home purchases, children, career changes, inheritance, and more
@@ -36,7 +36,7 @@
 ### 🎯 Retirement Planning
 - **Desired Monthly Income** — Start from what you want to spend, auto-derives your FIRE number
 - **State Pension Integration** — Reduces required portfolio by accounting for government pension
-- **Safe Withdrawal Rate** — Adjustable 2.5%–5.0% (default varies by country)
+- **Safe Withdrawal Rate** — Adjustable 2.5%–5.0% (default 3.5%)
 - **Dynamic Coast FIRE** — Calculated based on your actual target and expected returns
 
 ### 💰 Accumulation Phase
@@ -45,18 +45,15 @@
 - ETF return, inflation, employer pension (BAV)
 - Target wealth (auto or manual override), LZK phase & return
 
-### 🏛️ Multi-Country Tax Engine
-| Country | Tax Model |
-|---------|-----------|
-| 🇩🇪 Germany | Abgeltungssteuer (26.375%) + optional Kirchensteuer |
-| 🇺🇸 USA | Federal capital gains brackets |
-| 🇬🇧 UK | CGT with annual exempt amount |
-| 🇨🇭 Switzerland | No capital gains tax (wealth tax model) |
-| 🇦🇹 Austria | KESt (27.5%) |
-| 🇳🇱 Netherlands | Box 3 deemed return |
-| 🇨🇦 Canada | 50% inclusion rate |
-| 🇦🇺 Australia | 50% CGT discount |
-| 🇫🇷 France | PFU 30% flat tax |
+### 🏛️ German Tax Engine
+Focused entirely on Germany for maximum accuracy:
+
+| Feature | Detail |
+|---------|--------|
+| Abgeltungssteuer | 25% + 5.5% Solidaritätszuschlag (26.375%) |
+| Kirchensteuer | Optional 8/9% church-tax surcharge |
+| Teilfreistellung | 30% partial exemption for equity ETFs |
+| Sparer-Pauschbetrag | 1.000 € (single) / 2.000 € (couple) annual allowance |
 
 ### 📤 Withdrawal Phase
 - **Perpetual Income** ("Ewige Rente") vs. **Capital Depletion** ("Kapitalverzehr")
@@ -90,7 +87,7 @@
 - **URL State Persistence** — Share your exact scenario via link
 - **Export** — XLSX, PDF, CSV, JSON formats
 - **JSON Import** — Load saved configurations
-- **Onboarding Wizard** — 4-step guided setup for first-time users
+- **Onboarding Wizard** — 3-step guided setup for first-time users
 - **Glossary** — Searchable financial terms modal
 - **Example Plans** — Pre-built scenarios for different income levels
 
@@ -156,12 +153,12 @@ FIRE-Simulator/
 │   │   └── page.tsx              # Main dashboard
 │   ├── lib/                      # Core business logic
 │   │   ├── fireCalculations/     # Modular calculation engine
-│   │   ├── tax/                  # Multi-country tax engine
+│   │   ├── tax/                  # German Abgeltungssteuer engine
 │   │   ├── i18n/                 # Internationalization (DE + EN)
 │   │   ├── export/               # XLSX, PDF, CSV, JSON
 │   │   ├── theme/                # Dark/light theme
 │   │   ├── currency.ts           # Currency formatting
-│   │   └── countryDefaults.ts    # Country-specific defaults
+│   │   └── germanDefaults.ts     # German default assumptions
 │   ├── Dockerfile                # Multi-stage Docker build
 │   └── vitest.config.ts          # Test configuration
 ├── docker-compose.yml            # Container orchestration
@@ -203,7 +200,7 @@ The FIRE calculation engine is modular and fully tested:
 | `monteCarlo.ts` | Monte Carlo simulations (1,000+ runs) |
 | `reverse.ts` | Reverse planning + sensitivity analysis |
 | `lifeEvents.ts` | Cash-flow timeline from life events |
-| `tax.ts` | Bridge to the multi-country tax engine |
+| `tax.ts` | Bridge to the German tax engine |
 
 → See [API Reference](docs/API.md) for the complete function documentation.
 

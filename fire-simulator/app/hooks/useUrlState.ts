@@ -23,7 +23,6 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   sw: "swr",
   sm: "steuerModell",
   ks: "kirchensteuer",
-  tc: "taxCountry",
   em: "entnahmeModell",
   kj: "kapitalverzehrJahre",
   mb: "monatlichesNetto",
@@ -118,9 +117,6 @@ export function parseURLInputs(): Partial<FireInputs> | null {
       result[full] = val === "1";
     } else if (full === "entnahmeModell") {
       result[full] = val === "kapitalverzehr" ? "kapitalverzehr" : "ewigeRente";
-    } else if (full === "taxCountry") {
-      const valid = ["DE", "US", "UK", "CH", "AT", "NL", "CA", "AU", "FR"];
-      result[full] = valid.includes(val) ? val : "DE";
     } else {
       const num = parseFloat(val);
       if (!isNaN(num)) result[full] = num;

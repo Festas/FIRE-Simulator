@@ -2,9 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
-import { TAX_COUNTRIES } from "@/lib/tax";
-import type { TaxCountry } from "@/lib/tax";
-import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
+import { GERMAN_DEFAULTS } from "@/lib/germanDefaults";
 import { calculateFIRE } from "@/lib/fireCalculations";
 import type { FireInputs } from "@/lib/fireCalculations";
 
@@ -14,25 +12,12 @@ interface OnboardingData {
   startKapital: number;
   monatlicheSparrate: number;
   monatlichesWunschEinkommen: number;
-  taxCountry: TaxCountry;
 }
 
 interface OnboardingWizardProps {
   onComplete: (data: OnboardingData) => void;
   onSkip: () => void;
 }
-
-const COUNTRY_LABELS: Record<TaxCountry, string> = {
-  DE: "🇩🇪 Germany",
-  US: "🇺🇸 United States",
-  UK: "🇬🇧 United Kingdom",
-  CH: "🇨🇭 Switzerland",
-  AT: "🇦🇹 Austria",
-  NL: "🇳🇱 Netherlands",
-  CA: "🇨🇦 Canada",
-  AU: "🇦🇺 Australia",
-  FR: "🇫🇷 France",
-};
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -117,14 +102,12 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
     startKapital: 10_000,
     monatlicheSparrate: 500,
     monatlichesWunschEinkommen: 2_500,
-    taxCountry: "DE",
   });
 
-  // Build full FireInputs from wizard data + country defaults so the preview
+  // Build full FireInputs from wizard data + German defaults so the preview
   // uses exactly the same calculation as the main simulator.
   const previewInputs = useMemo((): FireInputs => {
-    const countryDef = COUNTRY_DEFAULTS[data.taxCountry];
-    const swrPct = countryDef.swr;
+    const swrPct = GERMAN_DEFAULTS.swr;
     const swrDecimal = swrPct / 100;
     const zielvermoegen =
       swrDecimal > 0
@@ -134,8 +117,8 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       startKapital: data.startKapital,
       monatlicheSparrate: data.monatlicheSparrate,
       dynamikSparrate: 2.0,
-      etfRendite: countryDef.etfRendite,
-      inflation: countryDef.inflation,
+      etfRendite: GERMAN_DEFAULTS.etfRendite,
+      inflation: GERMAN_DEFAULTS.inflation,
       bavJaehrlich: 0,
       zielvermoegen,
       zielvermoegenOverride: false,
@@ -144,12 +127,11 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       startYear: new Date().getFullYear(),
       currentAge: data.currentAge,
       monatlichesWunschEinkommen: data.monatlichesWunschEinkommen,
-      gesetzlicheRente: countryDef.gesetzlicheRente,
-      renteneintrittsalter: countryDef.renteneintrittsalter,
+      gesetzlicheRente: GERMAN_DEFAULTS.gesetzlicheRente,
+      renteneintrittsalter: GERMAN_DEFAULTS.renteneintrittsalter,
       swr: swrPct,
       steuerModell: "single",
       kirchensteuer: false,
-      taxCountry: data.taxCountry,
       entnahmeModell: "ewigeRente",
       kapitalverzehrJahre: 30,
       monatlichesNetto: data.monatlichesNetto,
@@ -170,22 +152,16 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
 
   const [showQuickResult, setShowQuickResult] = useState(false);
 
-  // Currency symbol for benchmarks
-  const currencySymbol = (() => {
-    try {
-      const parts = new Intl.NumberFormat("en", { style: "currency", currency: data.taxCountry === "US" ? "USD" : data.taxCountry === "UK" ? "GBP" : data.taxCountry === "CH" ? "CHF" : data.taxCountry === "CA" ? "CAD" : data.taxCountry === "AU" ? "AUD" : "EUR", maximumFractionDigits: 0 }).formatToParts(0);
-      return parts.find(p => p.type === "currency")?.value ?? "€";
-    } catch { return "€"; }
-  })();
+  // Currency symbol for benchmarks — Germany focus, always Euro.
+  const currencySymbol = "€";
 
-  // Auto-fill with country average
-  const applyCountryAvg = () => {
-    const def = COUNTRY_DEFAULTS[data.taxCountry];
+  // Auto-fill with German average values
+  const applyGermanAvg = () => {
     setData(prev => ({
       ...prev,
-      monatlichesNetto: def.monatlichesNetto,
-      monatlicheSparrate: def.monatlicheSparrate,
-      monatlichesWunschEinkommen: def.monatlichesWunschEinkommen,
+      monatlichesNetto: GERMAN_DEFAULTS.monatlichesNetto,
+      monatlicheSparrate: GERMAN_DEFAULTS.monatlicheSparrate,
+      monatlichesWunschEinkommen: GERMAN_DEFAULTS.monatlichesWunschEinkommen,
       startKapital: 10_000,
     }));
   };
@@ -205,11 +181,6 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       title: t.onboardingStep3Title,
       desc: t.onboardingStep3DescStory,
       icon: "🎯",
-    },
-    {
-      title: t.onboardingStep4Title,
-      desc: t.onboardingStep4DescStory,
-      icon: "🌍",
     },
   ], [t]);
 
@@ -326,34 +297,12 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                     step={100}
                   />
                   <p className="text-[10px] text-slate-500 -mt-3 mb-2 ml-1">{t.onboardingBenchmarkDesiredIncome(currencySymbol)}</p>
-                </>
-              )}
 
-              {step === 3 && (
-                <div className="mb-5">
-                  <label className="block text-sm font-medium text-slate-300 mb-2">{t.onboardingCountryLabel}</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {TAX_COUNTRIES.map((code) => (
-                      <button
-                        key={code}
-                        type="button"
-                        onClick={() => update("taxCountry", code)}
-                        className={`px-3 py-2.5 rounded-lg text-xs font-medium transition-colors border ${
-                          data.taxCountry === code
-                            ? "bg-emerald-500 border-emerald-400 text-white"
-                            : "bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600"
-                        }`}
-                      >
-                        {COUNTRY_LABELS[code]}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Use country average button */}
+                  {/* Use German average button */}
                   <button
                     type="button"
-                    onClick={applyCountryAvg}
-                    className="mt-3 w-full text-xs text-emerald-400 hover:text-emerald-300 transition-colors py-1.5 rounded-lg border border-dashed border-emerald-500/30 hover:border-emerald-500/60"
+                    onClick={applyGermanAvg}
+                    className="mt-1 w-full text-xs text-emerald-400 hover:text-emerald-300 transition-colors py-1.5 rounded-lg border border-dashed border-emerald-500/30 hover:border-emerald-500/60"
                   >
                     {t.onboardingUseCountryAvg}
                   </button>
@@ -381,7 +330,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
                       </p>
                     )}
                   </div>
-                </div>
+                </>
               )}
             </>
           )}

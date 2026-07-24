@@ -351,7 +351,7 @@ export function importScenarioJSON(file: File): Promise<FireInputs> {
     "inflation", "bavJaehrlich", "zielvermoegen", "zielvermoegenOverride",
     "lzkJahre", "lzkRendite", "startYear", "currentAge",
     "monatlichesWunschEinkommen", "gesetzlicheRente", "renteneintrittsalter",
-    "swr", "steuerModell", "kirchensteuer", "taxCountry", "entnahmeModell",
+    "swr", "steuerModell", "kirchensteuer", "entnahmeModell",
     "kapitalverzehrJahre", "monatlichesNetto", "lifeEvents",
     "arbeitszeitkontoEnabled", "stundenProJahr", "wochenStunden",
   ]);

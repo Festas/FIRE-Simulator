@@ -361,18 +361,6 @@ export interface Translations {
   // Phase label
   phaseLabel: (n: number) => string;
 
-  // Tax Country
-  taxCountry: string;
-  taxCountryTooltip: string;
-  taxCountryDE: string;
-  taxCountryUS: string;
-  taxCountryUK: string;
-  taxCountryCH: string;
-  taxCountryAT: string;
-  taxCountryNL: string;
-  taxCountryCA: string;
-  taxCountryAU: string;
-  taxCountryFR: string;
 
   // Life Events
   lifeEventsSection: string;
@@ -458,8 +446,6 @@ export interface Translations {
   onboardingStep2Desc: string;
   onboardingStep3Title: string;
   onboardingStep3Desc: string;
-  onboardingStep4Title: string;
-  onboardingStep4Desc: string;
   onboardingNext: string;
   onboardingBack: string;
   onboardingFinish: string;
@@ -468,7 +454,6 @@ export interface Translations {
   onboardingIncomeLabel: string;
   onboardingSavingsLabel: string;
   onboardingDesiredIncomeLabel: string;
-  onboardingCountryLabel: string;
   onboardingStartCapitalLabel: string;
 
   // Dashboard sections
@@ -507,9 +492,6 @@ export interface Translations {
   showReal: string;
   nominalTooltip: string;
 
-  // Country-Specific Defaults
-  applyCountryDefaults: string;
-  countryDefaultsApplied: string;
 
   // Onboarding Result Preview
   onboardingPreviewTitle: string;
@@ -548,7 +530,6 @@ export interface Translations {
   onboardingStep1DescStory: string;
   onboardingStep2DescStory: string;
   onboardingStep3DescStory: string;
-  onboardingStep4DescStory: string;
   onboardingBenchmarkAge: string;
   onboardingBenchmarkIncome: (currency: string) => string;
   onboardingBenchmarkSavings: (currency: string) => string;
@@ -964,18 +945,6 @@ export const de: Translations = {
   kpiMonteCarlo: "Monte Carlo",
   phaseLabel: (n: number) => `Phase ${n}`,
 
-  // Tax Country
-  taxCountry: "Steuerland",
-  taxCountryTooltip: "Wählen Sie Ihr Steuerland für die Kapitalertragsbesteuerung.",
-  taxCountryDE: "🇩🇪 Deutschland",
-  taxCountryUS: "🇺🇸 USA",
-  taxCountryUK: "🇬🇧 Großbritannien",
-  taxCountryCH: "🇨🇭 Schweiz",
-  taxCountryAT: "🇦🇹 Österreich",
-  taxCountryNL: "🇳🇱 Niederlande",
-  taxCountryCA: "🇨🇦 Kanada",
-  taxCountryAU: "🇦🇺 Australien",
-  taxCountryFR: "🇫🇷 Frankreich",
 
   // Life Events
   lifeEventsSection: "Lebensereignisse",
@@ -1061,8 +1030,6 @@ export const de: Translations = {
   onboardingStep2Desc: "Startkapital und monatliche Sparrate",
   onboardingStep3Title: "Ruhestandsziel",
   onboardingStep3Desc: "Gewünschtes Einkommen im Ruhestand",
-  onboardingStep4Title: "Steuerland",
-  onboardingStep4Desc: "Wählen Sie Ihr Land für die Steuerberechnung",
   onboardingNext: "Weiter",
   onboardingBack: "Zurück",
   onboardingFinish: "Simulation starten",
@@ -1071,7 +1038,6 @@ export const de: Translations = {
   onboardingIncomeLabel: "Monatl. Nettoeinkommen",
   onboardingSavingsLabel: "Monatl. Sparrate",
   onboardingDesiredIncomeLabel: "Wunsch-Einkommen (Ruhestand)",
-  onboardingCountryLabel: "Steuerland",
   onboardingStartCapitalLabel: "Aktuelles Vermögen",
 
   // Dashboard sections
@@ -1112,9 +1078,6 @@ export const de: Translations = {
   showReal: "Real (inflationsbereinigt)",
   nominalTooltip: "Zwischen nominalen und kaufkraftbereinigten Werten wechseln",
 
-  // Country-Specific Defaults
-  applyCountryDefaults: "Landesstandards anwenden",
-  countryDefaultsApplied: "Landesstandards angewendet",
 
   // Onboarding Result Preview
   onboardingPreviewTitle: "Deine Vorschau",
@@ -1153,12 +1116,11 @@ export const de: Translations = {
   onboardingStep1DescStory: "Lass uns herausfinden, wann du aufhören könntest zu arbeiten. Zuerst: Wo stehst du heute?",
   onboardingStep2DescStory: "Super! Wie viel hast du bereits gespart, und wie viel kannst du monatlich zurücklegen? Selbst kleine Beträge machen einen großen Unterschied — Zeit ist dein größter Vorteil.",
   onboardingStep3DescStory: "Stell dir vor, du müsstest nie wieder arbeiten. Wie viel bräuchtest du monatlich, um komfortabel zu leben? Keine Sorge — du kannst alles später anpassen.",
-  onboardingStep4DescStory: "Fast geschafft! Dein Land bestimmt Steuern und Rentenregeln. Den Rest übernehmen wir.",
   onboardingBenchmarkAge: "Durchschnittlich starten FIRE-Planer mit 25–35 Jahren",
   onboardingBenchmarkIncome: (currency) => `Typisch: ${currency} 2.500–5.000 netto`,
   onboardingBenchmarkSavings: (currency) => `Die meisten in deinem Alter sparen ${currency} 300–800/Monat`,
   onboardingBenchmarkDesiredIncome: (currency) => `Typisch: ${currency} 2.000–4.000 monatlich`,
-  onboardingUseCountryAvg: "Landesdurchschnitt verwenden",
+  onboardingUseCountryAvg: "Deutschen Durchschnitt verwenden",
   onboardingQuickResultTitle: "🎉 Dein Ergebnis",
   onboardingQuickResultBody: (age) => `Du könntest mit ${age} Jahren finanziell frei sein!`,
   onboardingQuickResultCelebrate: "Los geht's!",
@@ -1569,18 +1531,6 @@ export const en: Translations = {
   kpiMonteCarlo: "Monte Carlo",
   phaseLabel: (n: number) => `Phase ${n}`,
 
-  // Tax Country
-  taxCountry: "Tax Country",
-  taxCountryTooltip: "Select your tax country for capital gains taxation.",
-  taxCountryDE: "🇩🇪 Germany",
-  taxCountryUS: "🇺🇸 USA",
-  taxCountryUK: "🇬🇧 United Kingdom",
-  taxCountryCH: "🇨🇭 Switzerland",
-  taxCountryAT: "🇦🇹 Austria",
-  taxCountryNL: "🇳🇱 Netherlands",
-  taxCountryCA: "🇨🇦 Canada",
-  taxCountryAU: "🇦🇺 Australia",
-  taxCountryFR: "🇫🇷 France",
 
   // Life Events
   lifeEventsSection: "Life Events",
@@ -1666,8 +1616,6 @@ export const en: Translations = {
   onboardingStep2Desc: "Starting capital and monthly savings rate",
   onboardingStep3Title: "Retirement Goal",
   onboardingStep3Desc: "Desired income in retirement",
-  onboardingStep4Title: "Tax Country",
-  onboardingStep4Desc: "Select your country for tax calculations",
   onboardingNext: "Next",
   onboardingBack: "Back",
   onboardingFinish: "Start Simulation",
@@ -1676,7 +1624,6 @@ export const en: Translations = {
   onboardingIncomeLabel: "Monthly Net Income",
   onboardingSavingsLabel: "Monthly Savings",
   onboardingDesiredIncomeLabel: "Desired Retirement Income",
-  onboardingCountryLabel: "Tax Country",
   onboardingStartCapitalLabel: "Current Savings",
 
   // Dashboard sections
@@ -1717,9 +1664,6 @@ export const en: Translations = {
   showReal: "Real (inflation-adjusted)",
   nominalTooltip: "Toggle between nominal and inflation-adjusted values",
 
-  // Country-Specific Defaults
-  applyCountryDefaults: "Apply country defaults",
-  countryDefaultsApplied: "Country defaults applied",
 
   // Onboarding Result Preview
   onboardingPreviewTitle: "Your Preview",
@@ -1758,12 +1702,11 @@ export const en: Translations = {
   onboardingStep1DescStory: "Let's figure out when you could stop working. First, tell us where you are today.",
   onboardingStep2DescStory: "Great! How much have you already saved, and how much can you put aside each month? Even small amounts matter — time is your biggest advantage.",
   onboardingStep3DescStory: "Imagine you never had to work again. How much would you need each month to live comfortably? Don't overthink it — you can always adjust later.",
-  onboardingStep4DescStory: "Almost done! Your country determines taxes and pension rules. We'll handle the rest.",
   onboardingBenchmarkAge: "Most FIRE planners start at age 25–35",
   onboardingBenchmarkIncome: (currency) => `Typical: ${currency}2,500–5,000 net`,
   onboardingBenchmarkSavings: (currency) => `Most people your age save ${currency}300–800/month`,
   onboardingBenchmarkDesiredIncome: (currency) => `Typical: ${currency}2,000–4,000 monthly`,
-  onboardingUseCountryAvg: "Use country average",
+  onboardingUseCountryAvg: "Use German average",
   onboardingQuickResultTitle: "🎉 Your Result",
   onboardingQuickResultBody: (age) => `You could be financially free at age ${age}!`,
   onboardingQuickResultCelebrate: "Let's go!",

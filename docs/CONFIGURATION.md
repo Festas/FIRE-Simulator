@@ -12,7 +12,7 @@
 - [Working Time Account](#working-time-account)
 - [Life Events](#life-events)
 - [Dashboard Modes](#dashboard-modes)
-- [Country Defaults](#country-defaults)
+- [German Defaults](#german-defaults)
 
 ---
 
@@ -100,19 +100,16 @@
 
 ## Taxes
 
-### Tax Country (`taxCountry`)
-- **Options:** DE, US, UK, CH, AT, NL, CA, AU, FR
-- **Default:** Auto-detected from browser locale
-- **Description:** Determines which tax model is applied to investment gains. Each country has different rules.
+### Taxes (Germany)
 
-| Country | Tax on Investment Gains                                |
-| ------- | ------------------------------------------------------ |
-| 🇩🇪 DE  | 26.375% flat (Abgeltungssteuer) + optional church tax  |
-| 🇺🇸 US  | Progressive federal capital gains brackets             |
-| 🇬🇧 UK  | CGT with £6,000 annual exempt amount                   |
-| 🇨🇭 CH  | No capital gains tax (wealth tax model)                |
-| 🇦🇹 AT  | 27.5% flat (KESt)                                      |
-| 🇳🇱 NL  | Box 3 deemed return on net assets                      |
+The simulator applies the German **Abgeltungssteuer** to investment gains.
+
+| Component            | Detail                                             |
+| -------------------- | -------------------------------------------------- |
+| Abgeltungssteuer     | 25% + 5.5% Solidaritätszuschlag (26.375%)          |
+| Kirchensteuer (`kirchensteuer`) | Optional 8/9% church-tax surcharge      |
+| Teilfreistellung     | 30% partial exemption for equity ETFs              |
+| Sparer-Pauschbetrag  | 1.000 € (single) / 2.000 € (couple) annual allowance |
 | 🇨🇦 CA  | 50% inclusion rate + marginal income tax               |
 | 🇦🇺 AU  | 50% CGT discount for assets held >12 months            |
 | 🇫🇷 FR  | 30% flat PFU (Prélèvement Forfaitaire Unique)          |
@@ -200,17 +197,17 @@ The mode is stored in `localStorage` and persists across sessions.
 
 ---
 
-## Country Defaults
+## German Defaults
 
-When you select a country (or it's auto-detected), these default values are suggested:
+The simulator ships with sensible defaults for Germany (`lib/germanDefaults.ts`):
 
-| Parameter          | 🇩🇪 DE    | 🇺🇸 US    | 🇬🇧 UK    | 🇨🇭 CH    | 🇦🇹 AT    | 🇳🇱 NL    | 🇨🇦 CA    | 🇦🇺 AU    | 🇫🇷 FR    |
-| ------------------ | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- | --------- |
-| Net Income         | €3,500    | $5,000    | £3,000    | CHF 6,000 | €3,000    | €3,500    | CA$4,500  | A$5,000   | €3,000    |
-| Monthly Savings    | €800      | $1,200    | £700      | CHF 1,500 | €700      | €800      | CA$1,000  | A$1,200   | €600      |
-| Desired Income     | €2,500    | $4,000    | £2,500    | CHF 4,500 | €2,300    | €2,500    | CA$3,500  | A$3,500   | €2,300    |
-| State Pension      | €1,200    | $1,800    | £900      | CHF 2,000 | €1,400    | €1,100    | CA$1,200  | A$1,500   | €1,300    |
-| Pension Age        | 67        | 67        | 66        | 65        | 65        | 67        | 65        | 67        | 64        |
-| ETF Return         | 7.0%      | 7.0%      | 7.0%      | 6.0%      | 7.0%      | 7.0%      | 7.0%      | 7.0%      | 7.0%      |
-| Inflation          | 2.5%      | 2.5%      | 2.5%      | 1.5%      | 2.5%      | 2.5%      | 2.5%      | 2.5%      | 2.5%      |
-| SWR                | 3.5%      | 4.0%      | 3.5%      | 3.5%      | 3.5%      | 3.5%      | 4.0%      | 4.0%      | 3.5%      |
+| Parameter          | 🇩🇪 Default |
+| ------------------ | ----------- |
+| Net Income         | €3,500      |
+| Monthly Savings    | €800        |
+| Desired Income     | €2,500      |
+| State Pension      | €1,200      |
+| Pension Age        | 67          |
+| ETF Return         | 7.0%        |
+| Inflation          | 2.5%        |
+| SWR                | 3.5%        |
