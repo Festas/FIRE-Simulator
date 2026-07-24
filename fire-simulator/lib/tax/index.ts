@@ -176,6 +176,7 @@ export class GermanTaxAccount {
     if (withdrawal <= 0 || valueBeforeWithdrawal <= 0) return 0;
     const sold = Math.min(withdrawal, valueBeforeWithdrawal);
     const basisFraction = Math.min(1, this.costBasis / valueBeforeWithdrawal);
+    // The realised gain is the part of the sale that is not return of capital.
     const realisedGain = Math.max(0, sold * (1 - basisFraction));
     // Return of capital reduces the remaining cost basis.
     this.costBasis = Math.max(0, this.costBasis - sold * basisFraction);

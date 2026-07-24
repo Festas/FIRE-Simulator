@@ -99,9 +99,9 @@ describe("Vorabpauschale accumulation & realised-gain drawdown", () => {
   });
 
   it("falls back to the default Basiszins when the field is omitted", () => {
-    const { basiszins: _omit, ...rest } = makeInputs();
-    void _omit;
-    const result = calculateFIRE(rest as FireInputs);
+    const inputs = makeInputs();
+    delete (inputs as Partial<FireInputs>).basiszins;
+    const result = calculateFIRE(inputs);
     expect(result.totalTaxPaid).toBeGreaterThanOrEqual(0);
     expect(Number.isFinite(result.effectiveTaxRate)).toBe(true);
   });

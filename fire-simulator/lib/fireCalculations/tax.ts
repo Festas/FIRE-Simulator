@@ -60,6 +60,9 @@ export function applyCashFlowToBasis(
   if (eventCF > 0) {
     account.contribute(eventCF);
   } else if (eventCF < 0 && balanceBefore > 0) {
+    // A negative cash flow (withdrawal) is a partial sale: it returns capital
+    // proportionally, so the remaining cost basis shrinks by the same fraction
+    // of the position that was removed.
     const frac = Math.min(1, -eventCF / balanceBefore);
     account.costBasis = Math.max(0, account.costBasis * (1 - frac));
   }
