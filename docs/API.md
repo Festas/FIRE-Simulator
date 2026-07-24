@@ -48,7 +48,6 @@ const inputs: FireInputs = {
   swr: 3.5,
   steuerModell: "single",
   kirchensteuer: false,
-  taxCountry: "DE",
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 3_500,
@@ -180,8 +179,7 @@ Complete set of user inputs for the simulation.
 | `renteneintrittsalter`     | `number`                          | State pension start age                              |
 | `swr`                      | `number`                          | Safe withdrawal rate (%)                             |
 | `steuerModell`             | `"single" \| "couple"`            | Tax filing status                                    |
-| `kirchensteuer`            | `boolean`                         | Church tax surcharge (DE only)                       |
-| `taxCountry`               | `TaxCountry`                      | Tax jurisdiction                                     |
+| `kirchensteuer`            | `boolean`                         | Church tax surcharge                                 |
 | `entnahmeModell`           | `"ewigeRente" \| "kapitalverzehr"` | Perpetual income vs. capital depletion              |
 | `kapitalverzehrJahre`      | `number`                          | Depletion period in years                            |
 | `monatlichesNetto`         | `number`                          | Monthly net income (for savings rate display)        |
@@ -339,30 +337,29 @@ Single year of simulation data (used for both accumulation and drawdown).
 
 ## Tax Engine
 
-### `TaxCountry`
-
-```typescript
-type TaxCountry = "DE" | "US" | "UK" | "CH" | "AT" | "NL" | "CA" | "AU" | "FR";
-```
+The simulator focuses exclusively on Germany. Capital gains are taxed via the
+**Abgeltungssteuer** (25% + 5.5% Solidaritätszuschlag → 26.375%, optionally
+increased by Kirchensteuer), with the equity-ETF **Teilfreistellung** (30%
+partial exemption) and the annual **Sparer-Pauschbetrag** allowance.
 
 ### `TaxConfig`
 
 | Field          | Type                    | Description                        |
 | -------------- | ----------------------- | ---------------------------------- |
-| `country`      | `TaxCountry`            | Tax jurisdiction                   |
-| `filingStatus` | `"single" \| "couple"`  | Filing status                      |
-| `kirchensteuer` | `boolean`              | Church tax (DE only)               |
-| `annualIncome` | `number` (optional)     | Annual income for progressive tax  |
+| `filingStatus` | `"single" \| "couple"`  | Determines the Sparer-Pauschbetrag (1.000 € / 2.000 €) |
+| `kirchensteuer` | `boolean`              | Church-tax surcharge               |
 
-### `TaxEngine` Interface
+### Functions & Constants
 
 ```typescript
-interface TaxEngine {
-  readonly id: TaxCountry;
-  calculateTax(gains: number, config: TaxConfig): number;
-  annualAllowance(config: TaxConfig): number;
-  partialExemptionRate: number;
-}
+function calculateGermanTax(gains: number, config: TaxConfig): number;
+function annualAllowance(config: TaxConfig): number;
+function taxRate(config: TaxConfig): number;
+
+const TEILFREISTELLUNG = 0.3;         // 30% partial exemption for equity ETFs
+const PARTIAL_EXEMPTION_RATE = 0.3;
+const TAX_RATE_BASE = 0.26375;        // 25% + 5.5% Soli
+const TAX_RATE_KIST = 0.2782;         // incl. 8% Kirchensteuer
 ```
 
 ---

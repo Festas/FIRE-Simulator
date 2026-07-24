@@ -1,31 +1,14 @@
-import type { TaxCountry } from "@/lib/tax";
+// ---------------------------------------------------------------------------
+// Currency — fixed to Euro (Germany focus)
+// ---------------------------------------------------------------------------
 
-export type CurrencyCode = "EUR" | "USD" | "GBP" | "CHF" | "CAD" | "AUD";
+export type CurrencyCode = "EUR";
 
-export const COUNTRY_CURRENCY: Record<TaxCountry, CurrencyCode> = {
-  DE: "EUR",
-  AT: "EUR",
-  NL: "EUR",
-  FR: "EUR",
-  US: "USD",
-  UK: "GBP",
-  CH: "CHF",
-  CA: "CAD",
-  AU: "AUD",
-};
+/** The only supported currency. */
+export const CURRENCY_CODE: CurrencyCode = "EUR";
 
-/** Return the Intl locale best matching the country */
-export function countryLocale(country: TaxCountry): string {
-  const map: Record<TaxCountry, string> = {
-    DE: "de-DE",
-    AT: "de-AT",
-    NL: "nl-NL",
-    FR: "fr-FR",
-    US: "en-US",
-    UK: "en-GB",
-    CH: "de-CH",
-    CA: "en-CA",
-    AU: "en-AU",
-  };
-  return map[country];
+/** Intl locale used for currency/number formatting per UI language. */
+export function formattingLocale(uiLocale: "de" | "en"): string {
+  // English still formats Euro amounts; en-IE uses the € symbol with English.
+  return uiLocale === "de" ? "de-DE" : "en-IE";
 }

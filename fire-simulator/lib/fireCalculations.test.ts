@@ -35,7 +35,6 @@ const defaultInputs: FireInputs = {
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 6_500,
-  taxCountry: "DE",
   lifeEvents: [],
   arbeitszeitkontoEnabled: false,
   stundenProJahr: 0,
@@ -720,7 +719,7 @@ describe("Reverse planner (calculateReverse)", () => {
   it("returns current projection when current savings differ from required", () => {
     const result = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE",
+      "single", false, "ewigeRente", 30,
       [], // lifeEvents
       2_000, // currentMonthlySavings
     );
@@ -731,7 +730,7 @@ describe("Reverse planner (calculateReverse)", () => {
   it("returns null current projection when current savings equals required", () => {
     const result = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE",
+      "single", false, "ewigeRente", 30,
       [], // lifeEvents
       0, // currentMonthlySavings = 0 (no comparison)
     );
@@ -741,13 +740,13 @@ describe("Reverse planner (calculateReverse)", () => {
   it("incorporates life events into required savings", () => {
     const noEvents = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE",
+      "single", false, "ewigeRente", 30,
       [],
     );
     // Add an inheritance event (positive cash flow)
     const withInheritance = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE",
+      "single", false, "ewigeRente", 30,
       [{
         id: "test-1",
         type: "inheritance",
@@ -834,41 +833,6 @@ describe("Additional edge cases", () => {
       }),
     );
     expect(result.drawdownData.length).toBeGreaterThan(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Multi-country tax support
-// ---------------------------------------------------------------------------
-
-describe("Multi-country tax", () => {
-  it("Switzerland has zero tax", () => {
-    const result = calculateFIRE(makeInputs({ taxCountry: "CH" }));
-    expect(result.totalTaxPaid).toBe(0);
-    expect(result.effectiveTaxRate).toBe(0);
-  });
-
-  it("Austria has higher effective tax than Germany (no Teilfreistellung)", () => {
-    const de = calculateFIRE(makeInputs({ taxCountry: "DE" }));
-    const at = calculateFIRE(makeInputs({ taxCountry: "AT" }));
-    expect(at.totalTaxPaid).toBeGreaterThan(de.totalTaxPaid);
-  });
-
-  it("all supported countries produce valid results", () => {
-    const countries = ["DE", "US", "UK", "CH", "AT", "NL"] as const;
-    for (const tc of countries) {
-      const result = calculateFIRE(makeInputs({ taxCountry: tc }));
-      expect(result.yearlyData.length).toBeGreaterThan(0);
-      expect(result.drawdownData.length).toBeGreaterThan(0);
-      expect(result.monteCarlo.successRate).toBeGreaterThanOrEqual(0);
-      expect(result.monteCarlo.successRate).toBeLessThanOrEqual(1);
-    }
-  });
-
-  it("US applies capital gains correctly", () => {
-    const result = calculateFIRE(makeInputs({ taxCountry: "US" }));
-    expect(result.totalTaxPaid).toBeGreaterThan(0);
-    expect(result.effectiveTaxRate).toBeGreaterThan(0);
   });
 });
 
@@ -1179,7 +1143,6 @@ describe("Monte Carlo–backed savings rate (calculateMCRequiredSparrate)", () =
     swr: 3.5,
     steuerModell: "single",
     kirchensteuer: false,
-    taxCountry: "DE",
     entnahmeModell: "ewigeRente",
     kapitalverzehrJahre: 30,
     monatlichesNetto: 4_000,
@@ -1208,7 +1171,7 @@ describe("Monte Carlo–backed savings rate (calculateMCRequiredSparrate)", () =
   it("MC savings are >= deterministic savings (accounts for volatility)", () => {
     const result = calculateReverse(
       3_000, 20, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE", [], 0, 4_000, 30, 67,
+      "single", false, "ewigeRente", 30, [], 0, 4_000, 30, 67,
     );
     expect(result.mcRecommendedSavings).toBeGreaterThanOrEqual(result.requiredMonthlySavings);
   });
@@ -1229,7 +1192,7 @@ describe("calculateReverse with currentAge and renteneintrittsalter", () => {
   it("passes currentAge through to the result projection", () => {
     const result = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE", [], 0, 4_000, 35, 67,
+      "single", false, "ewigeRente", 30, [], 0, 4_000, 35, 67,
     );
     // First data point should have age = 35
     expect(result.yearlyProjection[0].age).toBe(35);
@@ -1241,7 +1204,7 @@ describe("calculateReverse with currentAge and renteneintrittsalter", () => {
   it("includes accumulation Monte Carlo data", () => {
     const result = calculateReverse(
       4_000, 15, 1_500, 50_000, 7, 2.5, 3.5, 2.0, 0,
-      "single", false, "ewigeRente", 30, "DE", [], 0, 4_000, 30, 67,
+      "single", false, "ewigeRente", 30, [], 0, 4_000, 30, 67,
     );
     expect(result.accumulationMonteCarlo).toBeDefined();
     expect(result.accumulationMonteCarlo.accumulationPercentiles.p50.length).toBeGreaterThan(0);
@@ -1397,189 +1360,6 @@ describe("Edge cases — zero and extreme values", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Phase 2c — Tax module edge-case tests
-// ---------------------------------------------------------------------------
-
-describe("US LTCG bracket boundaries", () => {
-  it("0% rate applies when income + gains stay within $47,025", () => {
-    // Very low income and very small capital to keep gains within 0% bracket
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "US",
-        monatlichesNetto: 1_000, // low income: $12k/year
-        monatlicheSparrate: 50,
-        startKapital: 1_000,
-        etfRendite: 3,
-        bavJaehrlich: 0,
-        dynamikSparrate: 0,
-        zielvermoegen: 10_000_000,
-      }),
-    );
-    // With very low income + small gains, tax should be 0 in the early years
-    expect(result.yearlyData[1].taxPaid).toBe(0);
-  });
-
-  it("15% rate for mid-income single", () => {
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "US",
-        monatlichesNetto: 10_000,
-        startKapital: 200_000,
-      }),
-    );
-    expect(result.totalTaxPaid).toBeGreaterThan(0);
-    expect(result.effectiveTaxRate).toBeGreaterThan(0);
-    expect(result.effectiveTaxRate).toBeLessThanOrEqual(0.20);
-  });
-
-  it("20% rate for high-income single (income above $518,900)", () => {
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "US",
-        monatlichesNetto: 50_000, // annual: 600,000
-        startKapital: 500_000,
-      }),
-    );
-    expect(result.totalTaxPaid).toBeGreaterThan(0);
-    expect(result.effectiveTaxRate).toBeGreaterThan(0.15);
-  });
-});
-
-describe("Netherlands Box 3 edge cases", () => {
-  it("taxes gains using notional return rate", () => {
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "NL",
-        startKapital: 100_000,
-      }),
-    );
-    expect(result.totalTaxPaid).toBeGreaterThan(0);
-    // Effective rate should be lower than actual gains rate since it's notional
-    expect(result.effectiveTaxRate).toBeGreaterThan(0);
-  });
-
-  it("returns 0 tax on zero gains", () => {
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "NL",
-        etfRendite: 0,
-        inflation: 0,
-        monatlicheSparrate: 0,
-        bavJaehrlich: 0,
-        startKapital: 10_000,
-        zielvermoegen: 10_000_000,
-      }),
-    );
-    expect(result.totalTaxPaid).toBe(0);
-  });
-});
-
-describe("UK CGT edge cases", () => {
-  it("exempts gains below the annual exempt amount (£3,000)", () => {
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "UK",
-        startKapital: 10_000,
-        monatlicheSparrate: 100,
-        etfRendite: 3,
-        monatlichesNetto: 2_000,
-      }),
-    );
-    // Very low gains, likely within CGT allowance in early years
-    expect(result.yearlyData.length).toBeGreaterThan(0);
-  });
-
-  it("applies higher rate for high-income taxpayer", () => {
-    const lowIncome = calculateFIRE(
-      makeInputs({
-        taxCountry: "UK",
-        monatlichesNetto: 2_500,
-        startKapital: 200_000,
-      }),
-    );
-    const highIncome = calculateFIRE(
-      makeInputs({
-        taxCountry: "UK",
-        monatlichesNetto: 10_000,
-        startKapital: 200_000,
-      }),
-    );
-    // Higher income should lead to higher tax rate (20% vs 10%)
-    expect(highIncome.effectiveTaxRate).toBeGreaterThanOrEqual(
-      lowIncome.effectiveTaxRate,
-    );
-  });
-});
-
-describe("Austria KESt edge cases", () => {
-  it("applies flat 27.5% regardless of filing status", () => {
-    const single = calculateFIRE(
-      makeInputs({
-        taxCountry: "AT",
-        steuerModell: "single",
-        startKapital: 100_000,
-      }),
-    );
-    const couple = calculateFIRE(
-      makeInputs({
-        taxCountry: "AT",
-        steuerModell: "couple",
-        startKapital: 100_000,
-      }),
-    );
-    // KESt is flat — filing status doesn't affect rate
-    expect(single.effectiveTaxRate).toBeCloseTo(couple.effectiveTaxRate, 2);
-  });
-
-  it("has zero annual allowance", () => {
-    const result = calculateFIRE(
-      makeInputs({
-        taxCountry: "AT",
-        startKapital: 10_000,
-        monatlicheSparrate: 500,
-      }),
-    );
-    // Even small gains are taxed (no allowance)
-    expect(result.totalTaxPaid).toBeGreaterThan(0);
-  });
-});
-
-describe("All countries — zero and negative gains guard rails", () => {
-  const countries = ["DE", "US", "UK", "CH", "AT", "NL"] as const;
-
-  for (const country of countries) {
-    it(`${country}: zero gains produce zero tax`, () => {
-      const result = calculateFIRE(
-        makeInputs({
-          taxCountry: country,
-          etfRendite: 0,
-          inflation: 0,
-          monatlicheSparrate: 0,
-          bavJaehrlich: 0,
-          startKapital: 10_000,
-          zielvermoegen: 100_000_000,
-        }),
-      );
-      expect(result.totalTaxPaid).toBe(0);
-    });
-
-    it(`${country}: produces valid results with high gains`, () => {
-      const result = calculateFIRE(
-        makeInputs({
-          taxCountry: country,
-          startKapital: 500_000,
-          monatlicheSparrate: 5_000,
-          etfRendite: 10,
-        }),
-      );
-      expect(result.yearlyData.length).toBeGreaterThan(0);
-      expect(result.effectiveTaxRate).toBeGreaterThanOrEqual(0);
-      expect(isFinite(result.totalTaxPaid)).toBe(true);
-    });
-  }
-});
-
 // =========================================================================
 // Age-based savings analysis (calculateAgeSavingsAnalysis)
 // =========================================================================
@@ -1589,7 +1369,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       35, 55, 5,
     );
     // Ages: 35, 40, 45, 50, 55 → 5 rows
@@ -1602,7 +1382,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       35, 55, 5,
     );
     for (const row of rows) {
@@ -1620,7 +1400,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       35, 55, 10,
     );
     // Age 35 (5 years) should need more savings than age 55 (25 years)
@@ -1633,7 +1413,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       60, 35, 5, // min > max
     );
     expect(rows).toHaveLength(0);
@@ -1643,7 +1423,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       undefined, undefined, 5,
     );
     // Default: currentAge+5=35 to currentAge+40=70, step 5 → 8 rows
@@ -1655,7 +1435,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       40, 55, 5,
     );
     for (const row of rows) {
@@ -1668,7 +1448,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       0, 0, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "ewigeRente", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       40, 50, 5,
     );
     // With zero target income, savings should be 0
@@ -1682,7 +1462,7 @@ describe("calculateAgeSavingsAnalysis", () => {
     const rows = calculateAgeSavingsAnalysis(
       2000, 500, 50_000, 7, 2, 3.5,
       2, 0, "single", false, "kapitalverzehr", 30,
-      "DE", [], 30, 67,
+      [], 30, 67,
       40, 50, 5,
     );
     expect(rows.length).toBeGreaterThan(0);

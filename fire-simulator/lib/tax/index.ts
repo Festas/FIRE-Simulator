@@ -1,329 +1,48 @@
 // ---------------------------------------------------------------------------
-// Pluggable Tax Engine — Multi-Country Support
+// Tax Engine — Germany (Abgeltungssteuer)
 // ---------------------------------------------------------------------------
 //
-// Each country module implements the TaxEngine interface.  The main calculation
-// code calls `calculateTax(gains, config)` via the active engine, keeping
-// country-specific logic isolated.
+// The simulator focuses exclusively on Germany. Capital gains are taxed via the
+// Abgeltungssteuer (flat 25% + 5.5% Solidaritätszuschlag, optionally increased
+// by Kirchensteuer), with the equity-ETF Teilfreistellung (30% partial
+// exemption) and the annual Sparer-Pauschbetrag (tax-free allowance).
 // ---------------------------------------------------------------------------
-
-export type TaxCountry = "DE" | "US" | "UK" | "CH" | "AT" | "NL" | "CA" | "AU" | "FR";
 
 /**
- * Minimal tax-relevant configuration shared across engines.
- * Country-specific fields (e.g. filing status, church tax) are forwarded
- * via the same object; unused fields are simply ignored by other engines.
+ * Tax-relevant configuration for the German capital-gains tax.
  */
 export interface TaxConfig {
-  country: TaxCountry;
+  /** Filing status — determines the Sparer-Pauschbetrag (1.000 € vs. 2.000 €) */
   filingStatus: "single" | "couple";
-  /** DE-specific: church-tax surcharge */
+  /** Church-tax surcharge (increases the effective rate) */
   kirchensteuer: boolean;
-  /** Annual income (used by progressive-rate countries like US/UK) */
-  annualIncome?: number;
 }
 
-export interface TaxEngine {
-  /** Human-readable country label (untranslated key) */
-  readonly id: TaxCountry;
-  /** Calculate tax on investment gains for one year */
-  calculateTax(gains: number, config: TaxConfig): number;
-  /** Tax-free allowance (Sparerpauschbetrag equivalent) */
-  annualAllowance(config: TaxConfig): number;
-  /** Whether gains are partially exempt (e.g. Teilfreistellung for equity ETFs) */
-  partialExemptionRate: number;
+/** Teilfreistellung for equity ETFs — 30% of gains are exempt */
+export const TEILFREISTELLUNG = 0.3;
+/** Base rate: 25% Abgeltungssteuer + 5.5% Solidaritätszuschlag */
+export const TAX_RATE_BASE = 0.26375;
+/** Rate including 8% Kirchensteuer */
+export const TAX_RATE_KIST = 0.2782;
+
+/** Partial-exemption rate applied to gains before taxation */
+export const PARTIAL_EXEMPTION_RATE = TEILFREISTELLUNG;
+
+/** Annual tax-free allowance (Sparer-Pauschbetrag) */
+export function annualAllowance(config: TaxConfig): number {
+  return config.filingStatus === "couple" ? 2_000 : 1_000;
 }
 
-// ---------------------------------------------------------------------------
-// 🇩🇪 Germany — Abgeltungssteuer
-// ---------------------------------------------------------------------------
-
-const TEILFREISTELLUNG = 0.3;
-const TAX_RATE_BASE_DE = 0.26375; // 25% + 5.5% Soli
-const TAX_RATE_KIST_DE = 0.2782; // with 8% Kirchensteuer
-
-const germanyEngine: TaxEngine = {
-  id: "DE",
-  partialExemptionRate: TEILFREISTELLUNG,
-
-  annualAllowance(config) {
-    return config.filingStatus === "couple" ? 2_000 : 1_000;
-  },
-
-  calculateTax(gains, config) {
-    if (gains <= 0) return 0;
-    const taxable = gains * (1 - TEILFREISTELLUNG);
-    const freibetrag = this.annualAllowance(config);
-    const afterFreibetrag = Math.max(0, taxable - freibetrag);
-    if (afterFreibetrag <= 0) return 0;
-    const rate = config.kirchensteuer ? TAX_RATE_KIST_DE : TAX_RATE_BASE_DE;
-    return afterFreibetrag * rate;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇺🇸 United States — Federal Long-Term Capital Gains
-// ---------------------------------------------------------------------------
-// Simplified: only federal LTCG brackets (0 / 15 / 20 %).
-// State taxes are not modelled.  Standard deduction not applied to gains.
-// ---------------------------------------------------------------------------
-
-function usLtcgRate(taxableIncome: number, single: boolean): number {
-  if (single) {
-    if (taxableIncome <= 47_025) return 0.0;
-    if (taxableIncome <= 518_900) return 0.15;
-    return 0.20;
-  }
-  // married filing jointly
-  if (taxableIncome <= 94_050) return 0.0;
-  if (taxableIncome <= 583_750) return 0.15;
-  return 0.20;
+/** Effective capital-gains tax rate (incl. Kirchensteuer if enabled) */
+export function taxRate(config: TaxConfig): number {
+  return config.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE;
 }
 
-const usEngine: TaxEngine = {
-  id: "US",
-  partialExemptionRate: 0, // no partial exemption in the US
-
-  annualAllowance() {
-    return 0; // no flat allowance — handled via 0% bracket
-  },
-
-  calculateTax(gains, config) {
-    if (gains <= 0) return 0;
-    const income = config.annualIncome ?? 0;
-    const rate = usLtcgRate(income + gains, config.filingStatus === "single");
-    return gains * rate;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇬🇧 United Kingdom — Capital Gains Tax
-// ---------------------------------------------------------------------------
-// Basic-rate taxpayer: 10 % on gains above annual exempt amount (2024/25: £3,000)
-// Higher/additional rate: 20 %
-// Simplified: we use income to determine the marginal rate.
-// ---------------------------------------------------------------------------
-
-const UK_CGT_ALLOWANCE = 3_000; // 2024/25 onwards
-
-const ukEngine: TaxEngine = {
-  id: "UK",
-  partialExemptionRate: 0,
-
-  annualAllowance() {
-    return UK_CGT_ALLOWANCE;
-  },
-
-  calculateTax(gains, config) {
-    if (gains <= 0) return 0;
-    const taxable = Math.max(0, gains - UK_CGT_ALLOWANCE);
-    if (taxable <= 0) return 0;
-
-    const income = config.annualIncome ?? 0;
-    // Higher rate threshold (2024/25): £50,270
-    const higherRateThreshold = 50_270;
-    const basicRateRoom = Math.max(0, higherRateThreshold - income);
-
-    if (basicRateRoom >= taxable) {
-      return taxable * 0.10;
-    }
-    return basicRateRoom * 0.10 + (taxable - basicRateRoom) * 0.20;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇨🇭 Switzerland — No capital gains tax on private investments
-// ---------------------------------------------------------------------------
-// Swiss residents pay no federal/cantonal tax on private capital gains from
-// securities.  Wealth tax exists but is not modelled here (it applies to
-// total net worth, not gains).
-// ---------------------------------------------------------------------------
-
-const switzerlandEngine: TaxEngine = {
-  id: "CH",
-  partialExemptionRate: 0,
-
-  annualAllowance() {
-    return Infinity;
-  },
-
-  calculateTax() {
-    return 0; // no capital gains tax
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇦🇹 Austria — KESt (Kapitalertragsteuer)
-// ---------------------------------------------------------------------------
-// Flat 27.5 % on capital gains — no partial exemption, no allowance.
-// ---------------------------------------------------------------------------
-
-const austriaEngine: TaxEngine = {
-  id: "AT",
-  partialExemptionRate: 0,
-
-  annualAllowance() {
-    return 0;
-  },
-
-  calculateTax(gains) {
-    if (gains <= 0) return 0;
-    return gains * 0.275;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇳🇱 Netherlands — Box 3 Notional Return Tax
-// ---------------------------------------------------------------------------
-// The Netherlands does not tax actual gains.  Instead, a fictitious return is
-// assumed on net assets above a threshold and taxed at 36 %.  The notional
-// return depends on the asset mix — we use a simplified blended rate of 6.04 %
-// for investments (2024).  The tax-free threshold is €57,000 per person.
-//
-// Because this tax applies to total wealth and not per-year gains, we
-// approximate it by applying the effective rate to the year's balance growth.
-// ---------------------------------------------------------------------------
-
-const NL_NOTIONAL_RATE = 0.0604; // blended assumed return (2024)
-const NL_BOX3_TAX_RATE = 0.36;
-const NL_THRESHOLD_SINGLE = 57_000;
-const NL_THRESHOLD_COUPLE = 114_000;
-
-const netherlandsEngine: TaxEngine = {
-  id: "NL",
-  partialExemptionRate: 0,
-
-  annualAllowance(config) {
-    return config.filingStatus === "couple" ? NL_THRESHOLD_COUPLE : NL_THRESHOLD_SINGLE;
-  },
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  calculateTax(gains, _config) {
-    // In reality Box 3 applies to total balance — here we approximate with
-    // an effective rate on gains.
-    if (gains <= 0) return 0;
-    const effectiveRate = NL_NOTIONAL_RATE * NL_BOX3_TAX_RATE;
-    return gains * effectiveRate;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇨🇦 Canada — Federal Long-Term Capital Gains (50 % inclusion rate)
-// ---------------------------------------------------------------------------
-// Only 50 % of gains are included in taxable income. The included portion is
-// taxed at progressive federal rates.  Provincial taxes are not modelled.
-// ---------------------------------------------------------------------------
-
-function caFederalRate(taxableIncome: number): number {
-  if (taxableIncome <= 55_867) return 0.15;
-  if (taxableIncome <= 111_733) return 0.205;
-  if (taxableIncome <= 154_906) return 0.26;
-  if (taxableIncome <= 220_000) return 0.29;
-  return 0.33;
+/** Calculate German capital-gains tax on investment gains for one year */
+export function calculateGermanTax(gains: number, config: TaxConfig): number {
+  if (gains <= 0) return 0;
+  const taxable = gains * (1 - TEILFREISTELLUNG);
+  const afterFreibetrag = Math.max(0, taxable - annualAllowance(config));
+  if (afterFreibetrag <= 0) return 0;
+  return afterFreibetrag * taxRate(config);
 }
-
-const canadaEngine: TaxEngine = {
-  id: "CA",
-  partialExemptionRate: 0.5, // 50 % inclusion ⇒ 50 % exempt
-
-  annualAllowance() {
-    return 0;
-  },
-
-  calculateTax(gains, config) {
-    if (gains <= 0) return 0;
-    const included = gains * 0.5;
-    const income = config.annualIncome ?? 0;
-    const rate = caFederalRate(income + included);
-    return included * rate;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇦🇺 Australia — CGT with 50 % discount (assets held > 12 months)
-// ---------------------------------------------------------------------------
-// Discounted gains are added to income and taxed at marginal rates.
-// We assume long-term holding so the 50 % discount always applies.
-// ---------------------------------------------------------------------------
-
-function auMarginalRate(taxableIncome: number): number {
-  if (taxableIncome <= 18_200) return 0.0;
-  if (taxableIncome <= 45_000) return 0.19;
-  if (taxableIncome <= 120_000) return 0.325;
-  if (taxableIncome <= 180_000) return 0.37;
-  return 0.45;
-}
-
-const australiaEngine: TaxEngine = {
-  id: "AU",
-  partialExemptionRate: 0.5, // 50 % CGT discount
-
-  annualAllowance() {
-    return 0;
-  },
-
-  calculateTax(gains, config) {
-    if (gains <= 0) return 0;
-    const discounted = gains * 0.5;
-    const income = config.annualIncome ?? 0;
-    const rate = auMarginalRate(income + discounted);
-    return discounted * rate;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// 🇫🇷 France — Prélèvement Forfaitaire Unique (PFU / Flat Tax)
-// ---------------------------------------------------------------------------
-// 30 % flat tax on gains (12.8 % income tax + 17.2 % social charges).
-// No allowance, no partial exemption.
-// ---------------------------------------------------------------------------
-
-const FR_PFU_RATE = 0.30;
-
-const franceEngine: TaxEngine = {
-  id: "FR",
-  partialExemptionRate: 0,
-
-  annualAllowance() {
-    return 0;
-  },
-
-  calculateTax(gains) {
-    if (gains <= 0) return 0;
-    return gains * FR_PFU_RATE;
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Engine registry
-// ---------------------------------------------------------------------------
-
-const engines: Record<TaxCountry, TaxEngine> = {
-  DE: germanyEngine,
-  US: usEngine,
-  UK: ukEngine,
-  CH: switzerlandEngine,
-  AT: austriaEngine,
-  NL: netherlandsEngine,
-  CA: canadaEngine,
-  AU: australiaEngine,
-  FR: franceEngine,
-};
-
-export function getTaxEngine(country: TaxCountry): TaxEngine {
-  return engines[country];
-}
-
-export const TAX_COUNTRIES: TaxCountry[] = ["DE", "US", "UK", "CH", "AT", "NL", "CA", "AU", "FR"];
-
-export const TAX_COUNTRY_LABELS: Record<TaxCountry, string> = {
-  DE: "🇩🇪 Deutschland",
-  US: "🇺🇸 United States",
-  UK: "🇬🇧 United Kingdom",
-  CH: "🇨🇭 Schweiz",
-  AT: "🇦🇹 Österreich",
-  NL: "🇳🇱 Nederland",
-  CA: "🇨🇦 Canada",
-  AU: "🇦🇺 Australia",
-  FR: "🇫🇷 France",
-};

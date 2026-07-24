@@ -28,8 +28,7 @@ import WhatIfPanel from "@/app/components/WhatIfPanel";
 import ChartExplainer from "@/app/components/ChartExplainer";
 import Milestones from "@/app/components/Milestones";
 import FireScore from "@/app/components/FireScore";
-import { COUNTRY_DEFAULTS } from "@/lib/countryDefaults";
-import type { TaxCountry } from "@/lib/tax";
+import { GERMAN_DEFAULTS } from "@/lib/germanDefaults";
 import { IconButton, SegmentedControl } from "@/app/components/ui/primitives";
 
 type DashboardMode = "beginner" | "standard" | "advanced";
@@ -53,7 +52,6 @@ const DEFAULT_INPUTS: FireInputs = {
   swr: 3.5,
   steuerModell: "single",
   kirchensteuer: false,
-  taxCountry: "DE",
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 5_200,
@@ -66,25 +64,6 @@ const DEFAULT_INPUTS: FireInputs = {
 const LS_KEY = "fire-simulator-inputs";
 const LS_ONBOARDING_KEY = "fire-simulator-onboarded";
 const UNDO_LIMIT = 30;
-
-/** Detect likely tax country from browser locale */
-function detectCountryFromLocale(): FireInputs["taxCountry"] | null {
-  try {
-    const lang = navigator.language || (navigator.languages?.[0] ?? "");
-    const region = lang.split("-")[1]?.toUpperCase();
-    const mapping: Record<string, FireInputs["taxCountry"]> = {
-      DE: "DE", AT: "AT", CH: "CH", US: "US", GB: "UK", UK: "UK",
-      NL: "NL", CA: "CA", AU: "AU", FR: "FR",
-    };
-    if (region && mapping[region]) return mapping[region];
-    // Fallback: match language prefix
-    const langPrefix = lang.split("-")[0].toLowerCase();
-    const langMap: Record<string, FireInputs["taxCountry"]> = {
-      de: "DE", en: "US", fr: "FR", nl: "NL",
-    };
-    return langMap[langPrefix] ?? null;
-  } catch { return null; }
-}
 
 function getInitialInputs(): FireInputs {
   if (typeof window === "undefined") return DEFAULT_INPUTS;
@@ -103,27 +82,6 @@ function getInitialInputs(): FireInputs {
     }
   } catch {
     // ignore
-  }
-
-  // Auto-detect country from browser locale for first-time visitors
-  const detectedCountry = detectCountryFromLocale();
-  if (detectedCountry && detectedCountry !== DEFAULT_INPUTS.taxCountry) {
-    const defaults = COUNTRY_DEFAULTS[detectedCountry];
-    if (defaults) {
-      const swr = defaults.swr / 100;
-      return {
-        ...DEFAULT_INPUTS,
-        taxCountry: detectedCountry,
-        monatlichesNetto: defaults.monatlichesNetto,
-        monatlichesWunschEinkommen: defaults.monatlichesWunschEinkommen,
-        gesetzlicheRente: defaults.gesetzlicheRente,
-        renteneintrittsalter: defaults.renteneintrittsalter,
-        etfRendite: defaults.etfRendite,
-        inflation: defaults.inflation,
-        swr: defaults.swr,
-        zielvermoegen: swr > 0 ? Math.round((defaults.monatlichesWunschEinkommen * 12) / swr) : DEFAULT_INPUTS.zielvermoegen,
-      };
-    }
   }
 
   return DEFAULT_INPUTS;
@@ -155,7 +113,7 @@ function HomeContent() {
   const [activeTab, setActiveTab] = useState<"forward" | "reverse">("forward");
   const [exportToast, setExportToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const { theme, toggleTheme } = useTheme();
-  const { t, locale, setLocale, formatCurrency, setCurrency } = useI18n();
+  const { t, locale, setLocale, formatCurrency } = useI18n();
 
   // Onboarding state
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -212,11 +170,6 @@ function HomeContent() {
     document.documentElement.lang = locale;
   }, [locale]);
 
-  // Sync currency formatting when tax country changes
-  useEffect(() => {
-    setCurrency(inputs.taxCountry);
-  }, [inputs.taxCountry, setCurrency]);
-
   // Auto-dismiss export toast
   useEffect(() => {
     if (exportToast) {
@@ -257,26 +210,6 @@ function HomeContent() {
       if (key === "zielvermoegenOverride" && value === false) {
         const swr = next.swr / 100;
         next.zielvermoegen = swr > 0 ? Math.round((next.monatlichesWunschEinkommen * 12) / swr) : next.zielvermoegen;
-      }
-      // Apply country-specific defaults when tax country changes
-      if (key === "taxCountry") {
-        const country = value as TaxCountry;
-        const defaults = COUNTRY_DEFAULTS[country];
-        if (defaults) {
-          next.monatlichesNetto = defaults.monatlichesNetto;
-          next.monatlicheSparrate = defaults.monatlicheSparrate;
-          next.monatlichesWunschEinkommen = defaults.monatlichesWunschEinkommen;
-          next.gesetzlicheRente = defaults.gesetzlicheRente;
-          next.renteneintrittsalter = defaults.renteneintrittsalter;
-          next.etfRendite = defaults.etfRendite;
-          next.inflation = defaults.inflation;
-          next.swr = defaults.swr;
-          // Auto-recalculate FIRE number with new defaults
-          if (!next.zielvermoegenOverride) {
-            const swr = defaults.swr / 100;
-            next.zielvermoegen = swr > 0 ? Math.round((defaults.monatlichesWunschEinkommen * 12) / swr) : next.zielvermoegen;
-          }
-        }
       }
       saveInputs(next);
       return next;
@@ -381,11 +314,8 @@ function HomeContent() {
     startKapital: number;
     monatlicheSparrate: number;
     monatlichesWunschEinkommen: number;
-    taxCountry: string;
   }) => {
-    const country = data.taxCountry as FireInputs["taxCountry"];
-    const countryDef = COUNTRY_DEFAULTS[country];
-    const swr = countryDef.swr;
+    const swr = GERMAN_DEFAULTS.swr;
     const swrDecimal = swr / 100;
     const zielvermoegen = swrDecimal > 0 ? Math.round((data.monatlichesWunschEinkommen * 12) / swrDecimal) : DEFAULT_INPUTS.zielvermoegen;
     const merged: FireInputs = {
@@ -395,11 +325,10 @@ function HomeContent() {
       startKapital: data.startKapital,
       monatlicheSparrate: data.monatlicheSparrate,
       monatlichesWunschEinkommen: data.monatlichesWunschEinkommen,
-      taxCountry: country,
-      gesetzlicheRente: countryDef.gesetzlicheRente,
-      renteneintrittsalter: countryDef.renteneintrittsalter,
-      etfRendite: countryDef.etfRendite,
-      inflation: countryDef.inflation,
+      gesetzlicheRente: GERMAN_DEFAULTS.gesetzlicheRente,
+      renteneintrittsalter: GERMAN_DEFAULTS.renteneintrittsalter,
+      etfRendite: GERMAN_DEFAULTS.etfRendite,
+      inflation: GERMAN_DEFAULTS.inflation,
       swr,
       zielvermoegen,
     };

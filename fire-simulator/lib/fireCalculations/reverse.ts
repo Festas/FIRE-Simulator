@@ -21,7 +21,6 @@ import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { simulateAccumulation } from "./accumulation";
 import { simulateDrawdown } from "./drawdown";
 import { simulateMonteCarlo, simulateLifecycleMonteCarlo, calculateMCRequiredSparrate } from "./monteCarlo";
-import type { TaxCountry } from "@/lib/tax";
 
 // ---------------------------------------------------------------------------
 // Binary-search for required monthly savings
@@ -99,7 +98,6 @@ export function calculateReverse(
   kirchensteuer: boolean,
   entnahmeModell: "ewigeRente" | "kapitalverzehr",
   kapitalverzehrJahre: number,
-  taxCountry: TaxCountry = "DE",
   lifeEvents: LifeEvent[] = [],
   currentMonthlySavings: number = 0,
   monatlichesNetto: number = 0,
@@ -150,7 +148,6 @@ export function calculateReverse(
     entnahmeModell,
     kapitalverzehrJahre,
     monatlichesNetto,
-    taxCountry,
     lifeEvents,
     arbeitszeitkontoEnabled: false,
     stundenProJahr: 0,
@@ -284,7 +281,6 @@ export function calculateAgeSavingsAnalysis(
   kirchensteuer: boolean,
   entnahmeModell: "ewigeRente" | "kapitalverzehr",
   kapitalverzehrJahre: number,
-  taxCountry: TaxCountry = "DE",
   lifeEvents: LifeEvent[] = [],
   currentAge: number = 30,
   renteneintrittsalter: number = 67,
@@ -361,7 +357,6 @@ export function calculateAgeSavingsAnalysis(
         entnahmeModell,
         kapitalverzehrJahre,
         monatlichesNetto: 0,
-        taxCountry,
         lifeEvents,
         arbeitszeitkontoEnabled: false,
         stundenProJahr: 0,

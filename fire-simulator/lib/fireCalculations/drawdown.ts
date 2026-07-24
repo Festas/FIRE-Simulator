@@ -4,9 +4,9 @@
 
 import type { FireInputs, YearDataPoint } from "./types";
 import { DRAWDOWN_YEARS, TAX_RATE_BASE, TAX_RATE_KIST } from "./constants";
-import { calculateTax, makeTaxConfig } from "./tax";
+import { calculateTax } from "./tax";
 import { makeEmptyDrawdownPoint } from "./helpers";
-import { getTaxEngine } from "@/lib/tax";
+import { PARTIAL_EXEMPTION_RATE } from "@/lib/tax";
 
 export function simulateDrawdown(
   exitBalanceNominal: number,
@@ -69,12 +69,9 @@ export function simulateDrawdown(
         withdrawal = balance;
       } else {
         // Approximate net return after tax for the annuity formula
-        const engine = getTaxEngine(inputs.taxCountry);
         const approxTaxDrag =
-          (1 - engine.partialExemptionRate) *
-          (inputs.taxCountry === "DE"
-            ? (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE)
-            : engine.calculateTax(1, makeTaxConfig(inputs)));
+          (1 - PARTIAL_EXEMPTION_RATE) *
+          (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE);
         const netReturn = roi * (1 - approxTaxDrag);
         if (netReturn <= 0) {
           withdrawal = balance / remaining;

@@ -84,8 +84,8 @@ fire-simulator/
 │   ├── fireCalculations.ts       # Backward-compat re-export barrel
 │   ├── fireCalculations.test.ts  # 139+ calc tests
 │   ├── tax/
-│   │   ├── index.ts              # 9-country tax engine
-│   │   └── index.test.ts         # 38 tax tests
+│   │   ├── index.ts              # German Abgeltungssteuer engine
+│   │   └── index.test.ts         # Tax tests
 │   ├── i18n/
 │   │   ├── index.tsx             # I18nProvider + useI18n hook
 │   │   └── translations.ts       # DE + EN (600+ keys)
@@ -93,8 +93,8 @@ fire-simulator/
 │   │   └── index.ts              # XLSX, PDF, CSV, JSON export
 │   ├── theme/
 │   │   └── index.tsx             # ThemeProvider + useTheme hook
-│   ├── currency.ts               # COUNTRY_CURRENCY + formatting
-│   ├── countryDefaults.ts        # Per-country defaults
+│   ├── currency.ts               # EUR formatting
+│   ├── germanDefaults.ts         # German default assumptions
 │   ├── examplePlans.ts           # Pre-built example scenarios
 │   └── chartUtils.ts             # Chart formatting helpers
 ├── public/                       # Static assets
@@ -137,10 +137,10 @@ The barrel file `lib/fireCalculations.ts` re-exports everything for backward com
 
 ### Tax Engine
 
-Pluggable interface (`TaxEngine`) with 9 country implementations. Each engine:
-- Calculates tax on gains
-- Reports annual allowance
-- Reports partial exemption rate
+Germany-focused capital-gains tax (`lib/tax/`). The engine models the German
+**Abgeltungssteuer** (25% + 5.5% Solidaritätszuschlag, optional Kirchensteuer),
+the equity-ETF **Teilfreistellung** (30% partial exemption) and the annual
+**Sparer-Pauschbetrag** allowance.
 
 ### i18n
 
@@ -170,8 +170,8 @@ npm run test:watch    # Interactive watch mode
 
 | File                          | Tests | Covers                                  |
 | ----------------------------- | ----- | --------------------------------------- |
-| `lib/fireCalculations.test.ts` | 139+ | Core engine, edge cases, all countries |
-| `lib/tax/index.test.ts`      | 38    | All 9 tax models                        |
+| `lib/fireCalculations.test.ts` | 119+ | Core engine, edge cases, drawdown       |
+| `lib/tax/index.test.ts`      | 10    | German Abgeltungssteuer                  |
 | `lib/chartUtils.test.ts`     | 4     | Chart formatting                        |
 
 ### Writing Tests

@@ -2,8 +2,6 @@
 // Interfaces & Types for FIRE calculations
 // ---------------------------------------------------------------------------
 
-import type { TaxCountry } from "@/lib/tax";
-
 /** Life event types for cash-flow timeline modelling */
 export type LifeEventType =
   | "home_purchase"
@@ -57,9 +55,6 @@ export interface FireInputs {
   // Tax settings
   steuerModell: "single" | "couple"; // 1 000 € vs 2 000 € Freibetrag
   kirchensteuer: boolean; // adds church-tax surcharge
-
-  // Multi-country tax
-  taxCountry: TaxCountry;
 
   // Withdrawal mode
   entnahmeModell: "ewigeRente" | "kapitalverzehr";

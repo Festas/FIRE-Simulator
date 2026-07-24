@@ -177,32 +177,26 @@ calculateFIRE(inputs: FireInputs): FireResult
 
 ## Tax Engine
 
-The tax engine (`lib/tax/`) uses a **pluggable architecture** with a common interface:
+The tax engine (`lib/tax/`) is focused exclusively on **Germany**. It models the
+German **Abgeltungssteuer** with the equity-ETF Teilfreistellung and the annual
+Sparer-Pauschbetrag:
 
 ```typescript
-interface TaxEngine {
-  readonly id: TaxCountry;
-  calculateTax(gains: number, config: TaxConfig): number;
-  annualAllowance(config: TaxConfig): number;
-  partialExemptionRate: number;
-}
+function calculateGermanTax(gains: number, config: TaxConfig): number;
+function annualAllowance(config: TaxConfig): number; // 1.000 € / 2.000 €
+function taxRate(config: TaxConfig): number;          // 26.375% or 27.82% (KiSt)
 ```
 
-Each country implements this interface. The calculation engine calls `calculateTax()` through a unified bridge in `lib/fireCalculations/tax.ts`.
+The calculation engine calls `calculateGermanTax()` through a unified bridge in `lib/fireCalculations/tax.ts`.
 
-### Tax Models by Country
+### German Tax Model
 
-| Country | Model                                       |
-| ------- | ------------------------------------------- |
-| DE      | Flat 26.375% + optional Kirchensteuer       |
-| US      | Progressive federal capital gains brackets   |
-| UK      | CGT with annual exempt amount (£6,000)       |
-| CH      | No capital gains tax (wealth tax model)      |
-| AT      | Flat KESt 27.5%                              |
-| NL      | Box 3 deemed return on assets                |
-| CA      | 50% inclusion rate + marginal tax            |
-| AU      | 50% CGT discount for >12 months              |
-| FR      | PFU 30% flat tax                             |
+| Component            | Detail                                             |
+| -------------------- | -------------------------------------------------- |
+| Abgeltungssteuer     | 25% + 5.5% Solidaritätszuschlag (26.375%)          |
+| Kirchensteuer        | Optional 8/9% church-tax surcharge                 |
+| Teilfreistellung     | 30% partial exemption for equity ETFs              |
+| Sparer-Pauschbetrag  | 1.000 € (single) / 2.000 € (couple) annual allowance |
 
 ---
 
@@ -212,7 +206,7 @@ Each country implements this interface. The calculation engine calls `calculateT
 
 ```
 page.tsx (Orchestrator)
-├── OnboardingWizard          # First-visit 4-step wizard
+├── OnboardingWizard          # First-visit 3-step wizard
 ├── FireEducationPanel        # Dismissible FIRE explainer
 ├── Sidebar                   # All input parameters
 │   └── ExamplePlansDropdown  # Pre-built scenarios
@@ -249,7 +243,7 @@ page.tsx (Orchestrator)
 | `LifecycleMonteCarloChart` | Full lifecycle MC with confidence bands               |
 | `ReversePlanner`        | Reverse calculation + sensitivity analysis               |
 | `LifeEventsEditor`      | Add/edit/delete life events with timeline preview        |
-| `OnboardingWizard`      | 4-step guided setup for first-time users                 |
+| `OnboardingWizard`      | 3-step guided setup for first-time users                 |
 | `FireScore`             | Composite 0–100 score with SVG gauge visualization       |
 
 ---

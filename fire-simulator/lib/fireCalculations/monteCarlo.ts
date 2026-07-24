@@ -14,10 +14,10 @@ import {
   LIFECYCLE_END_AGE,
   DRAWDOWN_RETURN_DEDUCTION,
 } from "./constants";
-import { calculateTax, makeTaxConfig } from "./tax";
+import { calculateTax } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { mulberry32, normalRandom, percentile } from "./helpers";
-import { getTaxEngine } from "@/lib/tax";
+import { PARTIAL_EXEMPTION_RATE } from "@/lib/tax";
 
 // ---------------------------------------------------------------------------
 // Monte Carlo drawdown simulation
@@ -81,12 +81,9 @@ export function simulateMonteCarlo(
         if (remaining <= 1) {
           withdrawal = balance;
         } else {
-          const engine = getTaxEngine(inputs.taxCountry);
           const approxTaxDrag =
-            (1 - engine.partialExemptionRate) *
-            (inputs.taxCountry === "DE"
-              ? (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE)
-              : engine.calculateTax(1, makeTaxConfig(inputs)));
+            (1 - PARTIAL_EXEMPTION_RATE) *
+            (inputs.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE);
           const netReturn = annualReturn * (1 - approxTaxDrag);
           if (netReturn <= 0) {
             withdrawal = balance / remaining;
