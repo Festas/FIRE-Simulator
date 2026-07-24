@@ -4,7 +4,7 @@
 
 import type { FireInputs, YearDataPoint } from "./types";
 import { DRAWDOWN_YEARS, TAX_RATE_BASE, TAX_RATE_KIST } from "./constants";
-import { calculateTax } from "./tax";
+import { makeTaxAccount } from "./tax";
 import { makeEmptyDrawdownPoint } from "./helpers";
 import { PARTIAL_EXEMPTION_RATE } from "@/lib/tax";
 
@@ -12,6 +12,7 @@ export function simulateDrawdown(
   exitBalanceNominal: number,
   inputs: FireInputs,
   exitYear: number,
+  exitBasisNominal: number = exitBalanceNominal,
 ): {
   data: YearDataPoint[];
   survives: boolean;
@@ -39,6 +40,7 @@ export function simulateDrawdown(
   const pensionAge = renteneintrittsalter ?? 67;
 
   let balance = exitBalanceNominal;
+  const tax = makeTaxAccount(inputs, exitBasisNominal);
   const data: YearDataPoint[] = [];
   let survives = true;
   let depletionYear: number | null = null;
@@ -54,12 +56,14 @@ export function simulateDrawdown(
       continue;
     }
 
-    // Growth
+    tax.beginYear();
+
+    // Growth — only the annual Vorabpauschale is taxed while unrealised
     const prevBalance = balance;
     balance *= 1 + roi;
     const gains = balance - prevBalance;
-    const tax = calculateTax(gains, inputs);
-    balance -= tax;
+    let annualTax = tax.taxVorabpauschale(prevBalance, gains);
+    balance -= annualTax;
 
     // Withdrawal calculation
     let withdrawal: number;
@@ -90,7 +94,11 @@ export function simulateDrawdown(
     }
 
     withdrawal = Math.min(withdrawal, balance);
+    // Tax the realised-gain fraction of the sale (proportional method)
+    const withdrawalTax = tax.taxWithdrawal(withdrawal, balance);
+    annualTax += withdrawalTax;
     balance -= withdrawal;
+    balance -= withdrawalTax;
 
     if (balance <= 0 && depletionYear === null) {
       depletionYear = calYear;
@@ -104,6 +112,7 @@ export function simulateDrawdown(
       age,
       etfBalanceNominal: balance,
       etfBalanceReal: balance / realFactor,
+      costBasisNominal: tax.costBasis,
       lzkBalanceNominal: 0,
       lzkBalanceReal: 0,
       totalReal: balance / realFactor,
@@ -111,7 +120,7 @@ export function simulateDrawdown(
       annualLZKContrib: 0,
       monthlySavings: 0,
       isLZKPhase: false,
-      taxPaid: tax,
+      taxPaid: annualTax,
       annualGains: gains,
       isDrawdownPhase: true,
       annualWithdrawal: withdrawal,

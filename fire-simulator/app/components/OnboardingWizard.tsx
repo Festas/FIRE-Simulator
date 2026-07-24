@@ -132,6 +132,7 @@ export default function OnboardingWizard({ onComplete, onSkip }: OnboardingWizar
       swr: swrPct,
       steuerModell: "single",
       kirchensteuer: false,
+      basiszins: GERMAN_DEFAULTS.basiszins,
       entnahmeModell: "ewigeRente",
       kapitalverzehrJahre: 30,
       monatlichesNetto: data.monatlichesNetto,

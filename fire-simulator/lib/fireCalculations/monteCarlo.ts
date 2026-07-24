@@ -14,7 +14,7 @@ import {
   LIFECYCLE_END_AGE,
   DRAWDOWN_RETURN_DEDUCTION,
 } from "./constants";
-import { calculateTax } from "./tax";
+import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { mulberry32, normalRandom, percentile } from "./helpers";
 import { PARTIAL_EXEMPTION_RATE } from "@/lib/tax";
@@ -27,6 +27,7 @@ export function simulateMonteCarlo(
   exitBalanceNominal: number,
   inputs: FireInputs,
   exitYear: number,
+  exitBasisNominal: number = exitBalanceNominal,
 ): MonteCarloResult {
   const {
     etfRendite,
@@ -57,6 +58,7 @@ export function simulateMonteCarlo(
 
   for (let sim = 0; sim < MC_SIMULATIONS; sim++) {
     let balance = exitBalanceNominal;
+    const tax = makeTaxAccount(inputs, exitBasisNominal);
     let survived = true;
 
     for (let y = 1; y <= MC_DRAWDOWN_YEARS; y++) {
@@ -66,13 +68,14 @@ export function simulateMonteCarlo(
         continue;
       }
 
+      tax.beginYear();
+
       // Stochastic return
       const annualReturn = meanReturn + stdDev * normalRandom(rng);
       const prevBalance = balance;
       balance *= 1 + annualReturn;
       const gains = balance - prevBalance;
-      const tax = calculateTax(gains, inputs);
-      balance -= tax;
+      balance -= tax.taxVorabpauschale(prevBalance, gains);
 
       // Withdrawal
       let withdrawal: number;
@@ -100,7 +103,9 @@ export function simulateMonteCarlo(
       }
 
       withdrawal = Math.min(withdrawal, balance);
+      const withdrawalTax = tax.taxWithdrawal(withdrawal, balance);
       balance -= withdrawal;
+      balance -= withdrawalTax;
       if (balance <= 0) balance = 0;
 
       const realFactor = Math.pow(1 + inf, exitYear + y);
@@ -190,11 +195,13 @@ export function simulateLifecycleMonteCarlo(
 
   for (let sim = 0; sim < MC_LIFECYCLE_SIMULATIONS; sim++) {
     let balance = startKapital;
+    const tax = makeTaxAccount(inputs, startKapital);
     let fireYear: number | null = null;
     let survived = true;
 
     for (let y = 1; y <= totalYears; y++) {
       const age = currentAge + y;
+      tax.beginYear();
 
       if (fireYear === null) {
         // === ACCUMULATION PHASE ===
@@ -204,12 +211,14 @@ export function simulateLifecycleMonteCarlo(
 
         const annualReturn = meanReturnAccum + stdDev * normalRandom(rng);
         const prev = balance;
+        tax.contribute(contrib);
         balance = (balance + contrib) * (1 + annualReturn);
         const gains = balance - prev - contrib;
-        balance -= calculateTax(Math.max(0, gains), inputs);
+        balance -= tax.taxVorabpauschale(prev, gains);
 
         // Life events
         const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+        applyCashFlowToBasis(tax, eventCF, balance);
         balance += eventCF;
         balance = Math.max(0, balance);
 
@@ -239,7 +248,7 @@ export function simulateLifecycleMonteCarlo(
         const prev = balance;
         balance *= 1 + annualReturn;
         const gains = balance - prev;
-        balance -= calculateTax(Math.max(0, gains), inputs);
+        balance -= tax.taxVorabpauschale(prev, gains);
 
         // Withdrawal
         let withdrawal: number;
@@ -257,7 +266,9 @@ export function simulateLifecycleMonteCarlo(
         }
 
         withdrawal = Math.min(withdrawal, balance);
+        const withdrawalTax = tax.taxWithdrawal(withdrawal, balance);
         balance -= withdrawal;
+        balance -= withdrawalTax;
         if (balance <= 0) balance = 0;
 
         const realVal = balance / Math.pow(1 + inf, y);
@@ -397,20 +408,24 @@ export function calculateMCRequiredSparrate(
 
     for (let sim = 0; sim < MC_LIFECYCLE_SIMULATIONS; sim++) {
       let balance = startKapital;
+      const tax = makeTaxAccount(inputs, startKapital);
       let reached = false;
 
       for (let y = 1; y <= targetYears; y++) {
+        tax.beginYear();
         const override = getSavingsRateOverride(lifeEvents, startYear + y);
         const savings = override !== null ? override : monthlySavings * Math.pow(1 + dyn, y - 1);
         const contrib = savings * 12 + bavJaehrlich;
 
         const annualReturn = meanReturn + stdDev * normalRandom(rng);
         const prev = balance;
+        tax.contribute(contrib);
         balance = (balance + contrib) * (1 + annualReturn);
         const gains = balance - prev - contrib;
-        balance -= calculateTax(Math.max(0, gains), inputs);
+        balance -= tax.taxVorabpauschale(prev, gains);
 
         const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+        applyCashFlowToBasis(tax, eventCF, balance);
         balance += eventCF;
         balance = Math.max(0, balance);
 

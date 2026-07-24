@@ -14,6 +14,7 @@ export interface GermanDefaults {
   etfRendite: number;
   inflation: number;
   swr: number;
+  basiszins: number;
 }
 
 export const GERMAN_DEFAULTS: GermanDefaults = {
@@ -25,4 +26,5 @@ export const GERMAN_DEFAULTS: GermanDefaults = {
   etfRendite: 7.0,
   inflation: 2.5,
   swr: 3.5,
+  basiszins: 2.53,
 };

@@ -86,6 +86,9 @@ export interface Translations {
   taxFilingCouple: string;
   churchTax: string;
   churchTaxTooltip: string;
+  basiszins: string;
+  basiszinsSub: string;
+  basiszinsTooltip: string;
   withdrawalMode: string;
   withdrawalModeTooltip: string;
   withdrawalPreserve: string;
@@ -699,6 +702,9 @@ export const de: Translations = {
   taxFilingCouple: "Zusammen",
   churchTax: "Kirchensteuer",
   churchTaxTooltip: "Erhöht den Steuersatz auf Kapitalerträge von 26,375% auf ca. 27,82%.",
+  basiszins: "Basiszins",
+  basiszinsSub: "Für Vorabpauschale",
+  basiszinsTooltip: "Der jährlich vom BMF festgelegte Basiszins zur Berechnung der Vorabpauschale auf thesaurierende ETFs (2024: 2,29%, 2025: 2,53%).",
   withdrawalMode: "Entnahme-Modus",
   withdrawalModeTooltip: "'Kapital erhalten' (Ewige Rente): Sie leben nur von den Erträgen. 'Aufbrauchen': Das Vermögen wird über einen definierten Zeitraum komplett entnommen.",
   withdrawalPreserve: "Kapital erhalten",
@@ -1285,6 +1291,9 @@ export const en: Translations = {
   taxFilingCouple: "Couple",
   churchTax: "Church Tax",
   churchTaxTooltip: "Increases the tax rate on capital gains from 26.375% to approx. 27.82%.",
+  basiszins: "Base Rate",
+  basiszinsSub: "For advance lump-sum tax",
+  basiszinsTooltip: "The annual base rate set by the German Ministry of Finance, used to compute the Vorabpauschale (advance lump-sum tax) on accumulating ETFs (2024: 2.29%, 2025: 2.53%).",
   withdrawalMode: "Withdrawal Mode",
   withdrawalModeTooltip: "'Preserve Capital' (Perpetual Income): You live only from returns. 'Spend Down': The wealth is completely withdrawn over a defined period.",
   withdrawalPreserve: "Preserve Capital",

@@ -55,6 +55,12 @@ export interface FireInputs {
   // Tax settings
   steuerModell: "single" | "couple"; // 1 000 € vs 2 000 € Freibetrag
   kirchensteuer: boolean; // adds church-tax surcharge
+  /**
+   * Basiszins for the Vorabpauschale (percent, e.g. 2.53). Set annually by the
+   * Bundesfinanzministerium. Optional for backward compatibility — falls back to
+   * DEFAULT_BASISZINS when absent.
+   */
+  basiszins?: number;
 
   // Withdrawal mode
   entnahmeModell: "ewigeRente" | "kapitalverzehr";
@@ -90,6 +96,8 @@ export interface YearDataPoint {
   age: number;
   etfBalanceNominal: number;
   etfBalanceReal: number;
+  /** Cost basis of the ETF position (nominal) — used for realised-gain tax on sale */
+  costBasisNominal: number;
   lzkBalanceNominal: number;
   lzkBalanceReal: number;
   totalReal: number;

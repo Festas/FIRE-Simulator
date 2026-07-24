@@ -385,6 +385,18 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                     onChange={(v) => onChange("kirchensteuer", v)}
                   />
                 )}
+
+                <SliderField
+                  label={t.basiszins}
+                  subLabel={t.basiszinsSub}
+                  tooltip={t.basiszinsTooltip}
+                  value={inputs.basiszins ?? 2.53}
+                  min={0}
+                  max={5}
+                  step={0.01}
+                  onChange={(v) => onChange("basiszins", v)}
+                  format={fmtPct}
+                />
               </div>
 
               {/* --- Entnahme-Strategie --- */}

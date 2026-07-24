@@ -52,6 +52,7 @@ const DEFAULT_INPUTS: FireInputs = {
   swr: 3.5,
   steuerModell: "single",
   kirchensteuer: false,
+  basiszins: 2.53,
   entnahmeModell: "ewigeRente",
   kapitalverzehrJahre: 30,
   monatlichesNetto: 5_200,

@@ -23,6 +23,7 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   sw: "swr",
   sm: "steuerModell",
   ks: "kirchensteuer",
+  bz: "basiszins",
   em: "entnahmeModell",
   kj: "kapitalverzehrJahre",
   mb: "monatlichesNetto",
