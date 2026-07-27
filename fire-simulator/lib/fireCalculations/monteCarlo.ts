@@ -17,6 +17,7 @@ import {
 import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { mulberry32, normalRandom, percentile } from "./helpers";
+import { annualWithdrawalNeed } from "./retirementIncome";
 import { PARTIAL_EXEMPTION_RATE } from "@/lib/tax";
 
 // ---------------------------------------------------------------------------
@@ -32,9 +33,6 @@ export function simulateMonteCarlo(
   const {
     etfRendite,
     inflation,
-    monatlichesWunschEinkommen,
-    gesetzlicheRente,
-    renteneintrittsalter,
     entnahmeModell,
     kapitalverzehrJahre,
     startYear,
@@ -42,12 +40,9 @@ export function simulateMonteCarlo(
   } = inputs;
 
   // Expected return and volatility for drawdown phase
-  const meanReturn = Math.max(0, etfRendite - 1) / 100; // conservative
+  const meanReturn = Math.max(0, etfRendite - DRAWDOWN_RETURN_DEDUCTION) / 100; // conservative
   const stdDev = 0.15; // ~15% annual volatility (typical for diversified equity)
   const inf = inflation / 100;
-  const monthlyGapFull = monatlichesWunschEinkommen;
-  const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
-  const pensionAge = renteneintrittsalter ?? 67;
 
   const rng = mulberry32(42); // deterministic seed
   const balancesByYear: number[][] = Array.from(
@@ -98,8 +93,7 @@ export function simulateMonteCarlo(
         }
       } else {
         const age = currentAge + exitYear + y;
-        const gap = age >= pensionAge ? monthlyGapWithPension : monthlyGapFull;
-        withdrawal = gap * 12 * Math.pow(1 + inf, exitYear + y);
+        withdrawal = annualWithdrawalNeed(inputs, age, exitYear + y);
       }
 
       withdrawal = Math.min(withdrawal, balance);
@@ -158,8 +152,6 @@ export function simulateLifecycleMonteCarlo(
     startYear,
     currentAge,
     lifeEvents,
-    monatlichesWunschEinkommen,
-    gesetzlicheRente,
     renteneintrittsalter,
     entnahmeModell,
     kapitalverzehrJahre,
@@ -172,8 +164,6 @@ export function simulateLifecycleMonteCarlo(
   const dyn = dynamikSparrate / 100;
   const pensionAge = renteneintrittsalter ?? 67;
   const pensionStartYearOffset = Math.max(0, pensionAge - currentAge);
-  const monthlyGapFull = monatlichesWunschEinkommen;
-  const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
 
   // Full lifecycle horizon: simulate until LIFECYCLE_END_AGE (at least MAX_YEARS)
   const totalYears = Math.max(MAX_YEARS, LIFECYCLE_END_AGE - currentAge);
@@ -218,8 +208,9 @@ export function simulateLifecycleMonteCarlo(
 
         // Life events
         const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-        applyCashFlowToBasis(tax, eventCF, balance);
+        const eventTax = applyCashFlowToBasis(tax, eventCF, balance);
         balance += eventCF;
+        balance -= eventTax;
         balance = Math.max(0, balance);
 
         const realVal = balance / Math.pow(1 + inf, y);
@@ -261,8 +252,7 @@ export function simulateLifecycleMonteCarlo(
             withdrawal = balance / remaining;
           }
         } else {
-          const gap = age >= pensionAge ? monthlyGapWithPension : monthlyGapFull;
-          withdrawal = gap * 12 * Math.pow(1 + inf, y);
+          withdrawal = annualWithdrawalNeed(inputs, age, y);
         }
 
         withdrawal = Math.min(withdrawal, balance);
@@ -425,8 +415,9 @@ export function calculateMCRequiredSparrate(
         balance -= tax.taxVorabpauschale(prev, gains);
 
         const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-        applyCashFlowToBasis(tax, eventCF, balance);
+        const eventTax = applyCashFlowToBasis(tax, eventCF, balance);
         balance += eventCF;
+        balance -= eventTax;
         balance = Math.max(0, balance);
 
         const realVal = balance / Math.pow(1 + inf, y);

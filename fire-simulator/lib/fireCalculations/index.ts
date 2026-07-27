@@ -131,8 +131,9 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     const gains = etfBal - prev - contrib;
     etfBal -= estTax.taxVorabpauschale(prev, gains);
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-    applyCashFlowToBasis(estTax, eventCF, etfBal);
+    const eventTax = applyCashFlowToBasis(estTax, eventCF, etfBal);
     etfBal += eventCF;
+    etfBal -= eventTax;
     etfBal = Math.max(0, etfBal);
     const realVal = etfBal / Math.pow(1 + inf, y);
     if (realVal >= zielvermoegen) {
@@ -225,16 +226,18 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     etfBal -= etfTax;
 
     const yearGains = etfGains;
-    const yearTax = etfTax;
-
-    totalTaxPaid += yearTax;
-    totalGains += yearGains;
+    const yearTaxVorab = etfTax;
 
     // Apply life events cash-flow to ETF balance
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-    applyCashFlowToBasis(tax, eventCF, etfBal);
+    const eventTax = applyCashFlowToBasis(tax, eventCF, etfBal);
     etfBal += eventCF;
+    etfBal -= eventTax;
     etfBal = Math.max(0, etfBal);
+
+    const yearTax = yearTaxVorab + eventTax;
+    totalTaxPaid += yearTax;
+    totalGains += yearGains;
 
     const etfReal = etfBal / realFactor;
     const totalReal = etfReal;
@@ -286,7 +289,10 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     if (fullFireYear === null && totalReal >= zielvermoegen) fullFireYear = y;
   }
 
-  // Coast FIRE amount at the year it was reached (or current threshold)
+  // Coast FIRE amount at the year it was reached (or current threshold).
+  // When the real return is ≤ 0 the discount factor is ≥ 1, which would make
+  // the "coast" amount exceed the actual target — coasting is impossible then,
+  // so clamp to the target (you need the full amount, no coasting benefit).
   let coastFireAmount: number;
   if (coastFireYear !== null) {
     const remaining = Math.max(0, estimatedFireYear - coastFireYear);
@@ -299,6 +305,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       zielvermoegen /
       Math.pow(1 + realReturn, Math.max(1, estimatedFireYear));
   }
+  coastFireAmount = Math.min(coastFireAmount, zielvermoegen);
 
   // Freistellung duration in years
   const totalFreistellungJahre = arbeitszeitkontoEnabled && annualWorkHours > 0
@@ -327,6 +334,15 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const sparquote =
     monatlichesNetto > 0
       ? (monatlicheSparrate / monatlichesNetto) * 100
+      : 0;
+
+  // Effective savings rate including employer/gross bAV contributions, expressed
+  // relative to net income plus the monthly bAV amount (an approximation of the
+  // total money being put to work each month vs. total resources available).
+  const bavMonthly = (bavJaehrlich ?? 0) / 12;
+  const sparquoteEffective =
+    monatlichesNetto + bavMonthly > 0
+      ? ((monatlicheSparrate + bavMonthly) / (monatlichesNetto + bavMonthly)) * 100
       : 0;
 
   const targetYears = fullFireYear !== null ? fullFireYear : MAX_YEARS;
@@ -394,10 +410,14 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     drawdownData: drawdownResult.data,
     drawdownSurvives: drawdownResult.survives,
     drawdownDepletionYear: drawdownResult.depletionYear,
+    drawdownPlannedDepletion:
+      inputs.entnahmeModell === "kapitalverzehr" &&
+      drawdownResult.depletionYear !== null,
 
     coastFireAmount,
     requiredSparrate,
     sparquote,
+    sparquoteEffective,
 
     scenarioOptimistic,
     scenarioPessimistic,

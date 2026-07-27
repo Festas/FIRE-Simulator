@@ -14,6 +14,7 @@ export function makeTaxConfig(inputs: FireInputs): TaxConfig {
   return {
     filingStatus: inputs.steuerModell,
     kirchensteuer: inputs.kirchensteuer,
+    guenstigerpruefung: inputs.guenstigerpruefung ?? false,
   };
 }
 
@@ -45,25 +46,32 @@ export function calculateTax(gains: number, inputs: FireInputs): number {
 
 /**
  * Keep an account's cost basis consistent when a life-event cash flow hits the
- * portfolio: positive flows add fresh capital (basis increases), negative flows
- * are treated as a proportional return of capital (basis decreases pro-rata).
+ * portfolio and return any capital-gains tax triggered by the flow.
+ *
+ * Positive flows add fresh capital (basis increases, no tax). Negative flows are
+ * treated as a partial sale: the realised-gain fraction is taxed (proportional
+ * method) and the cost basis shrinks pro-rata. The caller must subtract the
+ * returned tax from the balance.
  *
  * @param account       the tax account to update
  * @param eventCF       the net cash flow applied to the balance
  * @param balanceBefore the ETF balance before the cash flow is applied
+ * @returns capital-gains tax owed on the sale (0 for non-negative flows)
  */
 export function applyCashFlowToBasis(
   account: GermanTaxAccount,
   eventCF: number,
   balanceBefore: number,
-): void {
+): number {
   if (eventCF > 0) {
     account.contribute(eventCF);
-  } else if (eventCF < 0 && balanceBefore > 0) {
-    // A negative cash flow (withdrawal) is a partial sale: it returns capital
-    // proportionally, so the remaining cost basis shrinks by the same fraction
-    // of the position that was removed.
-    const frac = Math.min(1, -eventCF / balanceBefore);
-    account.costBasis = Math.max(0, account.costBasis * (1 - frac));
+    return 0;
   }
+  if (eventCF < 0 && balanceBefore > 0) {
+    // A negative cash flow (withdrawal) is a partial sale: it realises a
+    // proportional share of the accrued gains, which is taxed, and returns the
+    // remaining capital (reducing the cost basis pro-rata).
+    return account.taxWithdrawal(-eventCF, balanceBefore);
+  }
+  return 0;
 }

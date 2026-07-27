@@ -76,6 +76,50 @@ export interface FireInputs {
   arbeitszeitkontoEnabled: boolean; // enable the working-time-account model
   stundenProJahr: number; // hours accumulated per year on the time account
   wochenStunden: number; // regular weekly working hours (for conversion to years)
+
+  // ---------------------------------------------------------------------------
+  // Germany-specific retirement realism (all optional, default-preserving)
+  // ---------------------------------------------------------------------------
+  /**
+   * Monthly health-insurance cost in retirement (today's €). Models the
+   * freiwillige gesetzliche / private Krankenversicherung that a German early
+   * retiree pays lifelong. Inflation-adjusted and added to the withdrawal need.
+   * Defaults to 0 (no health-insurance cost) for backward compatibility.
+   */
+  krankenversicherungMonatlich?: number;
+  /**
+   * Effective tax + social-contribution rate applied to the gross state pension
+   * (percent). Net pension = gross × (1 − rate/100). Models the Besteuerungsanteil
+   * of the gesetzliche Rente plus KVdR contributions. Defaults to 0 (pension
+   * treated as fully net) for backward compatibility.
+   */
+  pensionSteuersatz?: number;
+  /**
+   * Annual growth rate of the state pension (percent). German Rentenanpassung
+   * follows wages and can lag price inflation. When omitted, the pension grows
+   * with the general `inflation` rate (matching the previous behaviour).
+   */
+  pensionInflation?: number;
+  /**
+   * When true, the derived FIRE number credits the future state pension via a
+   * two-phase model (full income until pension age, gap thereafter) instead of
+   * requiring the full desired income to be funded from capital perpetually.
+   * Defaults to false (SWR-on-full-income) for backward compatibility.
+   */
+  pensionInFireNumber?: boolean;
+  /**
+   * When true, the drawdown applies a Günstigerprüfung: capital-gains tax is the
+   * lower of the flat Abgeltungssteuer and the personal income-tax approximation
+   * (with the Grundfreibetrag). Defaults to false (always flat Abgeltungssteuer).
+   */
+  guenstigerpruefung?: boolean;
+  /**
+   * When true, Monte-Carlo returns are drawn from a log-normal distribution
+   * (interpreting `etfRendite` as the geometric/CAGR mean) instead of an additive
+   * normal distribution. Defaults to true — the more realistic model. Set to
+   * false to reproduce the legacy additive-normal behaviour.
+   */
+  logNormalReturns?: boolean;
 }
 
 export interface MonteCarloResult {
@@ -184,6 +228,13 @@ export interface FireResult {
   drawdownData: YearDataPoint[];
   drawdownSurvives: boolean;
   drawdownDepletionYear: number | null;
+  /**
+   * True when a depletion is the *intended* outcome of a Kapitalverzehr plan
+   * (capital deliberately consumed by the target year), as opposed to a genuine
+   * shortfall in ewige-Rente mode. Lets the UI avoid framing a planned spend-down
+   * as a failure.
+   */
+  drawdownPlannedDepletion: boolean;
 
   // Dynamic Coast FIRE threshold
   coastFireAmount: number;
@@ -193,6 +244,12 @@ export interface FireResult {
 
   // Savings rate as % of net income
   sparquote: number;
+  /**
+   * Effective savings quota including the dynamic increase and bAV, averaged
+   * over the accumulation-to-FIRE horizon (percent of net income). More
+   * representative than `sparquote` for plans with rising savings or bAV.
+   */
+  sparquoteEffective: number;
 
   // Scenario comparison
   scenarioOptimistic: YearDataPoint[]; // +2 % return
