@@ -45,7 +45,7 @@ export { calculateTax, makeTaxConfig } from "./tax";
 
 import type { FireInputs, FireResult } from "./types";
 import { MAX_YEARS } from "./constants";
-import { calculateTax } from "./tax";
+import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { makeYearZero } from "./helpers";
 import { simulateAccumulation, simulateNoInvestment } from "./accumulation";
@@ -118,16 +118,20 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   // Pass 1: estimate FIRE year (without AZK effects, for Coast FIRE anchor)
   // -----------------------------------------------------------------------
   let etfBal = startKapital;
+  const estTax = makeTaxAccount(inputs, startKapital);
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
+    estTax.beginYear();
     const override = getSavingsRateOverride(lifeEvents, startYear + y);
     const savings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = savings * 12 + bavJaehrlich;
     const prev = etfBal;
+    estTax.contribute(contrib);
     etfBal = (etfBal + contrib) * (1 + roi);
     const gains = etfBal - prev - contrib;
-    etfBal -= calculateTax(gains, inputs);
+    etfBal -= estTax.taxVorabpauschale(prev, gains);
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    applyCashFlowToBasis(estTax, eventCF, etfBal);
     etfBal += eventCF;
     etfBal = Math.max(0, etfBal);
     const realVal = etfBal / Math.pow(1 + inf, y);
@@ -146,6 +150,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   // Pass 2: full simulation with Arbeitszeitkonto model
   // -----------------------------------------------------------------------
   etfBal = startKapital;
+  const tax = makeTaxAccount(inputs, startKapital);
   const yearlyData: import("./types").YearDataPoint[] = [];
   let totalTaxPaid = 0;
   let totalGains = 0;
@@ -206,15 +211,17 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
 
     // ETF growth & contributions
     const prevEtf = etfBal;
+    tax.beginYear();
     if (isFreistellung || isCoast) {
       // No new contributions during Freistellung or Coasting
       etfBal = etfBal * (1 + roi);
     } else {
       // Normal accumulation
+      tax.contribute(contrib);
       etfBal = (etfBal + contrib) * (1 + roi);
     }
     const etfGains = etfBal - prevEtf - ((isFreistellung || isCoast) ? 0 : contrib);
-    const etfTax = calculateTax(etfGains, inputs);
+    const etfTax = tax.taxVorabpauschale(prevEtf, etfGains);
     etfBal -= etfTax;
 
     const yearGains = etfGains;
@@ -225,6 +232,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
 
     // Apply life events cash-flow to ETF balance
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    applyCashFlowToBasis(tax, eventCF, etfBal);
     etfBal += eventCF;
     etfBal = Math.max(0, etfBal);
 
@@ -239,6 +247,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       age: currentAge + y,
       etfBalanceNominal: etfBal,
       etfBalanceReal: etfReal,
+      costBasisNominal: tax.costBasis,
       lzkBalanceNominal: 0,
       lzkBalanceReal: 0,
       totalReal,
@@ -307,6 +316,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const exitBalanceNominal = exitData
     ? exitData.etfBalanceNominal
     : 0;
+  const exitBasisNominal = exitData ? exitData.costBasisNominal : exitBalanceNominal;
   const passiveIncomeAtExit = (exitBalance * swrDecimal) / 12;
 
   // -----------------------------------------------------------------------
@@ -325,12 +335,12 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   // -----------------------------------------------------------------------
   // Drawdown phase
   // -----------------------------------------------------------------------
-  const drawdownResult = simulateDrawdown(exitBalanceNominal, inputs, exitIdx);
+  const drawdownResult = simulateDrawdown(exitBalanceNominal, inputs, exitIdx, exitBasisNominal);
 
   // -----------------------------------------------------------------------
   // Monte Carlo simulation
   // -----------------------------------------------------------------------
-  const monteCarlo = simulateMonteCarlo(exitBalanceNominal, inputs, exitIdx);
+  const monteCarlo = simulateMonteCarlo(exitBalanceNominal, inputs, exitIdx, exitBasisNominal);
 
   // -----------------------------------------------------------------------
   // Full lifecycle Monte Carlo

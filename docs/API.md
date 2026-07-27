@@ -180,6 +180,7 @@ Complete set of user inputs for the simulation.
 | `swr`                      | `number`                          | Safe withdrawal rate (%)                             |
 | `steuerModell`             | `"single" \| "couple"`            | Tax filing status                                    |
 | `kirchensteuer`            | `boolean`                         | Church tax surcharge                                 |
+| `basiszins`                | `number` (optional)               | Basiszins (%) for the Vorabpauschale; defaults to 2.53% |
 | `entnahmeModell`           | `"ewigeRente" \| "kapitalverzehr"` | Perpetual income vs. capital depletion              |
 | `kapitalverzehrJahre`      | `number`                          | Depletion period in years                            |
 | `monatlichesNetto`         | `number`                          | Monthly net income (for savings rate display)        |
@@ -237,6 +238,7 @@ Single year of simulation data (used for both accumulation and drawdown).
 | `age`                | `number`  | User's age in this year                      |
 | `etfBalanceNominal`  | `number`  | ETF balance (nominal)                        |
 | `etfBalanceReal`     | `number`  | ETF balance (inflation-adjusted)             |
+| `costBasisNominal`   | `number`  | Tracked cost basis (nominal) for realised-gain taxation |
 | `lzkBalanceNominal`  | `number`  | LZK balance (nominal)                        |
 | `lzkBalanceReal`     | `number`  | LZK balance (inflation-adjusted)             |
 | `totalReal`          | `number`  | Total portfolio (inflation-adjusted)         |
@@ -342,6 +344,11 @@ The simulator focuses exclusively on Germany. Capital gains are taxed via the
 increased by Kirchensteuer), with the equity-ETF **Teilfreistellung** (30%
 partial exemption) and the annual **Sparer-Pauschbetrag** allowance.
 
+Accumulating equity ETFs defer most of the capital-gains tax until sale. During
+the holding period only the annual **Vorabpauschale** (advance lump sum) is
+taxed; the remainder is settled on sale via cost-basis tracking. The stateful
+`GermanTaxAccount` models this behaviour.
+
 ### `TaxConfig`
 
 | Field          | Type                    | Description                        |
@@ -356,10 +363,37 @@ function calculateGermanTax(gains: number, config: TaxConfig): number;
 function annualAllowance(config: TaxConfig): number;
 function taxRate(config: TaxConfig): number;
 
+// Vorabpauschale (advance lump-sum tax on accumulating ETFs)
+function basisertrag(valueStartOfYear: number, basiszinsPercent: number): number;
+function vorabpauschale(
+  valueStartOfYear: number,
+  valueEndOfYear: number,
+  basiszinsPercent: number,
+): number;
+
 const TEILFREISTELLUNG = 0.3;         // 30% partial exemption for equity ETFs
 const PARTIAL_EXEMPTION_RATE = 0.3;
 const TAX_RATE_BASE = 0.26375;        // 25% + 5.5% Soli
 const TAX_RATE_KIST = 0.2782;         // incl. 8% Kirchensteuer
+const DEFAULT_BASISZINS = 2.53;       // 2025 Basiszins (%)
+const VORABPAUSCHALE_FACTOR = 0.7;    // 70% of the Basiszins forms the Basisertrag
+```
+
+### `GermanTaxAccount`
+
+A stateful tax account for a single ETF position. Created once per simulation
+run and mutated year by year. It tracks the cost basis and a per-year
+Sparer-Pauschbetrag budget shared between the Vorabpauschale and realised gains.
+
+```typescript
+class GermanTaxAccount {
+  costBasis: number;
+  constructor(config: TaxConfig, basiszinsPercent?: number, initialBasis?: number);
+  beginYear(): void;                                    // reset annual allowance
+  contribute(amount: number): void;                     // increase basis, no tax
+  taxVorabpauschale(valueStartOfYear: number, growthGain: number): number;
+  taxWithdrawal(withdrawal: number, valueBeforeWithdrawal: number): number;
+}
 ```
 
 ---

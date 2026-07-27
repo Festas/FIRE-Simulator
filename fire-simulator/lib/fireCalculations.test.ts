@@ -79,6 +79,35 @@ describe("Tax calculation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Vorabpauschale / cost-basis behaviour
+// ---------------------------------------------------------------------------
+
+describe("Vorabpauschale accumulation & realised-gain drawdown", () => {
+  it("defers tax: a higher Basiszins raises the accumulation-phase tax", () => {
+    const low = calculateFIRE(makeInputs({ basiszins: 0 }));
+    const high = calculateFIRE(makeInputs({ basiszins: 4 }));
+    // With Basiszins 0 there is no Vorabpauschale during accumulation, so the
+    // total tax paid can only be higher (or equal) with a positive Basiszins.
+    expect(high.totalTaxPaid).toBeGreaterThanOrEqual(low.totalTaxPaid);
+  });
+
+  it("does not tax the full unrealised gain each year (deferral keeps rate low)", () => {
+    const result = calculateFIRE(makeInputs({ basiszins: 2.53 }));
+    // If every year's full gain were taxed, the effective rate would approach
+    // the base rate. Deferral via Vorabpauschale keeps it well below that.
+    expect(result.effectiveTaxRate).toBeLessThan(0.26375);
+  });
+
+  it("falls back to the default Basiszins when the field is omitted", () => {
+    const inputs = makeInputs();
+    delete (inputs as Partial<FireInputs>).basiszins;
+    const result = calculateFIRE(inputs);
+    expect(result.totalTaxPaid).toBeGreaterThanOrEqual(0);
+    expect(Number.isFinite(result.effectiveTaxRate)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // FIRE milestone tests
 // ---------------------------------------------------------------------------
 

@@ -110,6 +110,21 @@ The simulator applies the German **Abgeltungssteuer** to investment gains.
 | Kirchensteuer (`kirchensteuer`) | Optional 8/9% church-tax surcharge      |
 | Teilfreistellung     | 30% partial exemption for equity ETFs              |
 | Sparer-Pauschbetrag  | 1.000 € (single) / 2.000 € (couple) annual allowance |
+| Vorabpauschale       | Advance lump-sum tax on accumulating ETFs (see below) |
+
+During the accumulation phase the simulator models **tax deferral** the way
+German accumulating ("thesaurierend") equity ETFs are actually taxed: instead of
+taxing the full unrealised gain each year, only the annual **Vorabpauschale**
+(advance lump sum) is taxed. The Vorabpauschale equals
+`value × Basiszins × 70%`, capped at the position's actual gain for the year,
+reduced by the 30% Teilfreistellung and offset by the Sparer-Pauschbetrag. Any
+Vorabpauschale already taxed raises the position's cost basis so it is not taxed
+again when the shares are sold.
+
+During drawdown only the **realised-gain fraction** of each withdrawal is taxed
+(proportional-gain method), based on the tracked cost basis, crediting the
+Vorabpauschale paid during accumulation. A single Sparer-Pauschbetrag budget is
+shared per year across the Vorabpauschale and realised gains.
 
 ### Filing Status (`steuerModell`)
 - **Options:** Single, Couple
@@ -120,6 +135,11 @@ The simulator applies the German **Abgeltungssteuer** to investment gains.
 - **Options:** Yes, No
 - **Default:** No
 - **Description:** Germany-specific: adds church tax surcharge to capital gains tax (effective rate rises from 26.375% to 27.82%).
+
+### Base Rate / Basiszins (`basiszins`)
+- **Range:** 0%–5%
+- **Default:** 2.53% (the 2025 tax-year value published by the Bundesfinanzministerium; 2024 was 2.29%)
+- **Description:** The base interest rate used to compute the yearly Vorabpauschale on accumulating ETFs. Setting it to 0 disables the Vorabpauschale (no advance taxation during accumulation).
 
 ---
 

@@ -16,7 +16,7 @@ import {
   SENSITIVITY_MAX_RETURN,
   SENSITIVITY_STEP,
 } from "./constants";
-import { calculateTax } from "./tax";
+import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { simulateAccumulation } from "./accumulation";
 import { simulateDrawdown } from "./drawdown";
@@ -49,16 +49,20 @@ export function calculateRequiredSparrate(
 
   function finalRealValue(monthlySavings: number): number {
     let bal = startKapital;
+    const tax = makeTaxAccount(inputs, startKapital);
     for (let y = 1; y <= targetYears; y++) {
+      tax.beginYear();
       const override = getSavingsRateOverride(lifeEvents, startYear + y);
       const savings = override !== null ? override : monthlySavings * Math.pow(1 + dyn, y - 1);
       const contrib = savings * 12 + bavJaehrlich;
       const prev = bal;
+      tax.contribute(contrib);
       bal = (bal + contrib) * (1 + roi);
       const gains = bal - prev - contrib;
-      bal -= calculateTax(gains, inputs);
+      bal -= tax.taxVorabpauschale(prev, gains);
       // Life events impact
       const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+      applyCashFlowToBasis(tax, eventCF, bal);
       bal += eventCF;
       bal = Math.max(0, bal);
     }
@@ -168,12 +172,13 @@ export function calculateReverse(
   const exitIdx = Math.min(targetYears, yearlyProjection.length - 1);
   const exitData = yearlyProjection[exitIdx];
   const exitBalanceNominal = exitData ? exitData.etfBalanceNominal : 0;
+  const exitBasisNominal = exitData ? exitData.costBasisNominal : exitBalanceNominal;
 
   // Monte Carlo drawdown simulation (full percentile data)
-  const monteCarlo = simulateMonteCarlo(exitBalanceNominal, projectionInputs, targetYears);
+  const monteCarlo = simulateMonteCarlo(exitBalanceNominal, projectionInputs, targetYears, exitBasisNominal);
 
   // Deterministic drawdown simulation
-  const drawdownResult = simulateDrawdown(exitBalanceNominal, projectionInputs, targetYears);
+  const drawdownResult = simulateDrawdown(exitBalanceNominal, projectionInputs, targetYears, exitBasisNominal);
 
   // Total tax paid during accumulation
   let totalTaxPaid = 0;

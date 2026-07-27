@@ -4,7 +4,7 @@
 
 import type { FireInputs, YearDataPoint } from "./types";
 import { MAX_YEARS } from "./constants";
-import { calculateTax } from "./tax";
+import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { makeYearZero } from "./helpers";
 
@@ -42,16 +42,20 @@ export function simulateAccumulation(
 
   // Pass 1: estimate FIRE year (without AZK effects) to anchor Coast FIRE
   let tempBal = startKapital;
+  const tempTax = makeTaxAccount(inputs, startKapital);
   let estimatedFireYear = MAX_YEARS;
   for (let y = 1; y <= MAX_YEARS; y++) {
+    tempTax.beginYear();
     const override = getSavingsRateOverride(lifeEvents, startYear + y);
     const baseSavings = override !== null ? override : monatlicheSparrate * Math.pow(1 + dyn, y - 1);
     const contrib = baseSavings * 12 + bavJaehrlich;
     const prev = tempBal;
+    tempTax.contribute(contrib);
     tempBal = (tempBal + contrib) * (1 + roi);
     const gains = tempBal - prev - contrib;
-    tempBal -= calculateTax(gains, inputs);
+    tempBal -= tempTax.taxVorabpauschale(prev, gains);
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    applyCashFlowToBasis(tempTax, eventCF, tempBal);
     tempBal += eventCF;
     tempBal = Math.max(0, tempBal);
     const realVal = tempBal / Math.pow(1 + inf, y);
@@ -63,6 +67,7 @@ export function simulateAccumulation(
 
   // Pass 2: full simulation with Arbeitszeitkonto logic
   let etfBal = startKapital;
+  const tax = makeTaxAccount(inputs, startKapital);
   const data: YearDataPoint[] = [];
   let accumulatedHours = 0;
   let coastFireReached = false;
@@ -116,6 +121,7 @@ export function simulateAccumulation(
 
     // ETF growth & contributions
     const prevEtf = etfBal;
+    tax.beginYear();
     if (isFreistellung) {
       // Freistellung: no new contributions, only portfolio growth
       etfBal = etfBal * (1 + roi);
@@ -124,14 +130,16 @@ export function simulateAccumulation(
       etfBal = etfBal * (1 + roi);
     } else {
       // Normal accumulation: contributions + growth
+      tax.contribute(contrib);
       etfBal = (etfBal + contrib) * (1 + roi);
     }
     const etfGains = etfBal - prevEtf - (isFreistellung || isCoast ? 0 : contrib);
-    const etfTax = calculateTax(etfGains, inputs);
+    const etfTax = tax.taxVorabpauschale(prevEtf, etfGains);
     etfBal -= etfTax;
 
     // Life events cash-flow
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
+    applyCashFlowToBasis(tax, eventCF, etfBal);
     etfBal += eventCF;
     etfBal = Math.max(0, etfBal);
 
@@ -145,6 +153,7 @@ export function simulateAccumulation(
       age: currentAge + y,
       etfBalanceNominal: etfBal,
       etfBalanceReal: etfReal,
+      costBasisNominal: tax.costBasis,
       lzkBalanceNominal: 0,
       lzkBalanceReal: 0,
       totalReal,
@@ -205,6 +214,7 @@ export function simulateNoInvestment(inputs: FireInputs): YearDataPoint[] {
       age: currentAge + y,
       etfBalanceNominal: nominalBalance,
       etfBalanceReal: realValue,
+      costBasisNominal: nominalBalance,
       lzkBalanceNominal: 0,
       lzkBalanceReal: 0,
       totalReal: realValue,
