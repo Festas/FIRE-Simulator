@@ -3,9 +3,10 @@
 // ---------------------------------------------------------------------------
 
 import type { FireInputs, YearDataPoint } from "./types";
-import { DRAWDOWN_YEARS, TAX_RATE_BASE, TAX_RATE_KIST } from "./constants";
+import { DRAWDOWN_YEARS, DRAWDOWN_RETURN_DEDUCTION, TAX_RATE_BASE, TAX_RATE_KIST } from "./constants";
 import { makeTaxAccount } from "./tax";
 import { makeEmptyDrawdownPoint } from "./helpers";
+import { annualWithdrawalNeed } from "./retirementIncome";
 import { PARTIAL_EXEMPTION_RATE } from "@/lib/tax";
 
 export function simulateDrawdown(
@@ -21,9 +22,6 @@ export function simulateDrawdown(
   const {
     etfRendite,
     inflation,
-    monatlichesWunschEinkommen,
-    gesetzlicheRente,
-    renteneintrittsalter,
     entnahmeModell,
     kapitalverzehrJahre,
     startYear,
@@ -31,13 +29,8 @@ export function simulateDrawdown(
   } = inputs;
 
   // More conservative allocation in drawdown (−1 % return)
-  const roi = Math.max(0, etfRendite - 1) / 100;
+  const roi = Math.max(0, etfRendite - DRAWDOWN_RETURN_DEDUCTION) / 100;
   const inf = inflation / 100;
-  // Full monthly gap (no pension) and reduced gap (with pension)
-  const monthlyGapFull = monatlichesWunschEinkommen;
-  const monthlyGapWithPension = Math.max(0, monatlichesWunschEinkommen - gesetzlicheRente);
-  // Pension start age — default 67 if not set
-  const pensionAge = renteneintrittsalter ?? 67;
 
   let balance = exitBalanceNominal;
   const tax = makeTaxAccount(inputs, exitBasisNominal);
@@ -86,11 +79,10 @@ export function simulateDrawdown(
         }
       }
     } else {
-      // Ewige Rente: desired income gap, inflation-adjusted
-      // Before pension age: withdraw full desired income
-      // After pension age: withdraw only the gap (desired - pension)
-      const gap = age >= pensionAge ? monthlyGapWithPension : monthlyGapFull;
-      withdrawal = gap * 12 * Math.pow(1 + inf, exitYear + y);
+      // Ewige Rente: desired income gap, inflation-adjusted. Health-insurance,
+      // pension taxation and a distinct pension growth rate are handled by the
+      // shared retirement-income helper (defaults reproduce the previous logic).
+      withdrawal = annualWithdrawalNeed(inputs, age, exitYear + y);
     }
 
     withdrawal = Math.min(withdrawal, balance);

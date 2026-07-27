@@ -317,6 +317,13 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                 format={fmtPct}
               />
 
+              <ToggleSwitch
+                label={t.logNormalReturns}
+                tooltip={t.logNormalReturnsTooltip}
+                checked={inputs.logNormalReturns ?? false}
+                onChange={(v) => onChange("logNormalReturns", v)}
+              />
+
               {/* --- Sparphase Details --- */}
               <div className="border-t border-slate-700/50 pt-4 mt-3">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
@@ -360,6 +367,44 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                 />
               </div>
 
+              {/* --- Rente & Gesundheit (Retirement & Health) --- */}
+              <div className="border-t border-slate-700/50 pt-4 mt-3">
+                <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
+                  {t.retirementHealthSection}
+                </p>
+
+                <SliderField
+                  label={t.healthInsurance}
+                  subLabel={t.healthInsuranceSub}
+                  tooltip={t.healthInsuranceTooltip}
+                  value={inputs.krankenversicherungMonatlich ?? 0}
+                  min={0}
+                  max={1200}
+                  step={10}
+                  onChange={(v) => onChange("krankenversicherungMonatlich", v)}
+                  format={fmtEuro}
+                />
+
+                <SliderField
+                  label={t.pensionTaxRate}
+                  subLabel={t.pensionTaxRateSub}
+                  tooltip={t.pensionTaxRateTooltip}
+                  value={inputs.pensionSteuersatz ?? 0}
+                  min={0}
+                  max={40}
+                  step={1}
+                  onChange={(v) => onChange("pensionSteuersatz", v)}
+                  format={fmtPct}
+                />
+
+                <ToggleSwitch
+                  label={t.pensionInFireNumber}
+                  tooltip={t.pensionInFireNumberTooltip}
+                  checked={inputs.pensionInFireNumber ?? false}
+                  onChange={(v) => onChange("pensionInFireNumber", v)}
+                />
+              </div>
+
               {/* --- Steuern --- */}
               <div className="border-t border-slate-700/50 pt-4 mt-3">
                 <p className="text-[10px] uppercase tracking-widest text-slate-500 mb-3 font-semibold">
@@ -396,6 +441,13 @@ export default function Sidebar({ inputs, onChange, onReset }: SidebarProps) {
                   step={0.01}
                   onChange={(v) => onChange("basiszins", v)}
                   format={fmtPct}
+                />
+
+                <ToggleSwitch
+                  label={t.guenstigerpruefung}
+                  tooltip={t.guenstigerpruefungTooltip}
+                  checked={inputs.guenstigerpruefung ?? false}
+                  onChange={(v) => onChange("guenstigerpruefung", v)}
                 />
               </div>
 

@@ -86,6 +86,46 @@ export function normalRandom(rng: () => number): number {
 }
 
 /**
+ * Draw a one-year *simple* return given an arithmetic mean and standard
+ * deviation of returns.
+ *
+ * When `logNormal` is false the classic additive model is used
+ * (`mean + stdDev · Z`), which can produce returns below −100 %.
+ *
+ * When `logNormal` is true, gross returns are drawn from a log-normal
+ * distribution — the realistic model for compounding asset prices: it can never
+ * wipe out more than 100 % of the portfolio and is right-skewed. The log-space
+ * parameters are chosen so the *arithmetic* mean of the simple return stays
+ * equal to `mean` (so expected outcomes are unchanged, only the shape/tail is
+ * corrected):
+ *
+ *   σ² = ln(1 + (stdDev / (1 + mean))²)
+ *   μ  = ln(1 + mean) − σ² / 2
+ *   r  = exp(μ + σ · Z) − 1
+ */
+export function sampleAnnualReturn(
+  rng: () => number,
+  mean: number,
+  stdDev: number,
+  logNormal: boolean,
+): number {
+  const z = normalRandom(rng);
+  if (!logNormal) return mean + stdDev * z;
+
+  const base = 1 + mean;
+  if (base <= 0) return mean + stdDev * z; // degenerate; fall back
+  // Method-of-moments: choose log-space μ, σ so the growth factor (1+r) is
+  // log-normal with arithmetic mean = base and std dev = stdDev. This keeps the
+  // *arithmetic* mean of the simple return equal to `mean` while preventing any
+  // draw below −100%. See the standard log-normal moment equations:
+  //   σ² = ln(1 + (stdDev/base)²),  μ = ln(base) − σ²/2.
+  const variance = Math.log(1 + Math.pow(stdDev / base, 2));
+  const sigma = Math.sqrt(variance);
+  const mu = Math.log(base) - variance / 2;
+  return Math.exp(mu + sigma * z) - 1;
+}
+
+/**
  * Calculate a percentile value from a sorted array of numbers.
  * Returns 0 for empty arrays.
  */

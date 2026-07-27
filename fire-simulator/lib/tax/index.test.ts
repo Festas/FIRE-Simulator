@@ -6,6 +6,8 @@ import {
   basisertrag,
   vorabpauschale,
   GermanTaxAccount,
+  approxIncomeTax,
+  GRUNDFREIBETRAG,
   DEFAULT_BASISZINS,
   VORABPAUSCHALE_FACTOR,
   PARTIAL_EXEMPTION_RATE,
@@ -165,5 +167,65 @@ describe("GermanTaxAccount", () => {
   it("no tax when withdrawing from a position with no gain", () => {
     const acct = makeAccount({}, 2.53, 100_000);
     expect(acct.taxWithdrawal(10_000, 100_000)).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Approximate income tax (§32a EStG 2024) and Günstigerprüfung
+// ---------------------------------------------------------------------------
+
+describe("approxIncomeTax", () => {
+  it("is zero at or below the Grundfreibetrag", () => {
+    const cfg = makeConfig();
+    expect(approxIncomeTax(0, cfg)).toBe(0);
+    expect(approxIncomeTax(GRUNDFREIBETRAG, cfg)).toBe(0);
+    expect(approxIncomeTax(GRUNDFREIBETRAG - 1_000, cfg)).toBe(0);
+  });
+
+  it("is positive and monotonic increasing above the allowance", () => {
+    const cfg = makeConfig();
+    const t20k = approxIncomeTax(20_000, cfg);
+    const t40k = approxIncomeTax(40_000, cfg);
+    const t80k = approxIncomeTax(80_000, cfg);
+    expect(t20k).toBeGreaterThan(0);
+    expect(t40k).toBeGreaterThan(t20k);
+    expect(t80k).toBeGreaterThan(t40k);
+  });
+
+  it("applies the top 42% marginal zone for high incomes", () => {
+    const cfg = makeConfig();
+    // A €1,000 increase in the linear-progressive 42% zone adds ~€420 base tax
+    const a = approxIncomeTax(100_000, cfg);
+    const b = approxIncomeTax(101_000, cfg);
+    expect(b - a).toBeGreaterThan(400);
+    expect(b - a).toBeLessThan(470); // incl. Soli headroom
+  });
+
+  it("couples (Splitting) pay no more than two singles on the same total", () => {
+    const single = makeConfig({ filingStatus: "single" });
+    const couple = makeConfig({ filingStatus: "couple" });
+    expect(approxIncomeTax(80_000, couple)).toBeLessThanOrEqual(
+      approxIncomeTax(80_000, single),
+    );
+  });
+});
+
+describe("Günstigerprüfung (GermanTaxAccount)", () => {
+  const mkAcct = (guenstiger: boolean) =>
+    new GermanTaxAccount(
+      makeConfig({ guenstigerpruefung: guenstiger }),
+      2.53,
+      50_000,
+    );
+
+  it("charges less than the flat rate when personal income tax is lower", () => {
+    // Low realised gain, no other income → personal income tax < Abgeltungsteuer
+    const flat = mkAcct(false);
+    const guenstiger = mkAcct(true);
+    flat.beginYear();
+    guenstiger.beginYear();
+    const flatTax = flat.taxWithdrawal(20_000, 60_000);
+    const guenstigerTax = guenstiger.taxWithdrawal(20_000, 60_000);
+    expect(guenstigerTax).toBeLessThanOrEqual(flatTax);
   });
 });

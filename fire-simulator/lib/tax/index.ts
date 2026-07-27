@@ -23,6 +23,12 @@ export interface TaxConfig {
   filingStatus: "single" | "couple";
   /** Church-tax surcharge (increases the effective rate) */
   kirchensteuer: boolean;
+  /**
+   * When true, apply a Günstigerprüfung: capital-gains tax is the lower of the
+   * flat Abgeltungssteuer and the personal income-tax on the same taxable base
+   * (with the Grundfreibetrag). Benefits retirees with low taxable income.
+   */
+  guenstigerpruefung?: boolean;
 }
 
 /** Teilfreistellung for equity ETFs — 30% of gains are exempt */
@@ -53,6 +59,45 @@ export function annualAllowance(config: TaxConfig): number {
 /** Effective capital-gains tax rate (incl. Kirchensteuer if enabled) */
 export function taxRate(config: TaxConfig): number {
   return config.kirchensteuer ? TAX_RATE_KIST : TAX_RATE_BASE;
+}
+
+/**
+ * Grundfreibetrag (basic tax-free income allowance) for the 2024 German income
+ * tax tariff, in euro. Doubled for jointly-assessed couples (Splitting).
+ */
+export const GRUNDFREIBETRAG = 11_604;
+
+/**
+ * Approximate German income tax (Einkommensteuer) for a given taxable income
+ * using the 2024 §32a EStG tariff. Church tax / Soli are added on top to stay
+ * comparable with the flat Abgeltungssteuer rate. For couples a simple Splitting
+ * approximation is applied (tax on half the income, doubled).
+ */
+export function approxIncomeTax(taxableIncome: number, config: TaxConfig): number {
+  const perPerson = config.filingStatus === "couple" ? taxableIncome / 2 : taxableIncome;
+  const base = incomeTax2024(perPerson);
+  const tax = config.filingStatus === "couple" ? base * 2 : base;
+  // Add Solidaritätszuschlag (5.5%) and optional Kirchensteuer to match the
+  // surcharges baked into the flat Abgeltungssteuer rate. Kirchensteuer is 8%
+  // in Bavaria/Baden-Württemberg and 9% elsewhere; we approximate with 8%.
+  const surcharge = 0.055 + (config.kirchensteuer ? 0.08 : 0);
+  return tax * (1 + surcharge);
+}
+
+/** Core 2024 income-tax tariff (§32a EStG) for a single person, without Soli. */
+function incomeTax2024(zvE: number): number {
+  const x = Math.floor(Math.max(0, zvE));
+  if (x <= GRUNDFREIBETRAG) return 0;
+  if (x <= 17_005) {
+    const y = (x - GRUNDFREIBETRAG) / 10_000;
+    return (922.98 * y + 1_400) * y;
+  }
+  if (x <= 66_760) {
+    const z = (x - 17_005) / 10_000;
+    return (181.19 * z + 2_397) * z + 1_025.38;
+  }
+  if (x <= 277_825) return 0.42 * x - 10_602.13;
+  return 0.45 * x - 18_936.88;
 }
 
 /**
@@ -114,6 +159,10 @@ export class GermanTaxAccount {
   costBasis: number;
   /** Remaining Sparer-Pauschbetrag for the current year. */
   private allowanceLeft: number;
+  /** Cumulative post-allowance taxable capital income booked this year (Günstiger). */
+  private taxableThisYear = 0;
+  /** Income tax already charged this year under Günstigerprüfung. */
+  private incomeTaxPaidThisYear = 0;
 
   constructor(config: TaxConfig, basiszinsPercent: number = DEFAULT_BASISZINS, initialBasis = 0) {
     this.config = config;
@@ -125,6 +174,8 @@ export class GermanTaxAccount {
   /** Reset the annual Sparer-Pauschbetrag budget. Call once at the start of each year. */
   beginYear(): void {
     this.allowanceLeft = annualAllowance(this.config);
+    this.taxableThisYear = 0;
+    this.incomeTaxPaidThisYear = 0;
   }
 
   /** Record a contribution/purchase — increases the cost basis, no tax. */
@@ -141,7 +192,20 @@ export class GermanTaxAccount {
     const offset = Math.min(this.allowanceLeft, taxableAfterExemption);
     this.allowanceLeft -= offset;
     const net = taxableAfterExemption - offset;
-    return net > 0 ? net * taxRate(this.config) : 0;
+    if (net <= 0) return 0;
+    const flatTax = net * taxRate(this.config);
+    if (this.config.guenstigerpruefung) {
+      // Günstigerprüfung: take the lower of the flat Abgeltungssteuer and the
+      // personal income-tax on the realised taxable capital income this year.
+      this.taxableThisYear += net;
+      const personalTax = Math.max(
+        0,
+        approxIncomeTax(this.taxableThisYear, this.config) - this.incomeTaxPaidThisYear,
+      );
+      this.incomeTaxPaidThisYear += personalTax;
+      return Math.min(flatTax, personalTax);
+    }
+    return flatTax;
   }
 
   /**

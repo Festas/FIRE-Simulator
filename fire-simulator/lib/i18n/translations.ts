@@ -89,6 +89,19 @@ export interface Translations {
   basiszins: string;
   basiszinsSub: string;
   basiszinsTooltip: string;
+  retirementHealthSection: string;
+  healthInsurance: string;
+  healthInsuranceSub: string;
+  healthInsuranceTooltip: string;
+  pensionTaxRate: string;
+  pensionTaxRateSub: string;
+  pensionTaxRateTooltip: string;
+  pensionInFireNumber: string;
+  pensionInFireNumberTooltip: string;
+  guenstigerpruefung: string;
+  guenstigerpruefungTooltip: string;
+  logNormalReturns: string;
+  logNormalReturnsTooltip: string;
   withdrawalMode: string;
   withdrawalModeTooltip: string;
   withdrawalPreserve: string;
@@ -126,6 +139,7 @@ export interface Translations {
   kpiSavingsRate: string;
   kpiLzkStart: string;
   kpiTargetReached: (years: number, target: string) => string;
+  kpiFireConfidence: (pct: string) => string;
   kpiTargetNotReached: string;
   kpiYearLabel: (year: number) => string;
   kpiAgeLabel: (age: number) => string;
@@ -218,6 +232,10 @@ export interface Translations {
   warnSavingsExceedIncome: string;
   warnPensionAgeTooLow: string;
   warnDesiredIncomeHigh: string;
+  warnLowMcSuccess: (pct: string) => string;
+  warnCoastImpossible: string;
+  warnSwrAboveRealReturn: (swr: string, real: string) => string;
+  infoPlannedDepletion: string;
 
   // Disclaimer
   disclaimer: string;
@@ -705,6 +723,19 @@ export const de: Translations = {
   basiszins: "Basiszins",
   basiszinsSub: "Für Vorabpauschale",
   basiszinsTooltip: "Der jährlich vom BMF festgelegte Basiszins zur Berechnung der Vorabpauschale auf thesaurierende ETFs (2024: 2,29%, 2025: 2,53%).",
+  retirementHealthSection: "Rente & Gesundheit",
+  healthInsurance: "Krankenversicherung",
+  healthInsuranceSub: "Monatlich im Ruhestand",
+  healthInsuranceTooltip: "Monatliche Kranken- und Pflegeversicherungsbeiträge im Ruhestand (freiwillige GKV oder PKV). Diese laufen lebenslang und werden zusätzlich zum Wunscheinkommen aus dem Portfolio entnommen.",
+  pensionTaxRate: "Rentensteuersatz",
+  pensionTaxRateSub: "Auf gesetzliche Rente",
+  pensionTaxRateTooltip: "Effektiver Steuersatz auf die gesetzliche Rente (nachgelagerte Besteuerung). Reduziert die netto anrechenbare Rente. 0% = steuerfrei angenommen.",
+  pensionInFireNumber: "Rente in FIRE-Zahl anrechnen",
+  pensionInFireNumberTooltip: "Wenn aktiv, wird die (netto) gesetzliche Rente in der abgeleiteten FIRE-Zahl berücksichtigt: das benötigte Kapital sinkt, da ab Renteneintritt ein Teil des Bedarfs gedeckt ist. Aus (Vorsichts-)Gründen standardmäßig aus.",
+  guenstigerpruefung: "Günstigerprüfung",
+  guenstigerpruefungTooltip: "Vergleicht die Abgeltungsteuer (26,375%) mit der persönlichen Einkommensteuer inkl. Grundfreibetrag und wendet den günstigeren Satz an. Vorteilhaft bei niedrigem sonstigen Einkommen im Ruhestand.",
+  logNormalReturns: "Log-normale Renditen",
+  logNormalReturnsTooltip: "Modelliert Monte-Carlo-Renditen log-normal (realistisch für zusammengesetzte Aktienrenditen) statt normal. Verhindert unrealistische Verluste über 100% und bildet die rechtsschiefe Verteilung ab; der Erwartungswert bleibt gleich.",
   withdrawalMode: "Entnahme-Modus",
   withdrawalModeTooltip: "'Kapital erhalten' (Ewige Rente): Sie leben nur von den Erträgen. 'Aufbrauchen': Das Vermögen wird über einen definierten Zeitraum komplett entnommen.",
   withdrawalPreserve: "Kapital erhalten",
@@ -740,6 +771,7 @@ export const de: Translations = {
   kpiSavingsRate: "Sparquote",
   kpiLzkStart: "Sabbatical Start",
   kpiTargetReached: (years, target) => `Zielvermögen ${target} in ${years} Jahren`,
+  kpiFireConfidence: (pct) => `${pct}% Monte-Carlo-Erfolg (inkl. Renditerisiko)`,
   kpiTargetNotReached: "Sparrate oder Rendite erhöhen",
   kpiYearLabel: (year) => `Jahr ${year}`,
   kpiAgeLabel: (age) => `Alter ${age}`,
@@ -826,6 +858,10 @@ export const de: Translations = {
   warnSavingsExceedIncome: "⚠️ Ihre Sparrate übersteigt Ihr Nettoeinkommen. Bitte überprüfen Sie Ihre Eingaben.",
   warnPensionAgeTooLow: "⚠️ Das Renteneintrittsalter liegt unter oder beim aktuellen Alter.",
   warnDesiredIncomeHigh: "ℹ️ Ihr gewünschtes Ruhestandseinkommen liegt über Ihrem aktuellen Nettoeinkommen.",
+  warnLowMcSuccess: (pct) => `⚠️ Die Monte-Carlo-Erfolgswahrscheinlichkeit liegt bei nur ${pct}%. Ein Wert unter 75% deutet auf ein erhebliches Risiko hin, dass das Kapital nicht ausreicht – erwägen Sie eine niedrigere Entnahmerate, längeres Ansparen oder höhere Sparrate.`,
+  warnCoastImpossible: "⚠️ Coast FIRE ist mit diesen Annahmen nicht möglich: Ihre reale Rendite (Rendite minus Inflation) ist null oder negativ, sodass das Kapital ohne weitere Einzahlungen nicht wächst.",
+  warnSwrAboveRealReturn: (swr, real) => `⚠️ Ihre Entnahmerate (${swr}%) übersteigt die reale Rendite (${real}%). Dadurch wird das Kapital real aufgezehrt – bei „ewiger Rente" ist das langfristig nicht tragfähig.`,
+  infoPlannedDepletion: "ℹ️ Im Modell „Kapitalverzehr“ wird das Vermögen bewusst planmäßig aufgebraucht. Das Erreichen von 0 € am Ende ist beabsichtigt und kein Fehler.",
 
   disclaimer: "Diese Simulation dient ausschließlich Informationszwecken und stellt keine Anlageberatung dar. Alle Werte basieren auf vereinfachten Annahmen und historischen Durchschnittswerten. Steuerberechnung nach deutschem Recht (Abgeltungssteuer + Teilfreistellung).",
 
@@ -1294,6 +1330,19 @@ export const en: Translations = {
   basiszins: "Base Rate",
   basiszinsSub: "For advance lump-sum tax",
   basiszinsTooltip: "The annual base rate set by the German Ministry of Finance, used to compute the Vorabpauschale (advance lump-sum tax) on accumulating ETFs (2024: 2.29%, 2025: 2.53%).",
+  retirementHealthSection: "Retirement & Health",
+  healthInsurance: "Health Insurance",
+  healthInsuranceSub: "Monthly in retirement",
+  healthInsuranceTooltip: "Monthly health and long-term-care insurance premiums in retirement (voluntary statutory GKV or private PKV). These are lifelong and are drawn from the portfolio on top of your desired income.",
+  pensionTaxRate: "Pension Tax Rate",
+  pensionTaxRateSub: "On state pension",
+  pensionTaxRateTooltip: "Effective tax rate on the state pension (deferred taxation). Reduces the net creditable pension. 0% assumes the pension is tax-free.",
+  pensionInFireNumber: "Credit pension in FIRE number",
+  pensionInFireNumberTooltip: "When on, the (net) state pension is credited in the derived FIRE number: the required capital drops because part of your needs is covered from pension age. Off by default for a conservative target.",
+  guenstigerpruefung: "Günstigerprüfung",
+  guenstigerpruefungTooltip: "Compares the flat capital-gains tax (26.375%) with your personal income tax including the basic allowance (Grundfreibetrag) and applies whichever is lower. Beneficial when other income in retirement is low.",
+  logNormalReturns: "Log-normal returns",
+  logNormalReturnsTooltip: "Models Monte-Carlo returns as log-normal (realistic for compounding equity returns) instead of normal. Prevents impossible losses beyond 100% and captures the right-skewed distribution; the expected value is unchanged.",
   withdrawalMode: "Withdrawal Mode",
   withdrawalModeTooltip: "'Preserve Capital' (Perpetual Income): You live only from returns. 'Spend Down': The wealth is completely withdrawn over a defined period.",
   withdrawalPreserve: "Preserve Capital",
@@ -1329,6 +1378,7 @@ export const en: Translations = {
   kpiSavingsRate: "Savings Rate",
   kpiLzkStart: "Sabbatical Start",
   kpiTargetReached: (years, target) => `Target ${target} in ${years} years`,
+  kpiFireConfidence: (pct) => `${pct}% Monte-Carlo success (incl. return risk)`,
   kpiTargetNotReached: "Increase savings rate or return",
   kpiYearLabel: (year) => `Year ${year}`,
   kpiAgeLabel: (age) => `Age ${age}`,
@@ -1415,6 +1465,10 @@ export const en: Translations = {
   warnSavingsExceedIncome: "⚠️ Your savings rate exceeds your net income. Please check your inputs.",
   warnPensionAgeTooLow: "⚠️ The pension age is at or below your current age.",
   warnDesiredIncomeHigh: "ℹ️ Your desired retirement income is higher than your current net income.",
+  warnLowMcSuccess: (pct) => `⚠️ The Monte-Carlo success probability is only ${pct}%. A value below 75% signals a substantial risk of running out of money — consider a lower withdrawal rate, saving longer, or a higher savings rate.`,
+  warnCoastImpossible: "⚠️ Coast FIRE is impossible with these assumptions: your real return (return minus inflation) is zero or negative, so the portfolio cannot grow without further contributions.",
+  warnSwrAboveRealReturn: (swr, real) => `⚠️ Your withdrawal rate (${swr}%) exceeds your real return (${real}%). This depletes capital in real terms — not sustainable long-term under the \"perpetual\" model.`,
+  infoPlannedDepletion: "ℹ️ Under the \"capital depletion\" model the portfolio is intentionally drawn down to zero. Reaching €0 at the end is by design, not a failure.",
 
   disclaimer: "This simulation is for informational purposes only and does not constitute investment advice. All values are based on simplified assumptions and historical averages. Tax calculation according to German law (Abgeltungssteuer + Teilfreistellung).",
 

@@ -55,8 +55,9 @@ export function simulateAccumulation(
     const gains = tempBal - prev - contrib;
     tempBal -= tempTax.taxVorabpauschale(prev, gains);
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-    applyCashFlowToBasis(tempTax, eventCF, tempBal);
+    const eventTax = applyCashFlowToBasis(tempTax, eventCF, tempBal);
     tempBal += eventCF;
+    tempBal -= eventTax;
     tempBal = Math.max(0, tempBal);
     const realVal = tempBal / Math.pow(1 + inf, y);
     if (realVal >= zielvermoegen) {
@@ -81,22 +82,12 @@ export function simulateAccumulation(
     const contrib = savings * 12 + bavJaehrlich;
     const realFactor = Math.pow(1 + inf, y);
 
-    // Check Coast FIRE threshold
-    if (!coastFireReached) {
-      const yearsRemaining = Math.max(0, estimatedFireYear - y);
-      const coastThreshold = yearsRemaining > 0
-        ? zielvermoegen / Math.pow(1 + realReturn, yearsRemaining)
-        : zielvermoegen;
-      const currentReal = etfBal / Math.pow(1 + inf, y - 1);
-      if (currentReal >= coastThreshold) {
-        coastFireReached = true;
-        if (arbeitszeitkontoEnabled && accumulatedHours > 0 && annualWorkHours > 0) {
-          remainingFreistellungYears = accumulatedHours / annualWorkHours;
-        }
-      }
+    // Accumulate hours before Coast FIRE
+    if (arbeitszeitkontoEnabled && !coastFireReached) {
+      accumulatedHours += stundenProJahr;
     }
 
-    // Determine current phase
+    // Determine current phase (based on Coast FIRE reached in a previous year)
     let isFreistellung = false;
     let isCoast = false;
     let isLZK = false;
@@ -112,11 +103,6 @@ export function simulateAccumulation(
         isCoast = true;
         isLZK = true;
       }
-    }
-
-    // Accumulate hours before Coast FIRE
-    if (arbeitszeitkontoEnabled && !coastFireReached) {
-      accumulatedHours += stundenProJahr;
     }
 
     // ETF growth & contributions
@@ -139,13 +125,29 @@ export function simulateAccumulation(
 
     // Life events cash-flow
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-    applyCashFlowToBasis(tax, eventCF, etfBal);
+    const eventTax = applyCashFlowToBasis(tax, eventCF, etfBal);
     etfBal += eventCF;
+    etfBal -= eventTax;
     etfBal = Math.max(0, etfBal);
 
     const etfReal = etfBal / realFactor;
     const totalReal = etfReal;
     const effectiveMonthlySavings = (isFreistellung || isCoast) ? 0 : savings;
+
+    // Check Coast FIRE threshold — end-of-year, using the same real-value and
+    // exponent convention as the authoritative calculateFIRE (index.ts).
+    if (!coastFireReached) {
+      const yearsRemaining = Math.max(0, estimatedFireYear - y);
+      const coastThreshold = yearsRemaining > 0
+        ? zielvermoegen / Math.pow(1 + realReturn, yearsRemaining)
+        : zielvermoegen;
+      if (totalReal >= coastThreshold) {
+        coastFireReached = true;
+        if (arbeitszeitkontoEnabled && accumulatedHours > 0 && annualWorkHours > 0) {
+          remainingFreistellungYears = accumulatedHours / annualWorkHours;
+        }
+      }
+    }
 
     data.push({
       year: y,
@@ -161,7 +163,7 @@ export function simulateAccumulation(
       annualLZKContrib: 0,
       monthlySavings: effectiveMonthlySavings,
       isLZKPhase: isLZK,
-      taxPaid: etfTax,
+      taxPaid: etfTax + eventTax,
       annualGains: etfGains,
       isDrawdownPhase: false,
       annualWithdrawal: 0,

@@ -1532,3 +1532,122 @@ describe("percentile helper", () => {
     expect(percentile(arr, 1.0)).toBe(10);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Retirement income helper (health insurance, pension tax, pension inflation)
+// ---------------------------------------------------------------------------
+
+import {
+  annualWithdrawalNeed,
+  netMonthlyPension,
+} from "./fireCalculations/retirementIncome";
+import {
+  sampleAnnualReturn,
+  mulberry32,
+  normalRandom,
+} from "./fireCalculations/helpers";
+
+describe("retirementIncome helper", () => {
+  it("reproduces legacy behaviour with default levers", () => {
+    const inp = makeInputs({
+      monatlichesWunschEinkommen: 3_000,
+      gesetzlicheRente: 1_200,
+      inflation: 2.0,
+      renteneintrittsalter: 67,
+    });
+    // Before pension age: full desired income, inflation-scaled
+    const before = annualWithdrawalNeed(inp, 50, 5);
+    expect(before).toBeCloseTo(3_000 * 12 * Math.pow(1.02, 5), 4);
+    // After pension age: gap (desired - pension), inflation-scaled
+    const after = annualWithdrawalNeed(inp, 70, 10);
+    expect(after).toBeCloseTo((3_000 - 1_200) * 12 * Math.pow(1.02, 10), 4);
+  });
+
+  it("adds lifelong health insurance to the need", () => {
+    const base = makeInputs({ krankenversicherungMonatlich: 0 });
+    const withKv = makeInputs({ krankenversicherungMonatlich: 300 });
+    expect(annualWithdrawalNeed(withKv, 50, 0)).toBeGreaterThan(
+      annualWithdrawalNeed(base, 50, 0),
+    );
+  });
+
+  it("taxing the pension reduces the net creditable pension", () => {
+    const gross = makeInputs({ gesetzlicheRente: 1_500, pensionSteuersatz: 0 });
+    const taxed = makeInputs({ gesetzlicheRente: 1_500, pensionSteuersatz: 20 });
+    expect(netMonthlyPension(taxed)).toBeCloseTo(1_500 * 0.8, 4);
+    expect(netMonthlyPension(taxed)).toBeLessThan(netMonthlyPension(gross));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Log-normal Monte-Carlo returns (C2)
+// ---------------------------------------------------------------------------
+
+describe("sampleAnnualReturn (log-normal)", () => {
+  it("never produces a simple return below -100% in log-normal mode", () => {
+    const rng = mulberry32(1);
+    for (let i = 0; i < 5_000; i++) {
+      const r = sampleAnnualReturn(rng, 0.07, 0.15, true);
+      expect(r).toBeGreaterThan(-1);
+    }
+  });
+
+  it("preserves the arithmetic mean of returns (approximately)", () => {
+    const rng = mulberry32(2);
+    let sum = 0;
+    const n = 50_000;
+    for (let i = 0; i < n; i++) sum += sampleAnnualReturn(rng, 0.07, 0.15, true);
+    expect(sum / n).toBeCloseTo(0.07, 2);
+  });
+
+  it("matches the additive model when logNormal is false", () => {
+    const a = mulberry32(3);
+    const b = mulberry32(3);
+    // Same RNG stream ⇒ identical normal draws ⇒ additive result reproducible
+    const add = sampleAnnualReturn(a, 0.07, 0.15, false);
+    const z = normalRandom(b);
+    expect(add).toBeCloseTo(0.07 + 0.15 * z, 10);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New FireResult fields & levers (B1, D2, A4)
+// ---------------------------------------------------------------------------
+
+describe("new result fields and levers", () => {
+  it("exposes sparquoteEffective; equals sparquote when no bAV", () => {
+    const r = calculateFIRE(
+      makeInputs({ bavJaehrlich: 0, monatlicheSparrate: 3_000, monatlichesNetto: 6_000 }),
+    );
+    expect(r.sparquoteEffective).toBeCloseTo(r.sparquote, 4);
+  });
+
+  it("pension-aware FIRE number is lower than the pension-agnostic one", () => {
+    const off = calculateFIRE(makeInputs({ pensionInFireNumber: false, gesetzlicheRente: 1_500 }));
+    const on = calculateFIRE(makeInputs({ pensionInFireNumber: true, gesetzlicheRente: 1_500 }));
+    expect(on.derivedFireNumber).toBeLessThan(off.derivedFireNumber);
+  });
+
+  it("flags planned depletion for the Kapitalverzehr model", () => {
+    const r = calculateFIRE(
+      makeInputs({ entnahmeModell: "kapitalverzehr", kapitalverzehrJahre: 25 }),
+    );
+    // Kapitalverzehr intentionally draws the portfolio down; if it depletes,
+    // the flag must be set so the UI does not present it as a failure.
+    if (r.drawdownDepletionYear !== null) {
+      expect(r.drawdownPlannedDepletion).toBe(true);
+    }
+  });
+
+  it("does not flag planned depletion for the perpetual model", () => {
+    const r = calculateFIRE(makeInputs({ entnahmeModell: "ewigeRente" }));
+    expect(r.drawdownPlannedDepletion).toBe(false);
+  });
+
+  it("coastFireAmount never exceeds the target", () => {
+    // Real return <= 0 (return <= inflation) would otherwise blow up the discount
+    const inp = makeInputs({ etfRendite: 2.0, inflation: 2.5 });
+    const r = calculateFIRE(inp);
+    expect(r.coastFireAmount).toBeLessThanOrEqual(inp.zielvermoegen);
+  });
+});

@@ -62,8 +62,9 @@ export function calculateRequiredSparrate(
       bal -= tax.taxVorabpauschale(prev, gains);
       // Life events impact
       const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-      applyCashFlowToBasis(tax, eventCF, bal);
+      const eventTax = applyCashFlowToBasis(tax, eventCF, bal);
       bal += eventCF;
+      bal -= eventTax;
       bal = Math.max(0, bal);
     }
     return bal / Math.pow(1 + inf, targetYears);

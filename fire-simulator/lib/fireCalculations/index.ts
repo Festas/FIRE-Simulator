@@ -46,6 +46,7 @@ export { calculateTax, makeTaxConfig } from "./tax";
 import type { FireInputs, FireResult } from "./types";
 import { MAX_YEARS } from "./constants";
 import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
+import { netMonthlyPension } from "./retirementIncome";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { makeYearZero } from "./helpers";
 import { simulateAccumulation, simulateNoInvestment } from "./accumulation";
@@ -91,6 +92,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     startYear,
     currentAge,
     monatlichesWunschEinkommen,
+    renteneintrittsalter,
     swr,
     monatlichesNetto,
     lifeEvents,
@@ -108,10 +110,13 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   // Arbeitszeitkonto: hours → years conversion
   const annualWorkHours = wochenStunden * 52;
 
-  // Derived FIRE number: accounts for full withdrawal before pension age
-  // The binding constraint is the pre-pension period where no state pension is received
+  // Derived FIRE number: accounts for full withdrawal before pension age.
+  // The binding constraint is the pre-pension period where no state pension is
+  // received, so the default (pension-agnostic) figure sizes capital to sustain
+  // the *full* desired income perpetually via the SWR. The pension-aware variant
+  // (opt-in) is computed below, after the FIRE year estimate is available.
   const monthlyGapFull = monatlichesWunschEinkommen;
-  const derivedFireNumber =
+  let derivedFireNumber =
     swrDecimal > 0 ? (monthlyGapFull * 12) / swrDecimal : 0;
 
   // -----------------------------------------------------------------------
@@ -131,8 +136,9 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     const gains = etfBal - prev - contrib;
     etfBal -= estTax.taxVorabpauschale(prev, gains);
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-    applyCashFlowToBasis(estTax, eventCF, etfBal);
+    const eventTax = applyCashFlowToBasis(estTax, eventCF, etfBal);
     etfBal += eventCF;
+    etfBal -= eventTax;
     etfBal = Math.max(0, etfBal);
     const realVal = etfBal / Math.pow(1 + inf, y);
     if (realVal >= zielvermoegen) {
@@ -145,6 +151,34 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const lzkStartYear = arbeitszeitkontoEnabled
     ? estimatedFireYear // when AZK is on, lzkStartYear is set to wherever Coast FIRE triggers it
     : Math.max(1, estimatedFireYear - inputs.lzkJahre);
+
+  // B1 — pension-aware FIRE number (opt-in). Credits the (net, taxed) state
+  // pension once it starts. Capital is split into a perpetual part that sustains
+  // the post-pension gap forever (gapAfter / SWR) plus a bridge that self-funds
+  // the pension-covered portion during the years between the projected FIRE date
+  // and pension age (present-valued at the real return). With defaults (pension
+  // = 0, KV = 0) this reduces exactly to the pension-agnostic figure above.
+  if (inputs.pensionInFireNumber && swrDecimal > 0) {
+    const pensionAge = renteneintrittsalter ?? 67;
+    const kvMonthly = Math.max(0, inputs.krankenversicherungMonatlich ?? 0);
+    const needBeforeAnnual = (monatlichesWunschEinkommen + kvMonthly) * 12;
+    const netPensionAnnual = netMonthlyPension(inputs) * 12;
+    const needAfterAnnual = Math.max(0, needBeforeAnnual - netPensionAnnual);
+
+    const fireAge = currentAge + estimatedFireYear;
+    const bridgeYears = Math.max(0, pensionAge - fireAge);
+    // Present value of an annuity of `netPensionAnnual` for `bridgeYears` years
+    // discounted at the real return (the portion pension will later cover).
+    // Standard annuity-immediate PV factor; the epsilon guards the r→0 limit
+    // where the closed form is indeterminate and the PV is simply n periods.
+    const pvFactor =
+      Math.abs(realReturn) < 1e-9
+        ? bridgeYears
+        : (1 - Math.pow(1 + realReturn, -bridgeYears)) / realReturn;
+    const bridgeCapital = Math.min(netPensionAnnual, needBeforeAnnual) * pvFactor;
+
+    derivedFireNumber = needAfterAnnual / swrDecimal + bridgeCapital;
+  }
 
   // -----------------------------------------------------------------------
   // Pass 2: full simulation with Arbeitszeitkonto model
@@ -225,16 +259,18 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     etfBal -= etfTax;
 
     const yearGains = etfGains;
-    const yearTax = etfTax;
-
-    totalTaxPaid += yearTax;
-    totalGains += yearGains;
+    const yearTaxVorab = etfTax;
 
     // Apply life events cash-flow to ETF balance
     const eventCF = lifeEventCashFlow(lifeEvents, startYear + y, inf, startYear);
-    applyCashFlowToBasis(tax, eventCF, etfBal);
+    const eventTax = applyCashFlowToBasis(tax, eventCF, etfBal);
     etfBal += eventCF;
+    etfBal -= eventTax;
     etfBal = Math.max(0, etfBal);
+
+    const yearTax = yearTaxVorab + eventTax;
+    totalTaxPaid += yearTax;
+    totalGains += yearGains;
 
     const etfReal = etfBal / realFactor;
     const totalReal = etfReal;
@@ -286,7 +322,10 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     if (fullFireYear === null && totalReal >= zielvermoegen) fullFireYear = y;
   }
 
-  // Coast FIRE amount at the year it was reached (or current threshold)
+  // Coast FIRE amount at the year it was reached (or current threshold).
+  // When the real return is ≤ 0 the discount factor is ≥ 1, which would make
+  // the "coast" amount exceed the actual target — coasting is impossible then,
+  // so clamp to the target (you need the full amount, no coasting benefit).
   let coastFireAmount: number;
   if (coastFireYear !== null) {
     const remaining = Math.max(0, estimatedFireYear - coastFireYear);
@@ -299,6 +338,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
       zielvermoegen /
       Math.pow(1 + realReturn, Math.max(1, estimatedFireYear));
   }
+  coastFireAmount = Math.min(coastFireAmount, zielvermoegen);
 
   // Freistellung duration in years
   const totalFreistellungJahre = arbeitszeitkontoEnabled && annualWorkHours > 0
@@ -327,6 +367,15 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const sparquote =
     monatlichesNetto > 0
       ? (monatlicheSparrate / monatlichesNetto) * 100
+      : 0;
+
+  // Effective savings rate including employer/gross bAV contributions, expressed
+  // relative to net income plus the monthly bAV amount (an approximation of the
+  // total money being put to work each month vs. total resources available).
+  const bavMonthly = (bavJaehrlich ?? 0) / 12;
+  const sparquoteEffective =
+    monatlichesNetto + bavMonthly > 0
+      ? ((monatlicheSparrate + bavMonthly) / (monatlichesNetto + bavMonthly)) * 100
       : 0;
 
   const targetYears = fullFireYear !== null ? fullFireYear : MAX_YEARS;
@@ -394,10 +443,14 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     drawdownData: drawdownResult.data,
     drawdownSurvives: drawdownResult.survives,
     drawdownDepletionYear: drawdownResult.depletionYear,
+    drawdownPlannedDepletion:
+      inputs.entnahmeModell === "kapitalverzehr" &&
+      drawdownResult.depletionYear !== null,
 
     coastFireAmount,
     requiredSparrate,
     sparquote,
+    sparquoteEffective,
 
     scenarioOptimistic,
     scenarioPessimistic,
