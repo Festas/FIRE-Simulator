@@ -70,12 +70,19 @@ export default function FireChart({ result, inputs, zielvermoegen, showNominal =
   }));
 
   // Drawdown data points
+  // Note: the real→nominal inflation factor is derived from the balance ratio
+  // (nominal / real). In years where the portfolio is depleted both are 0, so we
+  // carry forward the last known factor instead of falling back to 1 (which would
+  // display a nominal withdrawal without deflating it to today's purchasing power).
+  let lastInflationFactor = 1;
   const ddData = drawdownData.map((d: YearDataPoint) => {
     const nominal = d.etfBalanceNominal;
     const real = d.totalReal;
     // Derive inflation factor from balance: nominal / real = Math.pow(1+inf, years)
     // Dividing nominal withdrawal by this converts to today's purchasing power
-    const inflationFactor = nominal > 0 && real > 0 ? nominal / real : 1;
+    const inflationFactor =
+      nominal > 0 && real > 0 ? nominal / real : lastInflationFactor;
+    lastInflationFactor = inflationFactor;
     const withdrawalDisplay = showNominal
       ? d.annualWithdrawal
       : inflationFactor > 0 ? d.annualWithdrawal / inflationFactor : d.annualWithdrawal;

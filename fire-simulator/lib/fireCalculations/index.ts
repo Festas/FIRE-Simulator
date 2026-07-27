@@ -46,6 +46,7 @@ export { calculateTax, makeTaxConfig } from "./tax";
 import type { FireInputs, FireResult } from "./types";
 import { MAX_YEARS } from "./constants";
 import { makeTaxAccount, applyCashFlowToBasis } from "./tax";
+import { netMonthlyPension } from "./retirementIncome";
 import { lifeEventCashFlow, getSavingsRateOverride } from "./lifeEvents";
 import { makeYearZero } from "./helpers";
 import { simulateAccumulation, simulateNoInvestment } from "./accumulation";
@@ -91,6 +92,7 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     startYear,
     currentAge,
     monatlichesWunschEinkommen,
+    renteneintrittsalter,
     swr,
     monatlichesNetto,
     lifeEvents,
@@ -108,10 +110,13 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   // Arbeitszeitkonto: hours → years conversion
   const annualWorkHours = wochenStunden * 52;
 
-  // Derived FIRE number: accounts for full withdrawal before pension age
-  // The binding constraint is the pre-pension period where no state pension is received
+  // Derived FIRE number: accounts for full withdrawal before pension age.
+  // The binding constraint is the pre-pension period where no state pension is
+  // received, so the default (pension-agnostic) figure sizes capital to sustain
+  // the *full* desired income perpetually via the SWR. The pension-aware variant
+  // (opt-in) is computed below, after the FIRE year estimate is available.
   const monthlyGapFull = monatlichesWunschEinkommen;
-  const derivedFireNumber =
+  let derivedFireNumber =
     swrDecimal > 0 ? (monthlyGapFull * 12) / swrDecimal : 0;
 
   // -----------------------------------------------------------------------
@@ -146,6 +151,32 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
   const lzkStartYear = arbeitszeitkontoEnabled
     ? estimatedFireYear // when AZK is on, lzkStartYear is set to wherever Coast FIRE triggers it
     : Math.max(1, estimatedFireYear - inputs.lzkJahre);
+
+  // B1 — pension-aware FIRE number (opt-in). Credits the (net, taxed) state
+  // pension once it starts. Capital is split into a perpetual part that sustains
+  // the post-pension gap forever (gapAfter / SWR) plus a bridge that self-funds
+  // the pension-covered portion during the years between the projected FIRE date
+  // and pension age (present-valued at the real return). With defaults (pension
+  // = 0, KV = 0) this reduces exactly to the pension-agnostic figure above.
+  if (inputs.pensionInFireNumber && swrDecimal > 0) {
+    const pensionAge = renteneintrittsalter ?? 67;
+    const kvMonthly = Math.max(0, inputs.krankenversicherungMonatlich ?? 0);
+    const needBeforeAnnual = (monatlichesWunschEinkommen + kvMonthly) * 12;
+    const netPensionAnnual = netMonthlyPension(inputs) * 12;
+    const needAfterAnnual = Math.max(0, needBeforeAnnual - netPensionAnnual);
+
+    const fireAge = currentAge + estimatedFireYear;
+    const bridgeYears = Math.max(0, pensionAge - fireAge);
+    // Present value of an annuity of `netPensionAnnual` for `bridgeYears` years
+    // discounted at the real return (the portion pension will later cover).
+    const pvFactor =
+      Math.abs(realReturn) < 1e-9
+        ? bridgeYears
+        : (1 - Math.pow(1 + realReturn, -bridgeYears)) / realReturn;
+    const bridgeCapital = Math.min(netPensionAnnual, needBeforeAnnual) * pvFactor;
+
+    derivedFireNumber = needAfterAnnual / swrDecimal + bridgeCapital;
+  }
 
   // -----------------------------------------------------------------------
   // Pass 2: full simulation with Arbeitszeitkonto model
