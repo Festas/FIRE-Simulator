@@ -77,8 +77,9 @@ export function approxIncomeTax(taxableIncome: number, config: TaxConfig): numbe
   const perPerson = config.filingStatus === "couple" ? taxableIncome / 2 : taxableIncome;
   const base = incomeTax2024(perPerson);
   const tax = config.filingStatus === "couple" ? base * 2 : base;
-  // Add Solidaritätszuschlag (5.5%) and optional Kirchensteuer (≈8%) to match
-  // the surcharges baked into the flat Abgeltungssteuer rate.
+  // Add Solidaritätszuschlag (5.5%) and optional Kirchensteuer to match the
+  // surcharges baked into the flat Abgeltungssteuer rate. Kirchensteuer is 8%
+  // in Bavaria/Baden-Württemberg and 9% elsewhere; we approximate with 8%.
   const surcharge = 0.055 + (config.kirchensteuer ? 0.08 : 0);
   return tax * (1 + surcharge);
 }

@@ -169,6 +169,8 @@ export function calculateFIRE(inputs: FireInputs): FireResult {
     const bridgeYears = Math.max(0, pensionAge - fireAge);
     // Present value of an annuity of `netPensionAnnual` for `bridgeYears` years
     // discounted at the real return (the portion pension will later cover).
+    // Standard annuity-immediate PV factor; the epsilon guards the r→0 limit
+    // where the closed form is indeterminate and the PV is simply n periods.
     const pvFactor =
       Math.abs(realReturn) < 1e-9
         ? bridgeYears

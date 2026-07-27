@@ -114,6 +114,11 @@ export function sampleAnnualReturn(
 
   const base = 1 + mean;
   if (base <= 0) return mean + stdDev * z; // degenerate; fall back
+  // Method-of-moments: choose log-space μ, σ so the growth factor (1+r) is
+  // log-normal with arithmetic mean = base and std dev = stdDev. This keeps the
+  // *arithmetic* mean of the simple return equal to `mean` while preventing any
+  // draw below −100%. See the standard log-normal moment equations:
+  //   σ² = ln(1 + (stdDev/base)²),  μ = ln(base) − σ²/2.
   const variance = Math.log(1 + Math.pow(stdDev / base, 2));
   const sigma = Math.sqrt(variance);
   const mu = Math.log(base) - variance / 2;
