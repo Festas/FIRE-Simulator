@@ -94,7 +94,13 @@ export function simulateDrawdown(
 
     if (balance <= 0 && depletionYear === null) {
       depletionYear = calYear;
-      survives = false;
+      // Kapitalverzehr deliberately depletes the portfolio by the end of the
+      // planned horizon, so only a *premature* depletion (before the planned
+      // year `kapitalverzehrJahre`) counts as a failure. Ewige Rente treats any
+      // depletion as a failure.
+      const prematureDepletion =
+        entnahmeModell !== "kapitalverzehr" || y < kapitalverzehrJahre;
+      if (prematureDepletion) survives = false;
       balance = 0;
     }
 

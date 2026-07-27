@@ -55,12 +55,11 @@ export function simulateMonteCarlo(
   for (let sim = 0; sim < MC_SIMULATIONS; sim++) {
     let balance = exitBalanceNominal;
     const tax = makeTaxAccount(inputs, exitBasisNominal);
-    let survived = true;
+    let depletionYearSim: number | null = null;
 
     for (let y = 1; y <= MC_DRAWDOWN_YEARS; y++) {
       if (balance <= 0) {
         balancesByYear[y - 1].push(0);
-        survived = false;
         continue;
       }
 
@@ -101,13 +100,28 @@ export function simulateMonteCarlo(
       const withdrawalTax = tax.taxWithdrawal(withdrawal, balance);
       balance -= withdrawal;
       balance -= withdrawalTax;
-      if (balance <= 0) balance = 0;
+      if (balance <= 0) {
+        balance = 0;
+        if (depletionYearSim === null) depletionYearSim = y;
+      }
 
       const realFactor = Math.pow(1 + inf, exitYear + y);
       balancesByYear[y - 1].push(balance / realFactor);
     }
 
-    if (survived && balance > 0) survivals++;
+    // Survival criterion depends on the withdrawal model:
+    // - Kapitalverzehr deliberately spends the portfolio down over
+    //   `kapitalverzehrJahre`. "Survival" therefore means the money lasts the
+    //   full planned horizon — depleting at (or after) the planned year is the
+    //   intended outcome, only running dry *earlier* is a failure.
+    // - Ewige Rente: the portfolio must still be positive at the end.
+    if (entnahmeModell === "kapitalverzehr") {
+      if (depletionYearSim === null || depletionYearSim >= kapitalverzehrJahre) {
+        survivals++;
+      }
+    } else if (balance > 0) {
+      survivals++;
+    }
   }
 
   // Calculate percentiles
