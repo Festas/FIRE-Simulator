@@ -1644,6 +1644,29 @@ describe("new result fields and levers", () => {
     expect(r.drawdownPlannedDepletion).toBe(false);
   });
 
+  it("counts intended Kapitalverzehr depletion as survival, not failure", () => {
+    // A well-funded plan drawn down over its planned horizon should be treated
+    // as a success: the deterministic drawdown "survives" and the Monte-Carlo
+    // success rate stays high, even though the portfolio ends at €0 by design.
+    const r = calculateFIRE(
+      makeInputs({ entnahmeModell: "kapitalverzehr", kapitalverzehrJahre: 30 }),
+    );
+    expect(r.drawdownSurvives).toBe(true);
+    expect(r.monteCarlo.successRate).toBeGreaterThan(0.8);
+  });
+
+  it("switching to Kapitalverzehr does not lower the drawdown Monte-Carlo score", () => {
+    const perpetual = calculateFIRE(makeInputs({ entnahmeModell: "ewigeRente" }));
+    const depletion = calculateFIRE(
+      makeInputs({ entnahmeModell: "kapitalverzehr", kapitalverzehrJahre: 30 }),
+    );
+    // Kapitalverzehr is an easier goal than an eternal pension, so its Monte
+    // Carlo drawdown success rate must not be penalised below the perpetual one.
+    expect(depletion.monteCarlo.successRate).toBeGreaterThanOrEqual(
+      perpetual.monteCarlo.successRate,
+    );
+  });
+
   it("coastFireAmount never exceeds the target", () => {
     // Real return <= 0 (return <= inflation) would otherwise blow up the discount
     const inp = makeInputs({ etfRendite: 2.0, inflation: 2.5 });
