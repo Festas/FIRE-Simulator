@@ -1,14 +1,15 @@
 "use client";
 
 import React from "react";
-import { FireInputs } from "@/lib/fireCalculations";
+import { FireInputs, FireResult } from "@/lib/fireCalculations";
 import { useI18n } from "@/lib/i18n";
 
 interface WarningsProps {
   inputs: FireInputs;
+  result?: FireResult;
 }
 
-export default function Warnings({ inputs }: WarningsProps) {
+export default function Warnings({ inputs, result }: WarningsProps) {
   const { t } = useI18n();
   const warnings: { text: string; isWarning: boolean }[] = [];
 
@@ -55,6 +56,40 @@ export default function Warnings({ inputs }: WarningsProps) {
       text: t.warnDesiredIncomeHigh,
       isWarning: false,
     });
+  }
+
+  // Result-driven warnings (D4)
+  if (result) {
+    // Low Monte-Carlo success probability
+    const mcSuccess = result.lifecycleMonteCarlo?.fireSuccessRate;
+    if (typeof mcSuccess === "number" && mcSuccess < 0.75) {
+      warnings.push({
+        text: t.warnLowMcSuccess((mcSuccess * 100).toFixed(0)),
+        isWarning: true,
+      });
+    }
+
+    // Coast FIRE impossible: real return ≤ 0 means the clamp made coast == target
+    const realReturn = (1 + inputs.etfRendite / 100) / (1 + inputs.inflation / 100) - 1;
+    if (realReturn <= 0) {
+      warnings.push({ text: t.warnCoastImpossible, isWarning: true });
+    }
+
+    // SWR exceeds real return under the perpetual model
+    if (inputs.entnahmeModell === "ewigeRente" && inputs.swr > realReturn * 100) {
+      warnings.push({
+        text: t.warnSwrAboveRealReturn(
+          inputs.swr.toFixed(1),
+          (realReturn * 100).toFixed(1),
+        ),
+        isWarning: true,
+      });
+    }
+
+    // Kapitalverzehr: depletion is intended, not a failure
+    if (result.drawdownPlannedDepletion) {
+      warnings.push({ text: t.infoPlannedDepletion, isWarning: false });
+    }
   }
 
   if (warnings.length === 0) return null;

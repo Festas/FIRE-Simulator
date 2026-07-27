@@ -60,6 +60,15 @@ const DEFAULT_INPUTS: FireInputs = {
   arbeitszeitkontoEnabled: false,
   stundenProJahr: 0,
   wochenStunden: 40,
+  // German-realism levers (see audit). Defaults preserve prior behaviour except
+  // logNormalReturns, which only corrects the *shape* of the Monte-Carlo return
+  // distribution (expected value unchanged) and is the realistic model.
+  krankenversicherungMonatlich: 0,
+  pensionSteuersatz: 0,
+  pensionInflation: undefined,
+  pensionInFireNumber: false,
+  guenstigerpruefung: false,
+  logNormalReturns: true,
 };
 
 const LS_KEY = "fire-simulator-inputs";
@@ -648,7 +657,7 @@ function HomeContent() {
                 {/* Guidance Card — contextual feedback */}
                 <GuidanceCard result={result} inputs={inputs} />
 
-                <Warnings inputs={inputs} />
+                <Warnings inputs={inputs} result={result} />
 
                 {/* Beginner Mode: simplified view */}
                 {dashboardMode === "beginner" ? (

@@ -141,6 +141,7 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
     drawdownDepletionYear,
     derivedFireNumber,
     monteCarlo,
+    lifecycleMonteCarlo,
     coastFireAge,
     fullFireAge,
     lzkSabbaticalStartAge,
@@ -187,11 +188,11 @@ export default function KPICards({ result, inputs }: KPICardsProps) {
         value={fullLabel}
         sub={
           targetReached && years
-            ? t.kpiTargetReached(years, formatCurrencyShort(inputs.zielvermoegen))
+            ? `${t.kpiTargetReached(years, formatCurrencyShort(inputs.zielvermoegen))} · ${t.kpiFireConfidence((lifecycleMonteCarlo.fireSuccessRate * 100).toFixed(0))}`
             : t.kpiTargetNotReached
         }
         accent={targetReached}
-        warning={!targetReached}
+        warning={!targetReached || lifecycleMonteCarlo.fireSuccessRate < 0.5}
         direction="lower"
       />
       <KPICard

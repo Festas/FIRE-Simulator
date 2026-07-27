@@ -32,6 +32,12 @@ const URL_KEYS: Record<string, keyof FireInputs> = {
   sp: "stundenProJahr",
   ws: "wochenStunden",
   ra: "renteneintrittsalter",
+  kv: "krankenversicherungMonatlich",
+  pt: "pensionSteuersatz",
+  pi: "pensionInflation",
+  pf: "pensionInFireNumber",
+  gp: "guenstigerpruefung",
+  ln: "logNormalReturns",
 };
 
 // ---------------------------------------------------------------------------
@@ -112,7 +118,13 @@ export function parseURLInputs(): Partial<FireInputs> | null {
 
     if (full === "steuerModell") {
       result[full] = val === "couple" ? "couple" : "single";
-    } else if (full === "kirchensteuer" || full === "arbeitszeitkontoEnabled") {
+    } else if (
+      full === "kirchensteuer" ||
+      full === "arbeitszeitkontoEnabled" ||
+      full === "pensionInFireNumber" ||
+      full === "guenstigerpruefung" ||
+      full === "logNormalReturns"
+    ) {
       result[full] = val === "1";
     } else if (full === "zielvermoegenOverride") {
       result[full] = val === "1";

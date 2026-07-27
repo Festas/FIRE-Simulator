@@ -354,6 +354,9 @@ export function importScenarioJSON(file: File): Promise<FireInputs> {
     "swr", "steuerModell", "kirchensteuer", "entnahmeModell",
     "kapitalverzehrJahre", "monatlichesNetto", "lifeEvents",
     "arbeitszeitkontoEnabled", "stundenProJahr", "wochenStunden",
+    "basiszins", "krankenversicherungMonatlich", "pensionSteuersatz",
+    "pensionInflation", "pensionInFireNumber", "guenstigerpruefung",
+    "logNormalReturns",
   ]);
 
   return new Promise((resolve, reject) => {
