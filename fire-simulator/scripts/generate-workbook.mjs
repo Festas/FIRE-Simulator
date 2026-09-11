@@ -62,6 +62,12 @@ function computed(cell, formula, numFmt) {
   if (numFmt) cell.numFmt = numFmt;
 }
 
+function computedNum(cell, value, numFmt) {
+  cell.value = value;
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: COLORS.computed } };
+  if (numFmt) cell.numFmt = numFmt;
+}
+
 // ---------------------------------------------------------------------------
 const wb = new ExcelJS.Workbook();
 wb.creator = "FIRE Masterplan Simulator";
@@ -175,7 +181,7 @@ for (let n = 1; n <= ACCUM_ROWS; n++) {
   const A = `A${r}`, B = `B${r}`, C = `C${r}`, D = `D${r}`, E = `E${r}`,
     F = `F${r}`, G = `G${r}`, H = `H${r}`, I = `I${r}`, J = `J${r}`, K = `K${r}`;
 
-  computed(acc.getCell(A), `${n}`, "0");
+  computedNum(acc.getCell(A), n, "0");
   computed(acc.getCell(B), `currentAge+${n}-1`, "0");
   // Only accumulate while age < fireAge, otherwise blank the row's numbers.
   const active = `(currentAge+${n}-1) < fireAge`;
@@ -258,9 +264,12 @@ for (let n = 1; n <= DRAW_ROWS; n++) {
   const age = `fireAge+${n}-1`;
   const active = `(${age}) <= endAge`;
 
-  computed(dd.getCell(A), `${n}`, "0");
+  computedNum(dd.getCell(A), n, "0");
   computed(dd.getCell(B), age, "0");
-  if (n === 1) computed(dd.getCell(C), `'FIRE number'!B9`, eur);
+  // Seed from the projected NOMINAL portfolio at FIRE age (consistent with the
+  // nominal, inflation-scaled withdrawals below). Falls back to 0 if not reached.
+  if (n === 1)
+    computed(dd.getCell(C), `IFERROR(INDEX(Accumulation!$G:$G, MATCH(fireAge, Accumulation!$B:$B, 0)), 0)`, eur);
   else computed(dd.getCell(C), `MAX(0, G${prev})`, eur);
   // Net need: desired income (+health), inflation-scaled, minus net pension once at pension age
   computed(
