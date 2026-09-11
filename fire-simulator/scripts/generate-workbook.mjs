@@ -325,7 +325,7 @@ dash.getCell("A1").value = "KPI Dashboard";
 dash.getCell("A1").font = { bold: true, size: 16 };
 const kpis = [
   ["FIRE number (pension-aware)", `'FIRE number'!B9`, eur],
-  ["FIRE number (simple SWR)", `'FIRE number'!B4`, eur],
+  ["FIRE number (simple SWR)", `'FIRE number'!B5`, eur],
   ["Projected real portfolio at FIRE age", `'FIRE number'!B10`, eur],
   ["Surplus / shortfall (real)", `'FIRE number'!B11`, eur],
   ["Years to FIRE", `fireAge-currentAge`, "0"],
