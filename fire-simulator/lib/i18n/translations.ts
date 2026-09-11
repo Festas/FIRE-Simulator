@@ -17,6 +17,7 @@ export interface Translations {
   csvExport: string;
   jsonExport: string;
   jsonImport: string;
+  templateDownload: string;
   exportError: string;
   importError: string;
   importSuccess: string;
@@ -656,6 +657,7 @@ export const de: Translations = {
   csvExport: "CSV Export",
   jsonExport: "JSON Export",
   jsonImport: "JSON Import",
+  templateDownload: "Excel-Vorlage herunterladen",
   exportError: "Export fehlgeschlagen. Bitte versuchen Sie es erneut.",
   importError: "Import fehlgeschlagen. Die Datei ist ungültig oder beschädigt.",
   importSuccess: "Szenario erfolgreich importiert.",
@@ -1263,6 +1265,7 @@ export const en: Translations = {
   csvExport: "CSV Export",
   jsonExport: "JSON Export",
   jsonImport: "JSON Import",
+  templateDownload: "Download Excel template",
   exportError: "Export failed. Please try again.",
   importError: "Import failed. The file is invalid or corrupted.",
   importSuccess: "Scenario imported successfully.",

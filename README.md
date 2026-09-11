@@ -227,6 +227,7 @@ npm test
 
 | Document | Description |
 |----------|-------------|
+| [Financial-Analysis Vision](docs/FINANCIAL_ANALYSIS_VISION.md) | North-star methodology + Excel workbook & tool-parity roadmap |
 | [Architecture](docs/ARCHITECTURE.md) | System design, data flow, component hierarchy |
 | [API Reference](docs/API.md) | Complete calculation engine documentation |
 | [Configuration](docs/CONFIGURATION.md) | All parameters and settings explained |
